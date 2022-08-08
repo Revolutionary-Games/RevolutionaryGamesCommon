@@ -1,0 +1,45 @@
+version: 1
+
+jobs:
+  test:
+    image: thrive/devcenter-ci:v3
+    cache:
+      loadFrom:
+        - v1-{Branch}-build
+      writeTo: v1-{Branch}-build
+      system:
+        /root/.nuget: v1-nuget
+    steps:
+      - run:
+           command: dotnet restore
+      - run:
+          name: Build
+          command: dotnet build
+      - run:
+          name: Test
+          command: dotnet test
+  lint:
+    image: thrive/devcenter-ci:v3
+    cache:
+      loadFrom:
+        - v1-{Branch}-build
+      writeTo: v1-{Branch}-build
+      system:
+        /root/.nuget: v1-nuget
+    steps:
+      - run:
+          name: Build list of changed files
+          # Remove the cat here once artifact uploads is done:
+          command: |
+            git diff-tree --no-commit-id --name-only -r HEAD..origin/$CI_DEFAULT_BRANCH > files_to_check.txt
+            git diff-tree --no-commit-id --name-only -r HEAD..$CI_EARLIER_COMMIT >> files_to_check.txt || echo compare with previous commit failed
+            echo Changed files:
+            cat files_to_check.txt
+      - run:
+          command: dotnet restore
+      - run:
+          name: Build with warnings
+          command: ruby check_formatting.rb -c compile
+      - run:
+          name: Jetbrains inspectcode
+          command: ruby check_formatting.rb -c inspectcode
