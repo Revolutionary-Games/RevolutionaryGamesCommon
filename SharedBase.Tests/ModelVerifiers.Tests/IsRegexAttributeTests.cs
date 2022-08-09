@@ -1,9 +1,9 @@
+namespace SharedBase.Tests.ModelVerifiers.Tests;
+
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using SharedBase.ModelVerifiers;
 using Xunit;
-
-namespace SharedBase.Tests.ModelVerifiers.Tests;
 
 public class IsRegexAttributeTests
 {
@@ -69,6 +69,7 @@ public class IsRegexAttributeTests
     private class Model2
     {
         [IsRegex(AllowBlank = true)]
+
         // Read by the property
         // ReSharper disable once UnusedAutoPropertyAccessor.Local
         public string? Regex { get; set; }

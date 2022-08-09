@@ -1,11 +1,11 @@
+namespace SharedBase.Tests.ModelVerifiers.Tests;
+
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text;
 using SharedBase.ModelVerifiers;
-using SharedBase.Utilities;
+using Utilities;
 using Xunit;
-
-namespace SharedBase.Tests.ModelVerifiers.Tests;
 
 public class EmailAttributeTests
 {

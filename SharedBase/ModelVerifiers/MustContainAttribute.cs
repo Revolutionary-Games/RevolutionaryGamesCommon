@@ -1,14 +1,14 @@
+namespace SharedBase.ModelVerifiers;
+
 using System;
 using System.Collections;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
-namespace SharedBase.ModelVerifiers;
-
 /// <summary>
 ///   Requires that a property is not null and contains the specified item
 /// </summary>
-[AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false)]
+[AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
 public class MustContainAttribute : RequiredAttribute
 {
     public MustContainAttribute(params string[] values)

@@ -1,12 +1,12 @@
+namespace SharedBase.ModelVerifiers;
+
 using System;
 using System.ComponentModel.DataAnnotations;
-
-namespace SharedBase.ModelVerifiers;
 
 /// <summary>
 ///   Requires that a property when Trim is called doesn't change (or the property is null)
 /// </summary>
-[AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false)]
+[AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
 public class NoTrailingOrPrecedingSpaceAttribute : RequiredAttribute
 {
     protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)

@@ -1,8 +1,8 @@
+namespace SharedBase.ModelVerifiers;
+
 using System;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
-
-namespace SharedBase.ModelVerifiers;
 
 /// <summary>
 ///   Requires that a property is not null when a condition is true (for example a boolean property is true).
@@ -15,7 +15,7 @@ namespace SharedBase.ModelVerifiers;
 ///     for a solution that doesn't work
 ///   </para>
 /// </remarks>
-[AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false)]
+[AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
 public class NotNullOrEmptyIfAttribute : RequiredAttribute
 {
     public string? BooleanPropertyIsTrue { get; set; }

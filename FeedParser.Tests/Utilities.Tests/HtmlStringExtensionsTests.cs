@@ -1,7 +1,7 @@
+namespace FeedParser.Tests.Utilities.Tests;
+
 using FeedParser.Utilities;
 using Xunit;
-
-namespace FeedParser.Tests.Utilities.Tests;
 
 public class HtmlStringExtensionsTests
 {

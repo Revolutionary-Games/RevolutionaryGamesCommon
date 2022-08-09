@@ -1,8 +1,8 @@
+namespace FeedParser.Models;
+
 using System;
 using System.Linq;
 using System.Web;
-
-namespace FeedParser.Models;
 
 public class ParsedFeedItem
 {

@@ -1,13 +1,13 @@
+namespace SharedBase.ModelVerifiers;
+
 using System;
 using System.ComponentModel.DataAnnotations;
-using SharedBase.Utilities;
-
-namespace SharedBase.ModelVerifiers;
+using Utilities;
 
 /// <summary>
 ///   Basic validation that (if not null) that a string looks like an email
 /// </summary>
-[AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false)]
+[AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
 public class EmailAttribute : RequiredAttribute
 {
     protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)

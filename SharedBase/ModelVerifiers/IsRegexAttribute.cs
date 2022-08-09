@@ -1,13 +1,13 @@
+namespace SharedBase.ModelVerifiers;
+
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
 
-namespace SharedBase.ModelVerifiers;
-
 /// <summary>
 ///   Validates that property is a valid regex
 /// </summary>
-[AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false)]
+[AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
 public class IsRegexAttribute : RequiredAttribute
 {
     public bool AllowBlank { get; set; }

@@ -1,7 +1,7 @@
+namespace FeedParser.Shared.Models;
+
 using System.Text.Json.Serialization;
 using SharedBase.ModelVerifiers;
-
-namespace FeedParser.Shared.Models;
 
 /// <summary>
 ///   Action to process a fetched feed with before saving or creating feed items. Note that the actions should be able

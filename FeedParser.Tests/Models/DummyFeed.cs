@@ -1,9 +1,9 @@
+namespace FeedParser.Tests.Models;
+
 using System;
 using System.Collections.Generic;
 using FeedParser.Models;
-using FeedParser.Shared.Models;
-
-namespace FeedParser.Tests.Models;
+using Shared.Models;
 
 public class DummyFeed : IFeed
 {
