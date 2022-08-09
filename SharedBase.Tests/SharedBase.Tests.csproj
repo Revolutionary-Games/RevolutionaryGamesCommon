@@ -2,11 +2,11 @@
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>false</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AngleSharp" Version="0.17.1" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.2.0" />
     <PackageReference Include="xunit" Version="2.4.2" />
     <PackageReference Include="xunit.runner.console" Version="2.4.2">
@@ -20,12 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Services.Tests" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\FeedParser.Shared\FeedParser.Shared.csproj" />
-    <ProjectReference Include="..\FeedParser\FeedParser.csproj" />
+    <ProjectReference Include="..\SharedBase\SharedBase.csproj" />
   </ItemGroup>
 
 </Project>
