@@ -35,7 +35,7 @@ public class EmailAttribute : RequiredAttribute
                 new[] { validationContext.MemberName! });
         }
 
-        if (asString.Length > GlobalConstants.MaxEmailLength || asString.Length < GlobalConstants.MinEmailLength)
+        if (asString.Length is > GlobalConstants.MaxEmailLength or < GlobalConstants.MinEmailLength)
         {
             return new ValidationResult(
                 ErrorMessage ??

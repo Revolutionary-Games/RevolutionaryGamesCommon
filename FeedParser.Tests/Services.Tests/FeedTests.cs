@@ -11,6 +11,8 @@ namespace FeedParser.Tests.Services.Tests;
 
 public class FeedTests
 {
+    // Used by another test in a different project
+    // ReSharper disable once MemberCanBePrivate.Global
     public const string TestGithubFeedContent = @"<?xml version=""1.0"" encoding=""UTF-8""?>
 <feed xmlns=""http://www.w3.org/2005/Atom"" xmlns:media=""http://search.yahoo.com/mrss/"" xml:lang=""en-US"">
   <id>tag:github.com,2008:/organizations/Revolutionary-Games/user</id>
