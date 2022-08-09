@@ -13,7 +13,7 @@ require_relative 'RubySetupSystem/RubyCommon'
 MAX_LINE_LENGTH = 120
 
 # VALID_CHECKS = %w[compile files inspectcode cleanupcode].freeze
-VALID_CHECKS = %w[compile inspectcode].freeze
+VALID_CHECKS = %w[compile inspectcode cleanupcode].freeze
 DEFAULT_CHECKS = VALID_CHECKS
 
 JET_BRAINS_CACHE = '.jetbrains-cache'
@@ -204,7 +204,7 @@ def run_compile
   output = nil
 
   BUILD_MUTEX.synchronize do
-    status, output = runOpen3CaptureOutput('dotnet', 'build', 'ThriveDevCenter.sln',
+    status, output = runOpen3CaptureOutput('dotnet', 'build', 'RevolutionaryGamesCommon.sln',
                                            '/t:Clean,Build', '/warnaserror')
   end
 
@@ -264,7 +264,7 @@ def run_inspect_code
 
   install_dotnet_tools
 
-  params = ['dotnet', 'tool', 'run', 'jb', 'inspectcode', 'ThriveDevCenter.sln',
+  params = ['dotnet', 'tool', 'run', 'jb', 'inspectcode', 'RevolutionaryGamesCommon.sln',
             '-o=inspect_results.xml', '--build', "--caches-home=#{JET_BRAINS_CACHE}"]
 
   params.append "--include=#{@includes.join(';')}" if @includes
@@ -308,15 +308,13 @@ def run_inspect_code
 end
 
 def run_cleanup_code
-  puts "NOTE: cleanup currently doesn't run correctly for razor files"
-
   return if skip_jetbrains?
 
   install_dotnet_tools
 
   old_diff = runOpen3CaptureOutput 'git', '-c', 'core.safecrlf=false', 'diff', '--stat'
 
-  params = ['dotnet', 'tool', 'run', 'jb', 'cleanupcode', 'ThriveDevCenter.sln',
+  params = ['dotnet', 'tool', 'run', 'jb', 'cleanupcode', 'RevolutionaryGamesCommon.sln',
             '--profile=full_no_xml', "--caches-home=#{JET_BRAINS_CACHE}"]
 
   # TODO: we could probably split the includes into 4 groups to speed up things as the
@@ -343,8 +341,8 @@ run_check = proc { |check|
     run_compile
   elsif check == 'inspectcode'
     run_inspect_code
-  # elsif check == 'cleanupcode'
-  #   run_cleanup_code
+  elsif check == 'cleanupcode'
+    run_cleanup_code
   else
     OUTPUT_MUTEX.synchronize do
       puts "Valid checks: #{VALID_CHECKS}"

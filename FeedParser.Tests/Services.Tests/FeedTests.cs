@@ -1,11 +1,13 @@
-namespace FeedParser.Tests.Models.Tests;
+using FeedParser.Services;
+using FeedParser.Tests.Models;
+
+namespace FeedParser.Tests.Services.Tests;
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using AngleSharp.Html.Parser;
 using FeedParser.Shared.Models;
-using Services;
 using Xunit;
 
 public class FeedTests
