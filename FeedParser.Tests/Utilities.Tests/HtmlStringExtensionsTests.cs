@@ -1,8 +1,7 @@
 using FeedParser.Utilities;
+using Xunit;
 
 namespace FeedParser.Tests.Utilities.Tests;
-
-using Xunit;
 
 public class HtmlStringExtensionsTests
 {
@@ -19,6 +18,6 @@ public class HtmlStringExtensionsTests
     [Fact]
     public void HtmlExtension_TruncatesExample1()
     {
-        Assert.Equal(TestResult1, TestString1.HtmlTruncate(300));
+        Assert.Equal(TestResult1, TestString1.HtmlTruncate());
     }
 }
