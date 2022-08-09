@@ -1,5 +1,3 @@
-namespace FeedParser.Utilities;
-
 using System;
 using System.IO;
 using System.Linq;
@@ -9,6 +7,8 @@ using AngleSharp.Html;
 using AngleSharp.Html.Dom;
 using AngleSharp.Html.Parser;
 using SharedBase.Utilities;
+
+namespace FeedParser.Utilities;
 
 public static class HtmlStringExtensions
 {

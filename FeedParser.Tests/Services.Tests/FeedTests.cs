@@ -1,14 +1,13 @@
-using FeedParser.Services;
-using FeedParser.Tests.Models;
-
-namespace FeedParser.Tests.Services.Tests;
-
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using AngleSharp.Html.Parser;
+using FeedParser.Services;
 using FeedParser.Shared.Models;
+using FeedParser.Tests.Models;
 using Xunit;
+
+namespace FeedParser.Tests.Services.Tests;
 
 public class FeedTests
 {
@@ -452,7 +451,7 @@ Current translation status:
     {
         var feed = new DummyFeed("test")
         {
-            PreprocessingActions = new List<FeedPreprocessingAction>()
+            PreprocessingActions = new List<FeedPreprocessingAction>
             {
                 // Regexes as strings
                 // ReSharper disable StringLiteralTypo

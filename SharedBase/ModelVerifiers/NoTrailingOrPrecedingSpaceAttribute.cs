@@ -1,7 +1,7 @@
-namespace SharedBase.ModelVerifiers;
-
 using System;
 using System.ComponentModel.DataAnnotations;
+
+namespace SharedBase.ModelVerifiers;
 
 /// <summary>
 ///   Requires that a property when Trim is called doesn't change (or the property is null)

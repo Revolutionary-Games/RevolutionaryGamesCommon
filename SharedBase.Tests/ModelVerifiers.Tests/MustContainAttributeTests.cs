@@ -1,9 +1,9 @@
-namespace SharedBase.Tests.ModelVerifiers.Tests;
-
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using SharedBase.ModelVerifiers;
 using Xunit;
+
+namespace SharedBase.Tests.ModelVerifiers.Tests;
 
 public class MustContainAttributeTests
 {
@@ -68,14 +68,14 @@ public class MustContainAttributeTests
     [Fact]
     public void MustContain_ListOfStringsProperty()
     {
-        var model = new Model2(new List<string>() { "item", "and other stuff", "third thing" });
+        var model = new Model2(new List<string> { "item", "and other stuff", "third thing" });
 
         var errors = new List<ValidationResult>();
 
         Assert.True(Validator.TryValidateObject(model, new ValidationContext(model), errors));
         Assert.Empty(errors);
 
-        model.Property = new List<string>() { "item" };
+        model.Property = new List<string> { "item" };
 
         Assert.True(Validator.TryValidateObject(model, new ValidationContext(model), errors));
         Assert.Empty(errors);

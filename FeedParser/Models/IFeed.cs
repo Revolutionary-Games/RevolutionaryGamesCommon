@@ -1,8 +1,8 @@
-namespace FeedParser.Models;
-
 using System;
 using System.Collections.Generic;
-using Shared.Models;
+using FeedParser.Shared.Models;
+
+namespace FeedParser.Models;
 
 public interface IFeed
 {

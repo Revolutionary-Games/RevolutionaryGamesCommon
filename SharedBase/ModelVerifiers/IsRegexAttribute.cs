@@ -1,8 +1,8 @@
-namespace SharedBase.ModelVerifiers;
-
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
+
+namespace SharedBase.ModelVerifiers;
 
 /// <summary>
 ///   Validates that property is a valid regex

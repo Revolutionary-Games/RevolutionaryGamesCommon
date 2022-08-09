@@ -1,8 +1,8 @@
-namespace SharedBase.ModelVerifiers;
-
 using System;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+
+namespace SharedBase.ModelVerifiers;
 
 /// <summary>
 ///   Requires that a property is not null when a condition is true (for example a boolean property is true).

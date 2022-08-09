@@ -1,12 +1,11 @@
-using SharedBase.Utilities;
-
-namespace SharedBase.Tests.ModelVerifiers.Tests;
-
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text;
 using SharedBase.ModelVerifiers;
+using SharedBase.Utilities;
 using Xunit;
+
+namespace SharedBase.Tests.ModelVerifiers.Tests;
 
 public class EmailAttributeTests
 {
@@ -17,7 +16,7 @@ public class EmailAttributeTests
     [InlineData(null)]
     public void Email_AllowsValid(string email)
     {
-        var model = new Model1()
+        var model = new Model1
         {
             Email = email,
         };
@@ -35,7 +34,7 @@ public class EmailAttributeTests
     [InlineData("")]
     public void Email_DisallowsInvalid(string email)
     {
-        var model = new Model1()
+        var model = new Model1
         {
             Email = email,
         };

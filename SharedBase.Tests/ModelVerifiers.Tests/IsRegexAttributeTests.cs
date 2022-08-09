@@ -1,9 +1,9 @@
-namespace SharedBase.Tests.ModelVerifiers.Tests;
-
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using SharedBase.ModelVerifiers;
 using Xunit;
+
+namespace SharedBase.Tests.ModelVerifiers.Tests;
 
 public class IsRegexAttributeTests
 {
@@ -14,7 +14,7 @@ public class IsRegexAttributeTests
     [InlineData(null)]
     public void IsRegex_AllowsValid(string email)
     {
-        var model = new Model1()
+        var model = new Model1
         {
             Regex = email,
         };
@@ -32,7 +32,7 @@ public class IsRegexAttributeTests
     [InlineData("")]
     public void IsRegex_DisallowsInvalid(string email)
     {
-        var model = new Model1()
+        var model = new Model1
         {
             Regex = email,
         };
@@ -49,7 +49,7 @@ public class IsRegexAttributeTests
     [Fact]
     public void IsRegex_AllowsBlankInSpecificMode()
     {
-        var model = new Model2()
+        var model = new Model2
         {
             Regex = string.Empty,
         };

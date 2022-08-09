@@ -1,10 +1,10 @@
-namespace SharedBase.ModelVerifiers;
-
 using System;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Reflection;
+
+namespace SharedBase.ModelVerifiers;
 
 /// <summary>
 ///   Requires that a property doesn't equal a value if another property has a matching value to the given

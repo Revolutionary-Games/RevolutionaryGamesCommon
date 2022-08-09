@@ -1,9 +1,9 @@
-namespace SharedBase.ModelVerifiers;
-
 using System;
 using System.Collections;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+
+namespace SharedBase.ModelVerifiers;
 
 /// <summary>
 ///   Requires that a property is not null and contains the specified item

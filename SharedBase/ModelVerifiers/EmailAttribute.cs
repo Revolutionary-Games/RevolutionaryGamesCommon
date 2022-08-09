@@ -1,8 +1,8 @@
-namespace SharedBase.ModelVerifiers;
-
 using System;
 using System.ComponentModel.DataAnnotations;
-using Utilities;
+using SharedBase.Utilities;
+
+namespace SharedBase.ModelVerifiers;
 
 /// <summary>
 ///   Basic validation that (if not null) that a string looks like an email

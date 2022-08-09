@@ -1,9 +1,9 @@
-namespace SharedBase.Tests.ModelVerifiers.Tests;
-
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using SharedBase.ModelVerifiers;
 using Xunit;
+
+namespace SharedBase.Tests.ModelVerifiers.Tests;
 
 public class NoTrailingOrPrecedingSpaceAttributeTests
 {
