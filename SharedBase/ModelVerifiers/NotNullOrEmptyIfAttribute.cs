@@ -37,11 +37,8 @@ public class NotNullOrEmptyIfAttribute : RequiredAttribute
 
             var propertyValue = property.GetValue(validationContext.ObjectInstance);
 
-            if (propertyValue != null)
-            {
-                if ((bool)propertyValue)
-                    requiredValue = true;
-            }
+            if ((bool?)propertyValue == true)
+                requiredValue = true;
         }
         else if (!string.IsNullOrEmpty(PropertyMatchesValue))
         {
