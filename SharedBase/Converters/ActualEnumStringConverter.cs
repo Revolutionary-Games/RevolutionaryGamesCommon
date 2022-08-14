@@ -19,9 +19,9 @@ public class ActualEnumStringConverter : JsonConverterFactory
         JsonConverter converter = (JsonConverter)Activator.CreateInstance(
             typeof(ActualEnumConverter<>).MakeGenericType(typeToConvert),
             BindingFlags.Instance | BindingFlags.Public,
-            binder: null,
+            null,
             new object[] { options },
-            culture: null)!;
+            null)!;
 
         return converter;
     }
