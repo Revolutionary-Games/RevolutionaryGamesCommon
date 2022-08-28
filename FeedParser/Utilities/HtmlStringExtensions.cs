@@ -115,7 +115,7 @@ public static class HtmlStringExtensions
         return result;
     }
 
-    private static IElement CreateDummyDom()
+    public static IElement CreateDummyDom()
     {
         var parser = new HtmlParser();
         var document = parser.ParseDocument(string.Empty);
