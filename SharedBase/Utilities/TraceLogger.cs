@@ -9,7 +9,7 @@ namespace SharedBase.Utilities;
 /// </summary>
 public class TraceLogger<TCategoryName> : ILogger<TCategoryName>
 {
-    public LogLevel LogLevel { get; set; } = LogLevel.Information;
+    public LogLevel LogLevel => LogLevel.Information;
 
     public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
         Func<TState, Exception?, string> formatter)
