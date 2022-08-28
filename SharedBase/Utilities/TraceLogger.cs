@@ -1,8 +1,8 @@
+namespace SharedBase.Utilities;
+
 using System;
 using System.Diagnostics;
 using Microsoft.Extensions.Logging;
-
-namespace SharedBase.Utilities;
 
 /// <summary>
 ///   Logger that puts everything to trace
