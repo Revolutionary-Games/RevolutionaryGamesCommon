@@ -2,12 +2,14 @@ namespace SharedBase.Utilities;
 
 using System;
 using System.Diagnostics;
+using System.Runtime.Versioning;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 public static class ProcessRunHelpers
 {
+    [UnsupportedOSPlatform("browser")]
     public static Task<ProcessResult> RunProcessAsync(ProcessStartInfo startInfo,
         CancellationToken cancellationToken, bool captureOutput = true, int startRetries = 5)
     {
@@ -34,6 +36,7 @@ public static class ProcessRunHelpers
         }
     }
 
+    [UnsupportedOSPlatform("browser")]
     public static void StartProcessOutputRead(Process process, CancellationToken cancellationToken)
     {
         if (process == null)
@@ -85,6 +88,7 @@ public static class ProcessRunHelpers
             throw new InvalidOperationException("Failed to BeginErrorReadLine even after a few retries");
     }
 
+    [UnsupportedOSPlatform("browser")]
     private static TaskCompletionSource<ProcessResult> StartProcessInternal(ProcessStartInfo startInfo,
         CancellationToken cancellationToken, bool captureOutput)
     {
