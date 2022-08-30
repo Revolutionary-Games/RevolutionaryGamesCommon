@@ -15,6 +15,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharedBase.Tests", "SharedB
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestUtilities", "TestUtilities\TestUtilities.csproj", "{F8B1F1DF-E726-4BBA-B186-AE5176F2363A}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScriptsBase", "ScriptsBase\ScriptsBase.csproj", "{3F51B449-1F18-44C5-A51E-DFBAB33CF466}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Scripts", "Scripts\Scripts.csproj", "{1AA749DC-B17C-492A-86E2-47349E971057}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -48,5 +52,13 @@ Global
 		{F8B1F1DF-E726-4BBA-B186-AE5176F2363A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F8B1F1DF-E726-4BBA-B186-AE5176F2363A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F8B1F1DF-E726-4BBA-B186-AE5176F2363A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3F51B449-1F18-44C5-A51E-DFBAB33CF466}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3F51B449-1F18-44C5-A51E-DFBAB33CF466}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3F51B449-1F18-44C5-A51E-DFBAB33CF466}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3F51B449-1F18-44C5-A51E-DFBAB33CF466}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1AA749DC-B17C-492A-86E2-47349E971057}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1AA749DC-B17C-492A-86E2-47349E971057}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1AA749DC-B17C-492A-86E2-47349E971057}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1AA749DC-B17C-492A-86E2-47349E971057}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
