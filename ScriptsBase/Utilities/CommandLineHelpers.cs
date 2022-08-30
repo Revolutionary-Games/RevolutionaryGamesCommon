@@ -32,8 +32,11 @@ public static class CommandLineHelpers
         }
 
         var firstError = errorList.First();
-        if (firstError.Tag is ErrorType.HelpRequestedError or ErrorType.VersionRequestedError)
+        if (firstError.Tag is ErrorType.HelpRequestedError or ErrorType.VersionRequestedError
+            or ErrorType.HelpVerbRequestedError)
+        {
             return 0;
+        }
 
         ColourConsole.WriteError("Invalid command line arguments specified. ");
 

@@ -48,6 +48,16 @@ public static class ColourConsole
         WriteWithColour(message, ConsoleColor.DarkBlue);
     }
 
+    public static void WriteSuccessLine(string message)
+    {
+        WriteLineWithColour(message, ConsoleColor.Green);
+    }
+
+    public static void WriteSuccess(string message)
+    {
+        WriteWithColour(message, ConsoleColor.Green);
+    }
+
     public static void WriteDebugLine(string message)
     {
         if (DebugPrintingEnabled)
@@ -62,12 +72,12 @@ public static class ColourConsole
 
     public static void WriteNormalLine(string message)
     {
-        WriteLineWithColour(message, ConsoleColor.White);
+        WriteLineWithColour(message, ConsoleColor.DarkGray);
     }
 
     public static void WriteNormal(string message)
     {
-        WriteWithColour(message, ConsoleColor.White);
+        WriteWithColour(message, ConsoleColor.DarkGray);
     }
 
     public static void WriteLineWithColour(string message, ConsoleColor color)

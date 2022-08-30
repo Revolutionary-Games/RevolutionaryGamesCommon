@@ -1,21 +1,33 @@
 ﻿using System;
+using System.Diagnostics;
+using System.Threading;
 using CommandLine;
+using Scripts;
 using ScriptsBase.Models;
 using ScriptsBase.Utilities;
+using SharedBase.Utilities;
 
-internal class Program
+public class Program
 {
+    public class CheckOptions : CheckOptionsBase
+    {
+    }
 
-    private class CheckOptions : CheckOptionsBase
+    [Verb("test", HelpText = "Run tests using 'dotnet' command")]
+    public class TestOptions : CheckOptionsBase
     {
     }
 
     [STAThread]
     public static int Main(string[] args)
     {
-        var result = CommandLineHelpers.CreateParser().ParseArguments<CheckOptions>(args)
+        RunFolderChecker.EnsureRightRunningFolder("RevolutionaryGamesCommon.sln");
+
+        // TestOptions mostly exists here to make the verb based command parsing work in the first place
+        var result = CommandLineHelpers.CreateParser().ParseArguments<CheckOptions, TestOptions>(args)
             .MapResult(
-                RunChecks,
+                (CheckOptions opts) => RunChecks(opts),
+                (TestOptions opts) => RunTests(opts),
                 CommandLineHelpers.PrintCommandLineErrors);
 
         ConsoleHelpers.CleanConsoleStateForExit();
@@ -28,9 +40,33 @@ internal class Program
         CommandLineHelpers.HandleDefaultOptions(opts);
 
         ColourConsole.WriteDebugLine("Running in check mode");
+        ColourConsole.WriteDebugLine($"Manually specified checks: {string.Join(' ', opts.Checks)}");
 
+        var checker = new CodeChecks(opts);
 
-        ColourConsole.WriteDebugLine("Exiting with success code");
-        return 0;
+        return checker.Run().Result;
+    }
+
+    private static int RunTests(TestOptions opts)
+    {
+        CommandLineHelpers.HandleDefaultOptions(opts);
+
+        ColourConsole.WriteDebugLine("Running dotnet tests");
+
+        var tokenSource = new CancellationTokenSource();
+
+        Console.CancelKeyPress += (_, args) =>
+        {
+            // Only prevent CTRL-C working once
+            if (tokenSource.IsCancellationRequested)
+                return;
+
+            ColourConsole.WriteNormalLine("Cancel request detected");
+            tokenSource.Cancel();
+            args.Cancel = true;
+        };
+
+        return ProcessRunHelpers.RunProcessAsync(new ProcessStartInfo("dotnet", "test"), tokenSource.Token, false)
+            .Result.ExitCode;
     }
 }

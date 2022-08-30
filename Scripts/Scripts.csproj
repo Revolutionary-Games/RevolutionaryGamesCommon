@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ScriptsBase\ScriptsBase.csproj" />
+    <ProjectReference Include="..\SharedBase\SharedBase.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -384,6 +384,7 @@ public static class GitRunHelpers
         return startInfo;
     }
 
+    [UnsupportedOSPlatform("browser")]
     private static void SetLFSSmudgeSkip(ProcessStartInfo startInfo)
     {
         startInfo.Environment["GIT_LFS_SKIP_SMUDGE"] = "1";
