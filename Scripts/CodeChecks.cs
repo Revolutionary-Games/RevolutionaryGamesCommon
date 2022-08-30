@@ -9,10 +9,12 @@ public class CodeChecks : CodeChecksBase<Program.CheckOptions>
     {
     }
 
-    // TODO: add all the checks
     protected override Dictionary<string, CodeCheck> ValidChecks { get; } = new()
     {
+        { "files", new FileChecks() },
+        { "compile", new CompileCheck() },
         { "inspectcode", new InspectCode() },
+        { "cleanupcode", new CleanupCode() },
     };
 
     protected override string MainSolutionFile => "RevolutionaryGamesCommon.sln";

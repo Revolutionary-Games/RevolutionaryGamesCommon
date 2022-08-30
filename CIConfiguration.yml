@@ -41,6 +41,9 @@ jobs:
           name: Build with warnings
           command: dotnet run --project Scripts -- check compile
       - run:
+          name: File based checks
+          command: dotnet run --project Scripts -- check files
+      - run:
           name: Jetbrains inspectcode
           command: dotnet run --project Scripts -- check inspectcode
       - run:
