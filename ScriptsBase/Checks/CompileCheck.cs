@@ -27,10 +27,14 @@ public class CompileCheck : CodeCheck
         await mutex.WaitAsync(cancellationToken);
         try
         {
+            runData.OutputInfoWithMutex("Building with warnings");
             var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken);
 
             if (result.ExitCode == 0)
+            {
+                runData.OutputTextWithMutex("Build finished with no warnings");
                 return;
+            }
 
             runData.OutputInfoWithMutex("Build output from dotnet:");
             runData.OutputTextWithMutex(result.FullOutput);

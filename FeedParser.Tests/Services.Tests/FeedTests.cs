@@ -12,6 +12,7 @@ using Xunit;
 public class FeedTests
 {
     // Used by another test in a different project
+    // LineLengthCheckDisable
     // ReSharper disable once MemberCanBePrivate.Global
     public const string TestGithubFeedContent = @"<?xml version=""1.0"" encoding=""UTF-8""?>
 <feed xmlns=""http://www.w3.org/2005/Atom"" xmlns:media=""http://search.yahoo.com/mrss/"" xml:lang=""en-US"">
@@ -342,7 +343,7 @@ Current translation status:
       <dc:creator><![CDATA[system]]></dc:creator>
       <category>Announcements</category>
       <description><![CDATA[
-            <p><small>			<a href=""https://revolutionarygamesstudio.com/progress-update-04-30-2022-patch-0-5-8-1/"" class=""inline-onebox"">Progress Update 04/30/2022 | Patch 0.5.8.1 - Revolutionary Games Studio</a><br>
+            <p><small>    <a href=""https://revolutionarygamesstudio.com/progress-update-04-30-2022-patch-0-5-8-1/"" class=""inline-onebox"">Progress Update 04/30/2022 | Patch 0.5.8.1 - Revolutionary Games Studio</a><br>
 </small><br>Update 0.5.8.1 is now out, and introduces a good amount of performance improvements, among other things. We hope that this significantly improves the enjoyability of Thrive, and look forward to hearing any feedback on the changes. This week we focused on performance, and the causes behind it. We eventually discovered that the spawn system was…</p>
             <p><small>2 posts - 1 participant</small></p>
             <p><a href=""https://community.revolutionarygamesstudio.com/t/progress-update-04-30-2022-patch-0-5-8-1/4722"">Read full topic</a></p>
@@ -447,6 +448,8 @@ Current translation status:
 </div>
 </div></div><br><a class=""custom-feed-item-url"" href=""https://github.com/Revolutionary-Games/Thrive/compare/improve_chemoreceptor_visuals"">Read it here</a></span></div>
 </div>";
+
+    // LineLengthCheckEnable
 
     [Fact]
     public static void Feed_TitleReplaceTextParts()
@@ -567,6 +570,7 @@ Current translation status:
     {
         var feed = new DummyFeed("test")
         {
+            // LineLengthCheckDisable
             HtmlFeedItemEntryTemplate = @"<div class=""custom-feed-item-class feed-{FeedName}"">
 <span class=""custom-feed-icon-{OriginalFeedName}""></span>
 <span class=""custom-feed-title""><span class=""custom-feed-title-main"">
@@ -575,6 +579,8 @@ Current translation status:
 <span class=""custom-feed-author"">{AuthorFirstWord}</span></span><span class=""custom-feed-at""> at <span class=""custom-feed-time"">{PublishedAt:yyyy-dd-MM HH.mm}</span></span>
 </span><br><span class=""custom-feed-content"">{Summary}<br><a class=""custom-feed-item-url"" href=""{Link}"">Read it here</a></span></div>
 </div>",
+
+            // LineLengthCheckEnable
         };
 
         feed.ProcessContent(RemapToHtmlInput);

@@ -84,8 +84,8 @@ public class MustContainAttribute : RequiredAttribute
             {
                 return new ValidationResult(
                     ErrorMessage ??
-                    $"The {validationContext.DisplayName} field is of unknown type to check that it contains a required value.",
-                    new[] { validationContext.MemberName! });
+                    $"The {validationContext.DisplayName} field is of unknown type to check that it contains" +
+                    " a required value.", new[] { validationContext.MemberName! });
             }
         }
 

@@ -146,7 +146,7 @@ public class CodeCheckRun
 
     internal void SetIgnoredFiles(IEnumerable<Regex> patterns)
     {
-        this.ignorePatterns = patterns.ToList();
+        ignorePatterns = patterns.ToList();
     }
 
     internal void SetSpecificSetOfFilesToCheck(IList<string>? files)

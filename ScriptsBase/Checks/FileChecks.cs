@@ -17,6 +17,8 @@ public class FileChecks : CodeCheck
 
     public override async Task Run(CodeCheckRun runData, CancellationToken cancellationToken)
     {
+        bool errors = false;
+
         foreach (var file in EnumerateFilesRecursively(".", runData))
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -30,8 +32,13 @@ public class FileChecks : CodeCheck
             {
                 if (!await FileHandlingForwarder.Handle(file, runData))
                 {
-                    runData.ReportError("Code format issues detected");
-                    return;
+                    if (!errors)
+                    {
+                        runData.ReportError("Code format issues detected");
+                        errors = true;
+                    }
+
+                    // Don't stop here as we want all file errors at once
                 }
             }
             catch (Exception e)

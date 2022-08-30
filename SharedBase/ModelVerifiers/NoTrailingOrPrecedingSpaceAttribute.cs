@@ -28,7 +28,8 @@ public class NoTrailingOrPrecedingSpaceAttribute : RequiredAttribute
         if (trimmed == null)
         {
             throw new InvalidOperationException(
-                $"Can't apply {nameof(NoTrailingOrPrecedingSpaceAttribute)} to a type that has null returning Trim method");
+                $"Can't apply {nameof(NoTrailingOrPrecedingSpaceAttribute)} to a type that has null returning " +
+                "Trim method");
         }
 
         if (!trimmed.Equals(value))
