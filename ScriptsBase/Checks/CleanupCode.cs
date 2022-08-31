@@ -7,6 +7,10 @@ using SharedBase.Utilities;
 
 public class CleanupCode : JetBrainsCheck
 {
+    public const string FullNoXMLProfile = "full_no_xml";
+
+    public string CleanUpProfile { get; set; } = FullNoXMLProfile;
+
     protected override async Task RunJetBrainsTool(CodeCheckRun runData, CancellationToken cancellationToken)
     {
         var oldDiff = await GitRunHelpers.Diff(null, cancellationToken);
@@ -17,7 +21,7 @@ public class CleanupCode : JetBrainsCheck
         startInfo.ArgumentList.Add("jb");
         startInfo.ArgumentList.Add("cleanupcode");
         startInfo.ArgumentList.Add(runData.SolutionFile!);
-        startInfo.ArgumentList.Add("--profile=full_no_xml");
+        startInfo.ArgumentList.Add($"--profile={CleanUpProfile}");
         startInfo.ArgumentList.Add($"--caches-home={JET_BRAINS_CACHE}");
 
         // TODO: check if the cleanupcode tool still doesn't run in parallel, and if so we should try to run multiple
