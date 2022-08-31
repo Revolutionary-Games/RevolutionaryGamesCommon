@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 
 public static class FileHandlingForwarder
 {
+    private const bool PrintNameTwice = false;
+
     /// <summary>
     ///   Forwards a file to process (if not skipped) to a real processing function
     /// </summary>
@@ -46,7 +48,21 @@ public static class FileHandlingForwarder
         }
 
         if (!success)
-            runData.OutputErrorWithMutex($"Problems found in file (see above): {path}");
+        {
+            // ReSharper disable HeuristicUnreachableCode RedundantIfElseBlock
+#pragma warning disable CS0162
+            if (PrintNameTwice)
+            {
+                runData.OutputErrorWithMutex($"Problems found in file (see above): {path}");
+            }
+            else
+            {
+                runData.OutputErrorWithMutex("Problems found in file (see above)");
+            }
+
+            // ReSharper restore HeuristicUnreachableCode RedundantIfElseBlock
+#pragma warning restore CS0162
+        }
 
         return success;
     }
