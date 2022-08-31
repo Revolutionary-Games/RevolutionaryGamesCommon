@@ -56,11 +56,11 @@ public abstract class CodeChecksBase<T>
     {
         new(@"\.vs/"),
         new(@"\.idea/"),
-        new(@"/tmp/"),
-        new(@"/RubySetupSystem/"),
+        new(@"/?tmp/"),
+        new(@"/?RubySetupSystem/"),
         new(@"/bin/"),
         new(@"/obj/"),
-        new(@"/\.git/"),
+        new(@"\.git/"),
     }.Concat(InspectCode.InspectCodeIgnoredFiles).ToList();
 
     /// <summary>

@@ -13,13 +13,15 @@ using Utilities;
 /// </summary>
 public class FileChecks : CodeCheck
 {
+    private const string StartFileEnumerateFolder = "./";
+
     private static readonly bool NeedsToReplacePaths = Path.DirectorySeparatorChar != '/';
 
     public override async Task Run(CodeCheckRun runData, CancellationToken cancellationToken)
     {
         bool errors = false;
 
-        foreach (var file in EnumerateFilesRecursively(".", runData))
+        foreach (var file in EnumerateFilesRecursively(StartFileEnumerateFolder, runData))
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -32,11 +34,9 @@ public class FileChecks : CodeCheck
             {
                 if (!await FileHandlingForwarder.Handle(file, runData))
                 {
-                    if (!errors)
-                    {
-                        runData.ReportError("Code format issues detected");
-                        errors = true;
-                    }
+                    // Give a little bit of extra spacing between the files with errors
+                    runData.OutputTextWithMutex("");
+                    errors = true;
 
                     // Don't stop here as we want all file errors at once
                 }
@@ -45,7 +45,13 @@ public class FileChecks : CodeCheck
             {
                 runData.OutputTextWithMutex($"An exception occurred when handling a file ({file}): {e}");
                 runData.ReportError($"Error: {e.Message}");
+                return;
             }
+        }
+
+        if (errors)
+        {
+            runData.ReportError("Code format issues detected");
         }
     }
 
@@ -53,7 +59,15 @@ public class FileChecks : CodeCheck
     {
         foreach (var file in Directory.EnumerateFiles(start))
         {
-            var handledFile = file;
+            string handledFile;
+            if (file.StartsWith(StartFileEnumerateFolder))
+            {
+                handledFile = file.Substring(StartFileEnumerateFolder.Length);
+            }
+            else
+            {
+                handledFile = file;
+            }
 
             // Hopefully this isn't too bad performance for Windows people
             if (NeedsToReplacePaths)
