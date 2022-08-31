@@ -16,7 +16,7 @@ public static class CommandLineHelpers
             config.AutoVersion = true;
             config.EnableDashDash = true;
             config.IgnoreUnknownArguments = false;
-            config.MaximumDisplayWidth = 70;
+            config.MaximumDisplayWidth = 80;
             config.HelpWriter = Console.Error;
         });
     }
