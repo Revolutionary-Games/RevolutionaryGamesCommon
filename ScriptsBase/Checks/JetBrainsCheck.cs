@@ -42,6 +42,8 @@ public abstract class JetBrainsCheck : CodeCheck
 
         await runData.CheckDotnetTools();
 
+        // We use the build mutex here as the inspectcode check wants to build the project, and if multiple JetBrains
+        // checks run at once they can pollute the JetBrains cache with bad data
         var mutex = runData.BuildMutex;
 
         await mutex.WaitAsync(cancellationToken);

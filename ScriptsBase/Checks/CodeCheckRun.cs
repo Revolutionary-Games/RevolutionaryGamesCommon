@@ -28,6 +28,7 @@ public class CodeCheckRun
     public string? SolutionFile { get; set; }
     public IList<string>? OnlyCheckFiles { get; private set; }
     public IList<string> ForceIgnoredJetbrainsInspections { get; set; } = new List<string>();
+    public IList<string> ExtraIgnoredJetbrainsInspectWildcards { get; set; } = new List<string>();
 
     /// <summary>
     ///   Checks if a file should be processed
