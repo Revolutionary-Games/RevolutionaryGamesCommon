@@ -53,18 +53,7 @@ public class Program
 
         ColourConsole.WriteDebugLine("Running dotnet tests");
 
-        var tokenSource = new CancellationTokenSource();
-
-        Console.CancelKeyPress += (_, args) =>
-        {
-            // Only prevent CTRL-C working once
-            if (tokenSource.IsCancellationRequested)
-                return;
-
-            ColourConsole.WriteNormalLine("Cancel request detected");
-            tokenSource.Cancel();
-            args.Cancel = true;
-        };
+        var tokenSource = ConsoleHelpers.CreateSimpleConsoleCancellationSource();
 
         return ProcessRunHelpers.RunProcessAsync(new ProcessStartInfo("dotnet", "test"), tokenSource.Token, false)
             .Result.ExitCode;
