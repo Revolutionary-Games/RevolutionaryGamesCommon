@@ -13,7 +13,7 @@ public static class ConsoleHelpers
 
     public static void CleanConsoleStateForInput()
     {
-        Console.ResetColor();
+        ColourConsole.ResetColor();
     }
 
     public static void ExitWithError(string message)
