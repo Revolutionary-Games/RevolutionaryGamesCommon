@@ -159,12 +159,13 @@ public static class ColourConsole
             return;
         }
 
-        if (!OperatingSystem.IsWindows() && UseCustomColourHandling)
-        {
-            Console.Write(ResetForegroundColour);
-            Console.Write(ResetBackgroundColour);
-            return;
-        }
+        // This is actually not a good idea here as we'll output these after the last full line of output of our process
+        // if (!OperatingSystem.IsWindows() && UseCustomColourHandling)
+        // {
+        //     Console.Write(ResetForegroundColour);
+        //     Console.Write(ResetBackgroundColour);
+        //     return;
+        // }
 
         Console.ResetColor();
     }
