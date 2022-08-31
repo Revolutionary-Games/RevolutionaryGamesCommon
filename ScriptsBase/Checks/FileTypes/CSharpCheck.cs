@@ -8,10 +8,14 @@ using System.Text;
 public static class CSharp
 {
     public const int MAX_LINE_LENGTH = 120;
+
+    // A bit of extra margin for razor files to have longer lines
+    public const int MAX_LINE_LENGTH_RAZOR = 140;
+
     public const string DISABLE_LINE_LENGTH_COMMENT = "LineLengthCheckDisable";
     public const string ENABLE_LINE_LENGTH_COMMENT = "LineLengthCheckEnable";
 
-    public static async IAsyncEnumerable<string> Handle(string path)
+    public static async IAsyncEnumerable<string> Handle(string path, int maxLength = MAX_LINE_LENGTH)
     {
         bool checkingLength = true;
 
@@ -49,9 +53,9 @@ public static class CSharp
             if (windows && endsWithCarriageReturn)
                 --length;
 
-            if (length > MAX_LINE_LENGTH && checkingLength)
+            if (length > maxLength && checkingLength)
             {
-                yield return $"Line {lineNumber} is too long. {length} > {MAX_LINE_LENGTH}";
+                yield return $"Line {lineNumber} is too long. {length} > {maxLength}";
             }
         }
     }

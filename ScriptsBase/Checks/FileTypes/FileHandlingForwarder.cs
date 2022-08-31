@@ -22,6 +22,10 @@ public static class FileHandlingForwarder
         {
             errors = CSharp.Handle(path);
         }
+        else if (path.EndsWith(".razor"))
+        {
+            errors = CSharp.Handle(path, CSharp.MAX_LINE_LENGTH_RAZOR);
+        }
         else
         {
             // Unhandled file type
