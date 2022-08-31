@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Threading;
 using CommandLine;
 using Scripts;
 using ScriptsBase.Models;
