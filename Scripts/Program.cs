@@ -14,7 +14,7 @@ public class Program
     }
 
     [Verb("test", HelpText = "Run tests using 'dotnet' command")]
-    public class TestOptions : CheckOptionsBase
+    public class TestOptions : ScriptOptionsBase
     {
     }
 
