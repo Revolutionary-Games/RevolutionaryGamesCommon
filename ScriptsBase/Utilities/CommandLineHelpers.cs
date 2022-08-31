@@ -12,6 +12,7 @@ public static class CommandLineHelpers
     {
         return new Parser(config =>
         {
+            config.AllowMultiInstance = true;
             config.AutoHelp = true;
             config.AutoVersion = true;
             config.EnableDashDash = true;

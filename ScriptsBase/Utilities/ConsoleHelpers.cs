@@ -10,6 +10,13 @@ public static class ConsoleHelpers
         Console.ResetColor();
     }
 
+    public static void ExitWithError(string message)
+    {
+        ColourConsole.WriteErrorLine(message);
+        CleanConsoleStateForExit();
+        Environment.Exit(1);
+    }
+
     public static CancellationTokenSource CreateSimpleConsoleCancellationSource()
     {
         var tokenSource = new CancellationTokenSource();
