@@ -33,8 +33,7 @@ public static class CommandLineHelpers
         }
 
         var firstError = errorList.First();
-        if (firstError.Tag is ErrorType.HelpRequestedError or ErrorType.VersionRequestedError
-            or ErrorType.HelpVerbRequestedError)
+        if (IsCommandLineErrorNotAnError(firstError))
         {
             return 0;
         }
@@ -54,6 +53,12 @@ public static class CommandLineHelpers
         if (errorList.Count < 1)
             return;
 
+        var firstError = errorList.First();
+        if (IsCommandLineErrorNotAnError(firstError))
+        {
+            Environment.Exit(0);
+        }
+
         ColourConsole.WriteError("Unknown command line arguments specified: ");
 
         foreach (var error in errorList)
@@ -62,6 +67,22 @@ public static class CommandLineHelpers
         Console.WriteLine();
 
         Environment.Exit(1);
+    }
+
+    /// <summary>
+    ///   Returns true if the specified error is not actually an error (help or version info)
+    /// </summary>
+    /// <param name="error"></param>
+    /// <returns></returns>
+    public static bool IsCommandLineErrorNotAnError(Error error)
+    {
+        if (error.Tag is ErrorType.HelpRequestedError or ErrorType.VersionRequestedError
+            or ErrorType.HelpVerbRequestedError)
+        {
+            return true;
+        }
+
+        return false;
     }
 
     public static void HandleDefaultOptions(ScriptOptionsBase baseOptions)
