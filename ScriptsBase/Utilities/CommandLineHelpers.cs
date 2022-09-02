@@ -72,8 +72,6 @@ public static class CommandLineHelpers
     /// <summary>
     ///   Returns true if the specified error is not actually an error (help or version info)
     /// </summary>
-    /// <param name="error"></param>
-    /// <returns></returns>
     public static bool IsCommandLineErrorNotAnError(Error error)
     {
         if (error.Tag is ErrorType.HelpRequestedError or ErrorType.VersionRequestedError

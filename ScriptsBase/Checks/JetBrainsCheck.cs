@@ -57,8 +57,6 @@ public abstract class JetBrainsCheck : CodeCheck
         }
     }
 
-    protected abstract Task RunJetBrainsTool(CodeCheckRun runData, CancellationToken cancellationToken);
-
     protected static void AddJetbrainsToolRunIncludes(CodeCheckRun runData, ProcessStartInfo startInfo)
     {
         if (runData.OnlyCheckFiles != null)
@@ -80,4 +78,6 @@ public abstract class JetBrainsCheck : CodeCheck
 
         runData.ReportError($"Failed to run JetBrains {tool}");
     }
+
+    protected abstract Task RunJetBrainsTool(CodeCheckRun runData, CancellationToken cancellationToken);
 }

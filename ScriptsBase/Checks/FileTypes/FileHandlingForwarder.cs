@@ -22,11 +22,11 @@ public static class FileHandlingForwarder
 
         if (path.EndsWith(".cs"))
         {
-            errors = CSharp.Handle(path);
+            errors = CSharpCheck.Handle(path);
         }
         else if (path.EndsWith(".razor"))
         {
-            errors = CSharp.Handle(path, CSharp.MAX_LINE_LENGTH_RAZOR);
+            errors = CSharpCheck.Handle(path, CSharpCheck.MAX_LINE_LENGTH_RAZOR);
         }
         else
         {

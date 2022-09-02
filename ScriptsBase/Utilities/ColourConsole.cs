@@ -14,14 +14,14 @@ public static class ColourConsole
     /// </summary>
     public const bool UseCustomColourHandling = true;
 
+    public static readonly Lazy<bool> ColourIsPrevented = new(CheckNoColourEnvironmentVariable);
+
     /// <summary>
     ///   Resets terminal to default colour
     /// </summary>
     private const string ResetForegroundColour = "\x1B[39m\x1B[22m";
 
     private const string ResetBackgroundColour = "\x1B[49m";
-
-    public static readonly Lazy<bool> ColourIsPrevented = new(CheckNoColourEnvironmentVariable);
 
     /// <summary>
     ///   Enables or disables the debug write methods in this class.

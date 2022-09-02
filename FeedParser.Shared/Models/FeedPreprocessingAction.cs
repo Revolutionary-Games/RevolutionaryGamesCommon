@@ -24,9 +24,3 @@ public class FeedPreprocessingAction
 
     public string Replacer { get; set; }
 }
-
-public enum PreprocessingActionTarget
-{
-    Title,
-    Summary,
-}

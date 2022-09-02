@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-public static class CSharp
+public static class CSharpCheck
 {
     public const int MAX_LINE_LENGTH = 120;
 

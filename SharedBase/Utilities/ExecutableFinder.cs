@@ -56,6 +56,6 @@ public static class ExecutableFinder
 
     public static string[] PathExtensions()
     {
-        return (Environment.GetEnvironmentVariable("PATHEXT") ?? "").Split(';');
+        return (Environment.GetEnvironmentVariable("PATHEXT") ?? string.Empty).Split(';');
     }
 }

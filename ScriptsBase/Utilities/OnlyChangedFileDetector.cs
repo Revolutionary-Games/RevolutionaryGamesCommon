@@ -30,7 +30,7 @@ public static class OnlyChangedFileDetector
 
         foreach (var line in File.ReadLines(ONLY_FILE_LIST, Encoding.UTF8))
         {
-            var processed = line.Trim().Replace("./", "").TrimStart('/');
+            var processed = line.Trim().Replace("./", string.Empty).TrimStart('/');
 
             if (processed.Length > 0)
                 result.Add(processed);

@@ -35,7 +35,7 @@ public class FileChecks : CodeCheck
                 if (!await FileHandlingForwarder.Handle(file, runData))
                 {
                     // Give a little bit of extra spacing between the files with errors
-                    runData.OutputTextWithMutex("");
+                    runData.OutputTextWithMutex(string.Empty);
                     errors = true;
 
                     // Don't stop here as we want all file errors at once

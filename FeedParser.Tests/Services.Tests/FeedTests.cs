@@ -468,8 +468,8 @@ Current translation status:
                 new(PreprocessingActionTarget.Title, @"[\w-_]+\sopened an issue",
                     "New issue"),
                 new(PreprocessingActionTarget.Summary,
-                    @"data-(hydro|ga|)-click[\w\-]*=""[^""]*", ""),
-                new(PreprocessingActionTarget.Summary, "<svg .*>.*</svg>", ""),
+                    @"data-(hydro|ga|)-click[\w\-]*=""[^""]*", string.Empty),
+                new(PreprocessingActionTarget.Summary, "<svg .*>.*</svg>", string.Empty),
 
                 // ReSharper restore StringLiteralTypo
             },

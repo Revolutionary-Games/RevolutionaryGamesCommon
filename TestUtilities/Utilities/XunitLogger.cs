@@ -4,7 +4,7 @@ using System;
 using Microsoft.Extensions.Logging;
 using Xunit.Abstractions;
 
-public class XunitLogger<T> : ILogger<T>, IDisposable
+public sealed class XunitLogger<T> : ILogger<T>, IDisposable
 {
     private readonly ITestOutputHelper output;
 

@@ -7,6 +7,12 @@ using Xunit;
 
 public class NotNullOrEmptyIfAttributeTests
 {
+    private enum AnEnum
+    {
+        Value1,
+        Value2,
+    }
+
     [Fact]
     public void NotNullOrEmpty_EnumComparisonWorks()
     {
@@ -32,11 +38,5 @@ public class NotNullOrEmptyIfAttributeTests
 
         [NotNullOrEmptyIf(PropertyMatchesValue = nameof(Flag), Value = nameof(AnEnum.Value2))]
         public string? DependentProperty { get; set; }
-    }
-
-    private enum AnEnum
-    {
-        Value1,
-        Value2,
     }
 }

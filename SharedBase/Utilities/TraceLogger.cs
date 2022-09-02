@@ -9,6 +9,8 @@ using Microsoft.Extensions.Logging;
 /// </summary>
 public class TraceLogger<TCategoryName> : ILogger<TCategoryName>
 {
+    private readonly string prefix = typeof(TCategoryName).Name;
+
     public LogLevel LogLevel { get; set; } = LogLevel.Information;
 
     public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
@@ -17,7 +19,7 @@ public class TraceLogger<TCategoryName> : ILogger<TCategoryName>
         if (!IsEnabled(logLevel))
             return;
 
-        Trace.WriteLine($"[{logLevel}] {formatter(state, exception)}");
+        Trace.WriteLine($"[{prefix}][{logLevel}] {formatter(state, exception)}");
     }
 
     public bool IsEnabled(LogLevel logLevel)

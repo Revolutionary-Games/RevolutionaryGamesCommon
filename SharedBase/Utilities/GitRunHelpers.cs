@@ -233,14 +233,14 @@ public static class GitRunHelpers
 
         if (IsPullRequestRef(refToCheckout))
         {
-            await Fetch(folder, $"{refToCheckout}:{parsed.localBranch}", remote, cancellationToken);
+            await Fetch(folder, $"{refToCheckout}:{parsed.LocalBranch}", remote, cancellationToken);
         }
         else
         {
             await Fetch(folder, refToCheckout, remote, cancellationToken);
         }
 
-        await Checkout(folder, parsed.localRef, skipLFS, cancellationToken, true);
+        await Checkout(folder, parsed.LocalRef, skipLFS, cancellationToken, true);
     }
 
     [UnsupportedOSPlatform("browser")]
@@ -251,7 +251,7 @@ public static class GitRunHelpers
 
         if (IsPullRequestRef(refToFetch))
         {
-            await Fetch(folder, $"{refToFetch}:{parsed.localBranch}", remote, cancellationToken);
+            await Fetch(folder, $"{refToFetch}:{parsed.LocalBranch}", remote, cancellationToken);
         }
         else
         {
@@ -338,7 +338,7 @@ public static class GitRunHelpers
         return $"pull/{id}/head";
     }
 
-    public static (string localBranch, string localRef) ParseRemoteRef(string remoteRef, string remote = "origin")
+    public static (string LocalBranch, string LocalRef) ParseRemoteRef(string remoteRef, string remote = "origin")
     {
         string localHeadsRef = $"refs/remotes/{remote}/";
 
@@ -366,7 +366,7 @@ public static class GitRunHelpers
 
     public static string ParseRefBranch(string remoteRef)
     {
-        return ParseRemoteRef(remoteRef).localBranch;
+        return ParseRemoteRef(remoteRef).LocalBranch;
     }
 
     [UnsupportedOSPlatform("browser")]

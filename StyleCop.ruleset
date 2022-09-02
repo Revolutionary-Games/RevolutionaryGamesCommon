@@ -113,7 +113,7 @@
     <Rule Id="SA1132" Action="Warning" /> <!-- Do not combine fields -->
     <Rule Id="SA1133" Action="Warning" /> <!-- Do not combine attributes -->
     <Rule Id="SA1134" Action="Warning" /> <!-- attributes on separate lines -->
-    <Rule Id="SA1135" Action="Warning" /> <!-- qualify using directives -->
+    <Rule Id="SA1135" Action="None" /> <!-- qualify using directives (conflicts with JetBrains cleanup) -->
     <Rule Id="SA1136" Action="Warning" /> <!-- no multiple enum values on the same line -->
     <Rule Id="SA1137" Action="Warning" /> <!-- Elements should have the same indentation -->
     <Rule Id="SA1141" Action="Warning" /> <!-- Use tuple syntax -->
@@ -122,7 +122,7 @@
     <Rule Id="SA1201" Action="Warning" /> <!-- Elements should appear in the correct order -->
     <Rule Id="SA1214" Action="Warning" /> <!-- Readonly fields should appear before non-readonly fields -->
     <Rule Id="SA1309" Action="Warning" /> <!-- Field names should not begin with underscore -->
-    <Rule Id="SA1310" Action="Warning" /> <!-- Field names should not contain an underscore -->
+    <Rule Id="SA1310" Action="None" /> <!-- Field names should not contain an underscore, naming is checked by JetBrains -->
     <Rule Id="SA1311" Action="Warning" /> <!-- StaticReadonlyFieldsMustBeginWithUpperCaseLetter -->
     <Rule Id="SA1312" Action="Warning" /> <!-- variable needs to begin with lowercase -->
     <Rule Id="SA1313" Action="Warning" /> <!-- parameter needs to begin with lowercase -->
@@ -138,6 +138,7 @@
     <Rule Id="SA1503" Action="None" /> <!-- BracesMustNotBeOmitted -->
     <Rule Id="SA1504" Action="Warning" /> <!-- All accessors must be single line or multi line -->
     <Rule Id="SA1512" Action="None" /> <!-- Single-line comments should not be followed by blank line -->
+    <Rule Id="SA1514" Action="Warning" /> <!-- Element documentation header should be preceded by blank line -->
     <Rule Id="SA1515" Action="Warning" /> <!-- Single-line comment should be preceded by blank line -->
     <Rule Id="SA1516" Action="None" /> <!-- Elements should be separated by blank line -->
     <Rule Id="SA1520" Action="None" /> <!-- Consistently use braces -->
@@ -145,14 +146,18 @@
     <Rule Id="SA1601" Action="Warning" /> <!-- Partial elements should be documented -->
     <Rule Id="SA1602" Action="None" /> <!-- Enumeration items must be documented -->
     <Rule Id="SA1604" Action="Warning" /> <!-- Element documentation should have summary -->
+    <Rule Id="SA1611" Action="None" /> <!-- Element parameters should be documented -->
     <Rule Id="SA1612" Action="Warning" /> <!-- ElementParameterDocumentationMustMatchElementParameters -->
     <Rule Id="SA1613" Action="Warning" /> <!-- ElementParameterDocumentationMustDeclareParameterName -->
     <Rule Id="SA1614" Action="Warning" /> <!-- ElementParameterDocumentationMustHaveText -->
     <Rule Id="SA1617" Action="Warning" /> <!-- VoidReturnValueMustNotBeDocumented -->
     <Rule Id="SA1622" Action="Warning" /> <!-- GenericTypeParameterDocumentationMustHaveText -->
+    <Rule Id="SA1623" Action="None" /> <!-- Property summary documentation should match accessors, checked by JetBrains instead -->
     <Rule Id="SA1625" Action="Warning" /> <!-- ElementDocumentationMustNotBeCopiedAndPasted -->
     <Rule Id="SA1626" Action="Warning" /> <!-- SingleLineCommentsMustNotUseDocumentationStyleSlashes -->
+    <Rule Id="SA1629" Action="None" /> <!-- Documentation text should end with a period, we currently don't want this -->
     <Rule Id="SA1633" Action="None" /> <!-- File should have header -->
+    <Rule Id="SA1642" Action="None" /> <!-- Constructor summary documentation should begin with standard tex, this is just silly -->
     <Rule Id="SA1648" Action="Warning" /> <!-- InheritDocMustBeUsedWithInheritingClass -->
     <Rule Id="SA1649" Action="Warning" /> <!-- FileNameMustMatchTypeName -->
     <Rule Id="SX1101" Action="Warning" /> <!-- Don't prefix things with this -->

@@ -7,6 +7,12 @@ using Xunit;
 
 public class DisallowIfEnabledAttributeTests
 {
+    private enum AnEnum
+    {
+        Value1,
+        Value2,
+    }
+
     [Fact]
     public void DisallowedValueIfAnotherPropertyMatches_StringEqualityFailsCorrectly()
     {
@@ -90,11 +96,5 @@ public class DisallowIfEnabledAttributeTests
             IfOtherMatchesValue = nameof(AnEnum.Value2))]
         [DisallowIfEnabled]
         public string? DependentProperty { get; set; }
-    }
-
-    private enum AnEnum
-    {
-        Value1,
-        Value2,
     }
 }

@@ -14,4 +14,10 @@
     <PackageReference Include="Microsoft.Extensions.Logging" Version="6.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="..\StyleCop.ruleset">
+      <Link>StyleCop.ruleset</Link>
+    </Content>
+  </ItemGroup>
+
 </Project>

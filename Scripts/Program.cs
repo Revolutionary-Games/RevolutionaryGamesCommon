@@ -8,15 +8,6 @@ using SharedBase.Utilities;
 
 public class Program
 {
-    public class CheckOptions : CheckOptionsBase
-    {
-    }
-
-    [Verb("test", HelpText = "Run tests using 'dotnet' command")]
-    public class TestOptions : ScriptOptionsBase
-    {
-    }
-
     [STAThread]
     public static int Main(string[] args)
     {
@@ -56,5 +47,14 @@ public class Program
 
         return ProcessRunHelpers.RunProcessAsync(new ProcessStartInfo("dotnet", "test"), tokenSource.Token, false)
             .Result.ExitCode;
+    }
+
+    public class CheckOptions : CheckOptionsBase
+    {
+    }
+
+    [Verb("test", HelpText = "Run tests using 'dotnet' command")]
+    public class TestOptions : ScriptOptionsBase
+    {
     }
 }

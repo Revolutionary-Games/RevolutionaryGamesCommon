@@ -8,6 +8,18 @@ using Xunit;
 
 public class ActualEnumStringConverterTests
 {
+    [JsonConverter(typeof(ActualEnumStringConverter))]
+    public enum SomeEnum
+    {
+        Value1,
+
+        [EnumMember(Value = "abc")]
+        Second,
+
+        [EnumMember(Value = "third")]
+        Third,
+    }
+
     [Fact]
     public void JsonEnum_EnumMemberSerialize()
     {
@@ -68,17 +80,5 @@ public class ActualEnumStringConverterTests
     private class Container
     {
         public SomeEnum Value { get; set; }
-    }
-
-    [JsonConverter(typeof(ActualEnumStringConverter))]
-    public enum SomeEnum
-    {
-        Value1,
-
-        [EnumMember(Value = "abc")]
-        Second,
-
-        [EnumMember(Value = "third")]
-        Third,
     }
 }

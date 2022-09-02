@@ -11,10 +11,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Models" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\SharedBase\SharedBase.csproj" />
   </ItemGroup>
 

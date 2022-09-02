@@ -39,7 +39,7 @@ public class IsRegexAttribute : RequiredAttribute
 
         try
         {
-            var _ = new Regex(asString);
+            _ = new Regex(asString);
         }
         catch (Exception)
         {
