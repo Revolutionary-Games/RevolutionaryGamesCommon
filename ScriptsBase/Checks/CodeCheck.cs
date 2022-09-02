@@ -4,7 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 /// <summary>
-///   Base class for all code checks
+///   Base class for all the individual code checks
 /// </summary>
 public abstract class CodeCheck
 {

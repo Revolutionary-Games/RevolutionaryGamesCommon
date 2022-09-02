@@ -9,6 +9,10 @@ using System.Threading.Tasks;
 using Models;
 using Utilities;
 
+/// <summary>
+///   Base class for handling running configured <see cref="CodeCheck"/>s
+/// </summary>
+/// <typeparam name="T">The type of the options class</typeparam>
 public abstract class CodeChecksBase<T>
     where T : CheckOptionsBase
 {
