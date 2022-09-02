@@ -13,6 +13,10 @@ public class CheckOptionsBase : ScriptOptionsBase
         HelpText = "Automatically restores dotnet tools before running")]
     public bool RestoreTools { get; set; }
 
+    [Option("pre-commit", Required = false, Default = false,
+        HelpText = "Run in pre-commit mode (automatically build list of changes)")]
+    public bool PreCommitMode { get; set; }
+
     [Value(0, MetaName = "Checks", HelpText = "Checks to enable (leave blank for default checks)")]
     public IList<string> Checks { get; set; } = new List<string>();
 }
