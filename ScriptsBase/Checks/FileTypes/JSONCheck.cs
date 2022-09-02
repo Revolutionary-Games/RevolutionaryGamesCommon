@@ -19,7 +19,7 @@ public class JSONCheck : FileCheck
 
         using var memoryStream = new MemoryStream();
 
-        var jsonWriter = new Utf8JsonWriter(memoryStream, new JsonWriterOptions()
+        var jsonWriter = new Utf8JsonWriter(memoryStream, new JsonWriterOptions
         {
             Indented = true,
         });

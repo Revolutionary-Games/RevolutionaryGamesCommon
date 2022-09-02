@@ -23,7 +23,7 @@ public class FileChecks : CodeCheck
     /// <summary>
     ///   Known list if binary file extensions to prevent checks from running on them
     /// </summary>
-    private static readonly IReadOnlyList<string> knownBinaryFiles = new List<string>
+    private static readonly IReadOnlyList<string> KnownBinaryFiles = new List<string>
     {
         ".obj",
         ".dll",
@@ -125,7 +125,7 @@ public class FileChecks : CodeCheck
                 // Skip handling any binary files as the handlers (even ones that work on *any* file type, don't really
                 // want to run on them). If we ever get a binary type that needs checking we'll need some way to say
                 // *really* any file and text files only for a check.
-                if (knownBinaryFiles.Any(handledFile.EndsWith))
+                if (KnownBinaryFiles.Any(handledFile.EndsWith))
                     continue;
 
                 yield return handledFile;
