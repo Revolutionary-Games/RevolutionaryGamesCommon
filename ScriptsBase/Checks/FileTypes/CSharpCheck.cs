@@ -4,19 +4,33 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 
-public static class CSharpCheck
+public class CSharpCheck : FileCheck
 {
-    public const int MAX_LINE_LENGTH = 120;
-
-    // A bit of extra margin for razor files to have longer lines
+    /// <summary>
+    ///   A bit of extra margin for razor files to have longer lines
+    /// </summary>
     public const int MAX_LINE_LENGTH_RAZOR = 140;
 
-    public const string DISABLE_LINE_LENGTH_COMMENT = "LineLengthCheckDisable";
-    public const string ENABLE_LINE_LENGTH_COMMENT = "LineLengthCheckEnable";
+    public static readonly Regex MissingFloatDecimalPoint = new(@"(?<![\d.])[^.]\d+f\b");
+    public static readonly Regex IncorrectFloatSuffixCase = new(@"^\d+F\W");
 
-    public static async IAsyncEnumerable<string> Handle(string path, int maxLength = MAX_LINE_LENGTH)
+    private const string RAZOR_EXTENSION = ".razor";
+
+    private readonly int defaultMaxLength;
+    private readonly int maxRazorLength;
+
+    public CSharpCheck(int maxLength = LineCharacterHelpers.MAX_LINE_LENGTH,
+        int maxRazorLength = MAX_LINE_LENGTH_RAZOR) : base(".cs", RAZOR_EXTENSION)
     {
+        defaultMaxLength = maxLength;
+        this.maxRazorLength = maxRazorLength;
+    }
+
+    public override async IAsyncEnumerable<string> Handle(string path)
+    {
+        var maxLength = path.EndsWith(RAZOR_EXTENSION) ? maxRazorLength : defaultMaxLength;
         bool checkingLength = true;
 
         bool windows = OperatingSystem.IsWindows();
@@ -27,19 +41,17 @@ public static class CSharpCheck
         var text = Encoding.UTF8.GetString(rawData);
 
         int lineNumber = 0;
+
+        // TODO: is it too bad here to have all of the split strings in memory at once
         foreach (var line in text.Split('\n'))
         {
             ++lineNumber;
 
-            if (line.Contains(DISABLE_LINE_LENGTH_COMMENT))
-                checkingLength = false;
-            if (line.Contains(ENABLE_LINE_LENGTH_COMMENT))
-                checkingLength = true;
+            LineCharacterHelpers.HandleLineLengthCheckControlComments(line, ref checkingLength);
 
-            if (line.Contains("\t"))
-            {
-                yield return $"Line {lineNumber} contains a tab";
-            }
+            var tabError = LineCharacterHelpers.CheckLineForTab(line, lineNumber);
+            if (tabError != null)
+                yield return tabError;
 
             bool endsWithCarriageReturn = line.EndsWith("\r");
 
@@ -48,14 +60,26 @@ public static class CSharpCheck
                 yield return $"Line {lineNumber} contains a windows style line ending (CR LF)";
             }
 
-            var length = line.Length;
+            var lengthError =
+                LineCharacterHelpers.CheckLineForBeingTooLong(line, lineNumber, checkingLength, maxLength);
+            if (lengthError != null)
+                yield return lengthError;
 
-            if (windows && endsWithCarriageReturn)
-                --length;
+            var match = MissingFloatDecimalPoint.Match(line);
 
-            if (length > maxLength && checkingLength)
+            if (match.Success)
             {
-                yield return $"Line {lineNumber} is too long. {length} > {maxLength}";
+                yield return
+                    $"Line {lineNumber} contains an invalid float format (missing decimal point). " +
+                    $"{match.Groups[0].Value}";
+            }
+
+            match = IncorrectFloatSuffixCase.Match(line);
+
+            if (match.Success)
+            {
+                yield return
+                    $"Line {lineNumber} contains an uppercase float suffix. {match.Groups[0].Value}";
             }
         }
     }

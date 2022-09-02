@@ -48,13 +48,21 @@ public class CodeCheckRun
             return false;
         }
 
+        if (IsFileIgnored(file))
+            return false;
+
+        return true;
+    }
+
+    public bool IsFileIgnored(string file)
+    {
         foreach (var ignorePattern in ignorePatterns)
         {
             if (ignorePattern.IsMatch(file))
-                return false;
+                return true;
         }
 
-        return true;
+        return false;
     }
 
     public async Task<bool> CheckDotnetTools()
