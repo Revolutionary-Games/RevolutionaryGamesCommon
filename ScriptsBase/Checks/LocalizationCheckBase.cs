@@ -157,6 +157,7 @@ public class LocalizationCheckBase : CodeCheck
         {
             // Don't leave any temp files hanging around even if we are canceled
             DeleteDuplicatesOfFiles(poFiles);
+            DeletePotDuplicates();
         }
     }
 
@@ -206,6 +207,25 @@ public class LocalizationCheckBase : CodeCheck
                     if (printErrors)
                         ColourConsole.WriteErrorLine($"Failed to delete temporary file ({name}): {e}");
                 }
+            }
+        }
+    }
+
+    private static void DeletePotDuplicates()
+    {
+        // We don't get an equivalent .pot file to the .po file in EnumerateAllPoFiles so we just search for one here
+        foreach (var file in Directory.EnumerateFiles("./", $"*.pot.{LOCALE_TEMP_SUFFIX}", SearchOption.AllDirectories))
+        {
+            if (!file.EndsWith(LOCALE_TEMP_SUFFIX))
+                throw new Exception("Logic error in file finding");
+
+            try
+            {
+                File.Delete(file);
+            }
+            catch (Exception e)
+            {
+                ColourConsole.WriteErrorLine($"Failed to delete temporary .pot file ({file}): {e}");
             }
         }
     }
