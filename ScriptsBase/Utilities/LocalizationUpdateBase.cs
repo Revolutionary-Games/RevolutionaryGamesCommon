@@ -75,6 +75,8 @@ public abstract class LocalizationUpdateBase<T>
             }
         }
 
+        await PostProcessTranslations(cancellationToken);
+
         ColourConsole.WriteSuccessLine("Done updating locales");
         return true;
     }
