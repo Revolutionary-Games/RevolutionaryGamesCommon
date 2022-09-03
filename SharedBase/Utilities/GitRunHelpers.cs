@@ -325,6 +325,26 @@ public static class GitRunHelpers
         return result.Output;
     }
 
+    [UnsupportedOSPlatform("browser")]
+    public static async Task Reset(string folder, string whereToResetTo, bool hard,
+        CancellationToken cancellationToken)
+    {
+        var startInfo = PrepareToRunGit(folder, false);
+        startInfo.ArgumentList.Add("reset");
+
+        if (hard)
+            startInfo.ArgumentList.Add("--hard");
+
+        startInfo.ArgumentList.Add(whereToResetTo);
+
+        var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken);
+        if (result.ExitCode != 0)
+        {
+            throw new Exception(
+                $"Failed to reset in repo, process exited with error: {result.FullOutput}");
+        }
+    }
+
     public static bool IsPullRequestRef(string remoteRef)
     {
         if (remoteRef.StartsWith("pull/"))
