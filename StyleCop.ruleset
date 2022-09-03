@@ -138,7 +138,7 @@
     <Rule Id="SA1503" Action="None" /> <!-- BracesMustNotBeOmitted -->
     <Rule Id="SA1504" Action="Warning" /> <!-- All accessors must be single line or multi line -->
     <Rule Id="SA1512" Action="None" /> <!-- Single-line comments should not be followed by blank line -->
-    <Rule Id="SA1514" Action="Warning" /> <!-- Element documentation header should be preceded by blank line -->
+    <Rule Id="SA1514" Action="None" /> <!-- Element documentation header should be preceded by blank line -->
     <Rule Id="SA1515" Action="Warning" /> <!-- Single-line comment should be preceded by blank line -->
     <Rule Id="SA1516" Action="None" /> <!-- Elements should be separated by blank line -->
     <Rule Id="SA1520" Action="None" /> <!-- Consistently use braces -->
