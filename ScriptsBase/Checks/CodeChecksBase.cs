@@ -18,11 +18,11 @@ public abstract class CodeChecksBase<T>
 {
     public const int MAX_RUNTIME_MINUTES = 45;
 
-    protected readonly T opts;
+    protected readonly T options;
 
-    protected CodeChecksBase(T opts)
+    protected CodeChecksBase(T options)
     {
-        this.opts = opts;
+        this.options = options;
         RunData = new CodeCheckRun();
     }
 
@@ -96,7 +96,7 @@ public abstract class CodeChecksBase<T>
 
         var selectedChecks = new List<CodeCheck>();
 
-        var checkNames = opts.Checks.Count > 0 ? opts.Checks : DefaultChecks.ToList();
+        var checkNames = options.Checks.Count > 0 ? options.Checks : DefaultChecks.ToList();
 
         var setupResult = SetupCheckObjectsForRun(checkNames, selectedChecks);
 
@@ -134,7 +134,7 @@ public abstract class CodeChecksBase<T>
             {
                 var task = codeCheck.Run(RunData, cancellationToken);
 
-                if (!opts.Parallel)
+                if (!options.Parallel)
                 {
                     await task;
 
@@ -180,7 +180,7 @@ public abstract class CodeChecksBase<T>
         RunData.SetIgnoredFiles(DefaultIgnoredFilePaths.Concat(FilePathsToAlwaysIgnore));
         RunData.SetSpecificSetOfFilesToCheck(OnlyChangedFileDetector.DetectOnlySomeFilesConfiguredForChecking()
             ?.ToList());
-        RunData.InstallDotnetTools = opts.RestoreTools;
+        RunData.InstallDotnetTools = options.RestoreTools;
         RunData.SolutionFile = MainSolutionFile;
         RunData.ForceIgnoredJetbrainsInspections = ForceIgnoredJetbrainsInspections.ToList();
         RunData.ExtraIgnoredJetbrainsInspectWildcards = ExtraIgnoredJetbrainsInspectWildcards.ToList();

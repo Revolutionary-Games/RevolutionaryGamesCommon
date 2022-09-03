@@ -16,8 +16,8 @@ public class Program
         // TestOptions mostly exists here to make the verb based command parsing work in the first place
         var result = CommandLineHelpers.CreateParser().ParseArguments<CheckOptions, TestOptions>(args)
             .MapResult(
-                (CheckOptions opts) => RunChecks(opts),
-                (TestOptions opts) => RunTests(opts),
+                (CheckOptions options) => RunChecks(options),
+                (TestOptions options) => RunTests(options),
                 CommandLineHelpers.PrintCommandLineErrors);
 
         ConsoleHelpers.CleanConsoleStateForExit();
@@ -25,21 +25,21 @@ public class Program
         return result;
     }
 
-    private static int RunChecks(CheckOptions opts)
+    private static int RunChecks(CheckOptions options)
     {
-        CommandLineHelpers.HandleDefaultOptions(opts);
+        CommandLineHelpers.HandleDefaultOptions(options);
 
         ColourConsole.WriteDebugLine("Running in check mode");
-        ColourConsole.WriteDebugLine($"Manually specified checks: {string.Join(' ', opts.Checks)}");
+        ColourConsole.WriteDebugLine($"Manually specified checks: {string.Join(' ', options.Checks)}");
 
-        var checker = new CodeChecks(opts);
+        var checker = new CodeChecks(options);
 
         return checker.Run().Result;
     }
 
-    private static int RunTests(TestOptions opts)
+    private static int RunTests(TestOptions options)
     {
-        CommandLineHelpers.HandleDefaultOptions(opts);
+        CommandLineHelpers.HandleDefaultOptions(options);
 
         ColourConsole.WriteDebugLine("Running dotnet tests");
 

@@ -15,13 +15,13 @@ using SharedBase.Utilities;
 public abstract class LocalizationUpdateBase<T>
     where T : LocalizationOptionsBase
 {
-    private readonly T opts;
+    private readonly T options;
 
     private readonly Dictionary<string, string> alreadyFoundTools = new();
 
-    protected LocalizationUpdateBase(T opts)
+    protected LocalizationUpdateBase(T options)
     {
-        this.opts = opts;
+        this.options = options;
     }
 
     /// <summary>
@@ -46,8 +46,8 @@ public abstract class LocalizationUpdateBase<T>
 
     protected virtual string TranslationTemplateFile => Path.Join(LocaleFolder, TranslationTemplateFileName);
 
-    protected string PotSuffix => string.IsNullOrEmpty(opts.PotSuffix) ? ".pot" : opts.PotSuffix;
-    protected string PoSuffix => string.IsNullOrEmpty(opts.PoSuffix) ? ".po" : opts.PoSuffix;
+    protected string PotSuffix => string.IsNullOrEmpty(options.PotSuffix) ? ".pot" : options.PotSuffix;
+    protected string PoSuffix => string.IsNullOrEmpty(options.PoSuffix) ? ".po" : options.PoSuffix;
 
     public async Task<bool> Run(CancellationToken cancellationToken)
     {
