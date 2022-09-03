@@ -95,12 +95,14 @@ public abstract class LocalizationUpdateBase<T>
             return RunTranslationUpdate(locale, target, cancellationToken);
         }
 
+        // TODO: this is untested
         ColourConsole.WriteNormalLine($"Creating locale {locale}");
         return RunTranslationCreate(locale, target, cancellationToken);
     }
 
     protected abstract Task<bool> RunTranslationCreate(string locale, string targetFile,
         CancellationToken cancellationToken);
+
     protected abstract Task<bool> RunTranslationUpdate(string locale, string targetFile,
         CancellationToken cancellationToken);
 
@@ -157,12 +159,13 @@ public abstract class LocalizationUpdateBase<T>
     {
         var startInfo = GetParametersToRunExtraction();
 
-        var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken, true);
+        // Showing the output about where it extracts stuff from is probably good always
+        var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken, false);
 
         if (result.ExitCode != 0)
         {
             ColourConsole.WriteErrorLine(
-                $"Failed to run text extraction (exit: {result.ExitCode}): {result.FullOutput}");
+                $"Failed to run text extraction (exit: {result.ExitCode}) see messages above");
             return false;
         }
 
