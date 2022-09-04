@@ -7,9 +7,9 @@ using SharedBase.Utilities;
 
 public class CleanupCode : JetBrainsCheck
 {
-    public const string FullNoXMLProfile = "full_no_xml";
+    public const string FULL_NO_XML_PROFILE = "full_no_xml";
 
-    public string CleanUpProfile { get; set; } = FullNoXMLProfile;
+    public string CleanUpProfile { get; set; } = FULL_NO_XML_PROFILE;
 
     protected override async Task RunJetBrainsTool(CodeCheckRun runData, CancellationToken cancellationToken)
     {
