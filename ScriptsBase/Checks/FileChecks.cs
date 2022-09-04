@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FileTypes;
+using SharedBase.Utilities;
 using Utilities;
 
 /// <summary>
@@ -17,6 +18,11 @@ public class FileChecks : CodeCheck
     private const bool PrintNameTwice = false;
 
     private const string StartFileEnumerateFolder = "./";
+
+    /// <summary>
+    ///   Used to warn the user when big files are accidentally being checked
+    /// </summary>
+    private const int ExpectedMebibyteMaxSize = 2;
 
     private static readonly bool NeedsToReplacePaths = Path.DirectorySeparatorChar != '/';
 
@@ -42,8 +48,6 @@ public class FileChecks : CodeCheck
     private readonly List<FileCheck> enabledChecks = new();
 
     private readonly IReadOnlyList<string> binaryFileExtensions;
-
-    private readonly int threads;
 
     /// <summary>
     ///   Initializes file checks with default settings
@@ -85,35 +89,9 @@ public class FileChecks : CodeCheck
 
     public override async Task Run(CodeCheckRun runData, CancellationToken cancellationToken)
     {
-        bool errors = false;
+        var files = EnumerateFilesRecursively(StartFileEnumerateFolder, runData);
 
-        foreach (var file in EnumerateFilesRecursively(StartFileEnumerateFolder, runData))
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-
-            if (ColourConsole.DebugPrintingEnabled)
-                runData.OutputTextWithMutex($"Handling: {file}");
-
-            try
-            {
-                if (!await Handle(file, runData))
-                {
-                    // Give a little bit of extra spacing between the files with errors
-                    runData.OutputTextWithMutex(string.Empty);
-                    errors = true;
-
-                    // Don't stop here as we want all file errors at once
-                }
-            }
-            catch (Exception e)
-            {
-                runData.OutputTextWithMutex($"An exception occurred when handling a file ({file}): {e}");
-                runData.ReportError($"Error: {e.Message}");
-                return;
-            }
-        }
-
-        if (errors)
+        if (!await RunChecksOnFiles(files, runData, cancellationToken))
         {
             runData.ReportError("Code format issues detected");
         }
@@ -157,6 +135,56 @@ public class FileChecks : CodeCheck
             {
                 yield return recursiveCall;
             }
+        }
+    }
+
+    private async Task<bool> RunChecksOnFiles(IEnumerable<string> files, CodeCheckRun runData,
+        CancellationToken cancellationToken)
+    {
+        bool success = true;
+
+        foreach (var file in files)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (ColourConsole.DebugPrintingEnabled)
+                runData.OutputTextWithMutex($"Handling: {file}");
+
+            CheckAndWarnAboutFileSize(runData, file);
+
+            try
+            {
+                if (!await Handle(file, runData))
+                {
+                    // Give a little bit of extra spacing between the files with errors
+                    runData.OutputTextWithMutex(string.Empty);
+                    success = false;
+
+                    // Don't stop here as we want all file errors at once
+                }
+            }
+            catch (Exception e)
+            {
+                runData.OutputTextWithMutex($"An exception occurred when handling a file ({file}): {e}");
+                runData.ReportError($"Error: {e.Message}");
+                return false;
+            }
+        }
+
+        return success;
+    }
+
+    private void CheckAndWarnAboutFileSize(CodeCheckRun runData, string file)
+    {
+        var fileInfo = new FileInfo(file);
+
+        if (fileInfo.Length > GlobalConstants.MEBIBYTE * ExpectedMebibyteMaxSize)
+        {
+            var mebibytes = Math.Round(fileInfo.Length / (float)GlobalConstants.MEBIBYTE, 2);
+
+            runData.OutputWarningWithMutex(
+                $"File {file} is bigger ({mebibytes} MiB) than is expected ({ExpectedMebibyteMaxSize} MiB) " +
+                "for file based checks. Is a file that should be ignored being checked?");
         }
     }
 
