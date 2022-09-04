@@ -54,6 +54,7 @@ public class JSONCheck : FileCheck
         if (originalFileContent == newContent)
             yield break;
 
+        // This ends up writing the file with a BOM
         await File.WriteAllTextAsync(path, newContent, Encoding.UTF8);
 
         yield return "JSON formatting made changes";
