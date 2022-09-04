@@ -11,8 +11,10 @@ using SharedBase.Utilities;
 
 public static class PipPackageVersionChecker
 {
-    private static readonly Regex PipBabelThriveVersion = new(@"^Babel-Thrive\s*([\d.]+)");
-    private static readonly Regex RequirementsBabelThriveVersion = new(@"^Babel-Thrive==([\d.]+)$");
+    private static readonly Regex PipBabelThriveVersion = new(@"^Babel-Thrive\s*([\d.]+)", RegexOptions.Multiline);
+
+    private static readonly Regex RequirementsBabelThriveVersion =
+        new(@"^Babel-Thrive==([\d.]+)$", RegexOptions.Multiline);
 
     public static async Task<(bool Matches, string Installed, string Wanted)> CompareInstalledBabelThriveVersion(
         CancellationToken cancellationToken,

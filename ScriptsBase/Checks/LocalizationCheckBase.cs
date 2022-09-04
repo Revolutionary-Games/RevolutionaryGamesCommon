@@ -171,6 +171,10 @@ public class LocalizationCheckBase : CodeCheck
         startInfo.ArgumentList.Add("Scripts");
         startInfo.ArgumentList.Add("--");
         startInfo.ArgumentList.Add("localization");
+        startInfo.ArgumentList.Add("--po-suffix");
+        startInfo.ArgumentList.Add($".po{LOCALE_TEMP_SUFFIX}");
+        startInfo.ArgumentList.Add("--pot-suffix");
+        startInfo.ArgumentList.Add($".pot{LOCALE_TEMP_SUFFIX}");
 
         return startInfo;
     }
@@ -216,7 +220,7 @@ public class LocalizationCheckBase : CodeCheck
     private static void DeletePotDuplicates()
     {
         // We don't get an equivalent .pot file to the .po file in EnumerateAllPoFiles so we just search for one here
-        foreach (var file in Directory.EnumerateFiles("./", $"*.pot.{LOCALE_TEMP_SUFFIX}", SearchOption.AllDirectories))
+        foreach (var file in Directory.EnumerateFiles("./", $"*.pot{LOCALE_TEMP_SUFFIX}", SearchOption.AllDirectories))
         {
             if (!file.EndsWith(LOCALE_TEMP_SUFFIX))
                 throw new Exception("Logic error in file finding");
