@@ -27,7 +27,8 @@ public static class LineCharacterHelpers
             checkingLength = true;
     }
 
-    public static string? CheckLineForBeingTooLong(string line, int lineNumber, bool checkingLength, int maxLength = MAX_LINE_LENGTH)
+    public static string? CheckLineForBeingTooLong(string line, int lineNumber, bool checkingLength,
+        int maxLength = MAX_LINE_LENGTH)
     {
         if (!checkingLength)
             return null;
@@ -38,7 +39,7 @@ public static class LineCharacterHelpers
             return null;
 
         // Windows line end grace (in case the line contains the line terminators)
-        if (OperatingSystem.IsWindows() && line.EndsWith("\r"))
+        if (line.EndsWith("\r") && OperatingSystem.IsWindows())
             --length;
 
         if (length > maxLength)

@@ -2,7 +2,7 @@
 
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
+using System.Threading.Tasks;
 using Karambolo.PO;
 
 /// <summary>
@@ -22,19 +22,20 @@ public class PoContentCheck : FileCheck
     {
     }
 
-    public override IAsyncEnumerable<string> Handle(string path)
+    public override async IAsyncEnumerable<string> Handle(string path)
     {
         var isEnglish = path.EndsWith("en.po");
 
         // Sadly async parsing not supported, so we adapt here
-        using var reader = File.OpenText(path);
+        var parseTask = new Task<POParseResult>(() =>
+        {
+            using var reader = File.OpenText(path);
 
-        return ParseAndHandle(reader, isEnglish).ToAsyncEnumerable();
-    }
+            return parser.Parse(reader);
+        });
+        parseTask.Start();
 
-    private IEnumerable<string> ParseAndHandle(StreamReader reader, bool isEnglish)
-    {
-        var result = parser.Parse(reader);
+        var result = await parseTask;
 
         if (!result.Success)
         {

@@ -7,7 +7,7 @@ using CommandLine;
 public class CheckOptionsBase : ScriptOptionsBase
 {
     [Option('p', "parallel", Required = false, Default = true, HelpText = "Set to run checks in parallel")]
-    public bool Parallel { get; set; }
+    public bool? Parallel { get; set; }
 
     [Option('r', "restore-tools", Required = false, Default = true,
         HelpText = "Automatically restores dotnet tools before running")]

@@ -1,6 +1,7 @@
 namespace SharedBase.Utilities;
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.Versioning;
@@ -387,6 +388,38 @@ public static class GitRunHelpers
     public static string ParseRefBranch(string remoteRef)
     {
         return ParseRemoteRef(remoteRef).LocalBranch;
+    }
+
+    /// <summary>
+    ///   Parses a .gitattributes file for binary file types (note this doesn't fully convert the wildcard patterns to
+    ///   regexes)
+    /// </summary>
+    /// <returns>A list of binary extensions</returns>
+    public static async Task<List<string>> ParseGitAttributeBinaryFiles(string folder,
+        CancellationToken cancellationToken)
+    {
+        var file = Path.Join(folder, ".gitattributes");
+
+        // TODO: could move up folders until finding a gitattributes file
+
+        // TODO: allow gitattributes to be optional
+        var lines = await File.ReadAllLinesAsync(file, cancellationToken);
+
+        var result = new List<string>();
+
+        foreach (var line in lines)
+        {
+            var split = line.Split(' ', 2);
+            var pattern = split[0];
+            var options = split[1];
+
+            if (options.Contains("-text") || options.Contains("text=false") || options.Contains("binary"))
+            {
+                result.Add(pattern.TrimStart('*', '?'));
+            }
+        }
+
+        return result;
     }
 
     [UnsupportedOSPlatform("browser")]

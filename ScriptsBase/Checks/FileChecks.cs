@@ -30,9 +30,20 @@ public class FileChecks : CodeCheck
         ".a",
         ".so",
         ".bin",
+        ".tar",
+        ".tar.xz",
+        ".tar.gz",
+        ".7z",
+
+        // Not really a binary file but we don't want to manually edit these
+        ".svg",
     };
 
     private readonly List<FileCheck> enabledChecks = new();
+
+    private readonly IReadOnlyList<string> binaryFileExtensions;
+
+    private readonly int threads;
 
     /// <summary>
     ///   Initializes file checks with default settings
@@ -62,6 +73,14 @@ public class FileChecks : CodeCheck
             enabledChecks.Add(new PoFormatCheck());
             enabledChecks.Add(new PoContentCheck());
         }
+
+        // Detect what git LFS has marked as binary and add those to known binary files
+        // TODO: check if we should somehow run this asynchronously
+        var binaryAttributes = GitRunHelpers.ParseGitAttributeBinaryFiles("./", CancellationToken.None).Result;
+
+        binaryFileExtensions = KnownBinaryFiles.Concat(binaryAttributes).ToList();
+
+        // TODO: maybe we should also load .gitignore here?
     }
 
     public override async Task Run(CodeCheckRun runData, CancellationToken cancellationToken)
@@ -100,7 +119,7 @@ public class FileChecks : CodeCheck
         }
     }
 
-    private static IEnumerable<string> EnumerateFilesRecursively(string start, CodeCheckRun runData)
+    private IEnumerable<string> EnumerateFilesRecursively(string start, CodeCheckRun runData)
     {
         foreach (var file in Directory.EnumerateFiles(start))
         {
@@ -125,7 +144,7 @@ public class FileChecks : CodeCheck
                 // Skip handling any binary files as the handlers (even ones that work on *any* file type, don't really
                 // want to run on them). If we ever get a binary type that needs checking we'll need some way to say
                 // *really* any file and text files only for a check.
-                if (KnownBinaryFiles.Any(handledFile.EndsWith))
+                if (binaryFileExtensions.Any(handledFile.EndsWith))
                     continue;
 
                 yield return handledFile;

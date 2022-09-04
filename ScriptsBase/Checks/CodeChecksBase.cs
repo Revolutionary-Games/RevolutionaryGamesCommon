@@ -62,13 +62,19 @@ public abstract class CodeChecksBase<T>
         new(@"\.idea/"),
         new(@"\.mono/"),
         new(@"\.import/"),
+        new(@"\.DotSettings$"),
         new(@"/?tmp/"),
         new(@"/?RubySetupSystem/"),
         new(@"/bin/"),
         new(@"/obj/"),
+        new(@"\.out$"),
+        new(@"~$"),
+        new(@"\.bak$"),
         new(@"\.git/"),
         new(@"/?builds/", RegexOptions.IgnoreCase),
         new(@"/?dist/", RegexOptions.IgnoreCase),
+        new(LocalizationCheckBase.LOCALE_TEMP_SUFFIX + "$"),
+        new(JetBrainsCheck.JET_BRAINS_CACHE + "/"),
     }.Concat(InspectCode.InspectCodeIgnoredFiles).ToList();
 
     /// <summary>
@@ -128,13 +134,19 @@ public abstract class CodeChecksBase<T>
         var cancellationToken = tokenSource.Token;
         var pendingTasks = new List<Task>();
 
+        if (options.Parallel != true)
+        {
+            ColourConsole.WriteDebugLine(
+                "Will wait for each check to finish before starting next one (parallel option is not enabled)");
+        }
+
         try
         {
             foreach (var codeCheck in selectedChecks)
             {
                 var task = codeCheck.Run(RunData, cancellationToken);
 
-                if (!options.Parallel)
+                if (options.Parallel != true)
                 {
                     await task;
 

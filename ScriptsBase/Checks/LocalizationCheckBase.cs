@@ -69,6 +69,8 @@ public class LocalizationCheckBase : CodeCheck
 
                 var updated = TempCheckName(original);
 
+                // NOTE: we can only use the PO parser library here as it preserves the order of translations as they
+                // are seen in the file
                 if (!ParsePoFile(original, runData, out var originalData))
                     break;
 
@@ -184,7 +186,7 @@ public class LocalizationCheckBase : CodeCheck
         {
             var name = TempCheckName(file);
 
-            File.Copy(file, name);
+            File.Copy(file, name, true);
 
             cancellationToken.ThrowIfCancellationRequested();
         }
