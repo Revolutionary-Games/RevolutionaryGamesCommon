@@ -80,7 +80,7 @@ public class FileChecks : CodeCheck
 
         // Detect what git LFS has marked as binary and add those to known binary files
         // TODO: check if we should somehow run this asynchronously
-        var binaryAttributes = GitRunHelpers.ParseGitAttributeBinaryFiles("./", CancellationToken.None).Result;
+        var binaryAttributes = GitRunHelpers.ParseGitAttributeBinaryFiles("./", false, CancellationToken.None).Result;
 
         binaryFileExtensions = KnownBinaryFiles.Concat(binaryAttributes).ToList();
 

@@ -395,17 +395,19 @@ public static class GitRunHelpers
     ///   regexes)
     /// </summary>
     /// <returns>A list of binary extensions</returns>
-    public static async Task<List<string>> ParseGitAttributeBinaryFiles(string folder,
+    public static async Task<List<string>> ParseGitAttributeBinaryFiles(string folder, bool required,
         CancellationToken cancellationToken)
     {
         var file = Path.Join(folder, ".gitattributes");
 
+        var result = new List<string>();
+
+        if (!required && !File.Exists(file))
+            return result;
+
         // TODO: could move up folders until finding a gitattributes file
 
-        // TODO: allow gitattributes to be optional
         var lines = await File.ReadAllLinesAsync(file, cancellationToken);
-
-        var result = new List<string>();
 
         foreach (var line in lines)
         {
