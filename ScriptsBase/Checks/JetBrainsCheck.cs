@@ -40,7 +40,11 @@ public abstract class JetBrainsCheck : CodeCheck
         if (runData.SolutionFile == null)
             throw new ArgumentException("No solution file specified");
 
-        await runData.CheckDotnetTools();
+        if (!await runData.CheckDotnetTools())
+        {
+            runData.ReportError("Failed to check that dotnet tools are good");
+            return;
+        }
 
         // We use the build mutex here as the inspectcode check wants to build the project, and if multiple JetBrains
         // checks run at once they can pollute the JetBrains cache with bad data
