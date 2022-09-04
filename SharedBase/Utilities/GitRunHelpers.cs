@@ -273,18 +273,19 @@ public static class GitRunHelpers
     /// </param>
     /// <returns>The output from git containing the diff</returns>
     [UnsupportedOSPlatform("browser")]
-    public static async Task<string> Diff(string? folder, CancellationToken cancellationToken, bool stat = true,
+    public static async Task<string> Diff(string folder, CancellationToken cancellationToken, bool stat = true,
         bool useWindowsWorkaround = true)
     {
-        if (folder != null && !Directory.Exists(folder))
+        if (!Directory.Exists(folder))
             throw new ArgumentException($"Specified folder: \"{folder}\" doesn't exist");
 
         var startInfo = new ProcessStartInfo(FindGit()) { CreateNoWindow = true, WorkingDirectory = folder };
 
-        startInfo.ArgumentList.Add("-c");
-
         if (useWindowsWorkaround)
+        {
+            startInfo.ArgumentList.Add("-c");
             startInfo.ArgumentList.Add("core.safecrlf=false");
+        }
 
         startInfo.ArgumentList.Add("diff");
 
@@ -298,7 +299,36 @@ public static class GitRunHelpers
                 $"Failed to get git diff, process exited with error: {result.FullOutput}");
         }
 
-        return result.Output;
+        return result.Output.Trim();
+    }
+
+    [UnsupportedOSPlatform("browser")]
+    public static async Task<string> DiffNameOnly(string folder, bool cached, CancellationToken cancellationToken,
+        bool useWindowsWorkaround = true)
+    {
+        var startInfo = PrepareToRunGit(folder, false);
+
+        if (useWindowsWorkaround)
+        {
+            startInfo.ArgumentList.Add("-c");
+            startInfo.ArgumentList.Add("core.safecrlf=false");
+        }
+
+        startInfo.ArgumentList.Add("diff");
+
+        if (cached)
+            startInfo.ArgumentList.Add("--cached");
+
+        startInfo.ArgumentList.Add("--name-only");
+
+        var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken);
+        if (result.ExitCode != 0)
+        {
+            throw new Exception(
+                $"Failed to get git diff, process exited with error: {result.FullOutput}");
+        }
+
+        return result.Output.Trim();
     }
 
     [UnsupportedOSPlatform("browser")]

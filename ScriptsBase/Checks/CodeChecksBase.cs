@@ -2,11 +2,14 @@ namespace ScriptsBase.Checks;
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Models;
+using SharedBase.Utilities;
 using Utilities;
 
 /// <summary>
@@ -109,15 +112,28 @@ public abstract class CodeChecksBase<T>
         if (setupResult != 0)
             return setupResult;
 
+        if (options.PreCommitMode)
+        {
+            await SetupPreCommitMode(tokenSource.Token);
+        }
+
         SetupRunDataObject();
 
-        if (tokenSource.Token.IsCancellationRequested)
-            return 1;
+        try
+        {
+            if (tokenSource.Token.IsCancellationRequested)
+                return 1;
 
-        ColourConsole.WriteInfoLine(
-            $"Starting formatting checks with the following checks: {string.Join(' ', checkNames)}");
+            ColourConsole.WriteInfoLine(
+                $"Starting formatting checks with the following checks: {string.Join(' ', checkNames)}");
 
-        await RunActualChecks(selectedChecks, tokenSource);
+            await RunActualChecks(selectedChecks, tokenSource);
+        }
+        finally
+        {
+            if (options.PreCommitMode)
+                TeardownPreCommitMode();
+        }
 
         if (RunData.Errors)
         {
@@ -183,6 +199,27 @@ public abstract class CodeChecksBase<T>
         {
             Console.WriteLine("Exception occurred when running code checks: {0}", e);
             RunData.ReportError("Check running caused an exception");
+        }
+    }
+
+    private async Task SetupPreCommitMode(CancellationToken cancellationToken)
+    {
+        RunData.OutputInfoWithMutex("Preparing to run in pre-commit mode");
+
+        var diff = await GitRunHelpers.DiffNameOnly("./", true, cancellationToken);
+
+        await File.WriteAllTextAsync(OnlyChangedFileDetector.ONLY_FILE_LIST, diff, Encoding.UTF8, cancellationToken);
+    }
+
+    private void TeardownPreCommitMode()
+    {
+        try
+        {
+            File.Delete(OnlyChangedFileDetector.ONLY_FILE_LIST);
+        }
+        catch (Exception e)
+        {
+            RunData.OutputErrorWithMutex($"Failed to delete changed files list: {e}");
         }
     }
 

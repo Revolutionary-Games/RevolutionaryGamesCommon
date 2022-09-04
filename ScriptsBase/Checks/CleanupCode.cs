@@ -13,7 +13,7 @@ public class CleanupCode : JetBrainsCheck
 
     protected override async Task RunJetBrainsTool(CodeCheckRun runData, CancellationToken cancellationToken)
     {
-        var oldDiff = await GitRunHelpers.Diff(null, cancellationToken);
+        var oldDiff = await GitRunHelpers.Diff("./", cancellationToken);
 
         var startInfo = new ProcessStartInfo("dotnet");
         startInfo.ArgumentList.Add("tool");
@@ -37,7 +37,7 @@ public class CleanupCode : JetBrainsCheck
             return;
         }
 
-        var newDiff = await GitRunHelpers.Diff(null, cancellationToken);
+        var newDiff = await GitRunHelpers.Diff("./", cancellationToken);
 
         if (newDiff != oldDiff)
         {
