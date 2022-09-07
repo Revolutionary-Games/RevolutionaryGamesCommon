@@ -77,23 +77,24 @@ public static class ColourConsole
     public static void WriteDebugLine(string message)
     {
         if (DebugPrintingEnabled)
-            WriteLineWithColour(message, ConsoleColor.Gray);
+            WriteLineWithColour(message, ConsoleColor.DarkGray);
     }
 
     public static void WriteDebug(string message)
     {
         if (DebugPrintingEnabled)
-            WriteWithColour(message, ConsoleColor.Gray);
+            WriteWithColour(message, ConsoleColor.DarkGray);
     }
 
     public static void WriteNormalLine(string message)
     {
-        WriteLineWithColour(message, ConsoleColor.DarkGray);
+        // TODO: if we switch to persistent colours, we'll need to fix this
+        Console.WriteLine(message);
     }
 
     public static void WriteNormal(string message)
     {
-        WriteWithColour(message, ConsoleColor.DarkGray);
+        Console.Write(message);
     }
 
     public static void WriteLineWithColour(string message, ConsoleColor colour)
