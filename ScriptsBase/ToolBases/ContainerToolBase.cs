@@ -206,6 +206,10 @@ public abstract class ContainerToolBase<T>
     {
         var file = Path.Join(ImagesAndConfigsFolder, $"{ExportFileNameBase}_{version}.tar.xz");
 
+        // Podman won't overwrite existing images so we need to delete if there is already one
+        if (File.Exists(file))
+            File.Delete(file);
+
         var startInfo = new ProcessStartInfo("podman");
         startInfo.ArgumentList.Add("save");
         startInfo.ArgumentList.Add($"{tag}");
