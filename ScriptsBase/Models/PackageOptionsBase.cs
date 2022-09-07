@@ -22,6 +22,4 @@ public abstract class PackageOptionsBase : ScriptOptionsBase
     public IList<PackagePlatform> Platforms { get; set; } = new List<PackagePlatform>();
 
     public abstract bool Compress { get; }
-
-
 }
