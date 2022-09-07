@@ -34,7 +34,7 @@ public abstract class PackageToolBase<T>
     /// </summary>
     protected abstract IEnumerable<PackagePlatform> DefaultPlatforms { get; }
 
-    protected CompressionType CompressionType { get; set; } = CompressionType.TarLZip;
+    protected CompressionType CompressionType { get; set; } = CompressionType.P7Zip;
 
     protected abstract IEnumerable<string> SourceFilesToPackage { get; }
 
@@ -152,7 +152,7 @@ public abstract class PackageToolBase<T>
                     FileUtilities.HashToHex(await FileUtilities.CalculateSha3OfFile(zipFile, cancellationToken));
 
                 var message1 = $"Created {platform} archive: {zipFile}";
-                var message2 = $"SHA3 {hash}";
+                var message2 = $"SHA3: {hash}";
 
                 AddReprintMessage(string.Empty);
                 AddReprintMessage(message1);
@@ -255,8 +255,10 @@ public abstract class PackageToolBase<T>
         ColourConsole.WriteNormalLine("Compressing source code...");
         try
         {
-            var task = Compression.CompressMultipleItems(SourceFilesToPackage, CompressedSourceLocation,
-                CompressionType, new List<Regex> { new(@"/bin"), new(@"/obj") }, ColourConsole.DebugPrintingEnabled);
+            // TODO: check that the ignores work on Windows
+            var task = Compression.CompressMultipleItems("./", SourceFilesToPackage, CompressedSourceLocation,
+                CompressionType, new List<string> { new("bin/"), new("obj/"), new(".*") }, cancellationToken,
+                ColourConsole.DebugPrintingEnabled);
             await task.WaitAsync(cancellationToken);
         }
         catch (Exception e)
@@ -273,9 +275,11 @@ public abstract class PackageToolBase<T>
     protected virtual async Task<bool> Compress(PackagePlatform platform, string folder, string archiveFile,
         CancellationToken cancellationToken)
     {
+        ColourConsole.WriteInfoLine($"Compressing {archiveFile}");
         try
         {
-            var task = Compression.CompressFolder(folder, archiveFile, CompressionType,
+            var task = Compression.CompressFolder(Path.GetDirectoryName(folder) ?? string.Empty,
+                Path.GetFileName(folder), archiveFile, CompressionType, cancellationToken,
                 ColourConsole.DebugPrintingEnabled);
             await task.WaitAsync(cancellationToken);
         }

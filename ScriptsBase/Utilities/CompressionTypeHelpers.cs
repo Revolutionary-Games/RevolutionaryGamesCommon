@@ -9,8 +9,8 @@ public static class CompressionTypeHelpers
     {
         switch (type)
         {
-            case CompressionType.TarLZip:
-                return ".tar.lz";
+            case CompressionType.P7Zip:
+                return ".7z";
             default:
                 throw new ArgumentOutOfRangeException(nameof(type), type, null);
         }

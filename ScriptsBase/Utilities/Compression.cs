@@ -5,17 +5,38 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
-using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Models;
-using SharpCompress.Archives;
-using SharpCompress.Archives.Tar;
-using SharpCompress.Writers.Tar;
+using SharedBase.Utilities;
 
 public static class Compression
 {
+    public static string Get7Zip(bool log = true)
+    {
+        string lookFor = "7za";
+
+        if (OperatingSystem.IsWindows())
+        {
+            lookFor = "7za.exe";
+        }
+
+        var result = ExecutableFinder.Which(lookFor);
+
+        if (result == null)
+        {
+            if (log)
+            {
+                ColourConsole.WriteErrorLine("7-zip is a needed tool, but it was not found in PATH. " +
+                    "Please install p7zip package, or 7-zip (on Windows)");
+            }
+
+            throw new Exception("7-zip not found");
+        }
+
+        return result;
+    }
+
     public static async Task GzipToTarget(string sourceFile, string targetFile, CancellationToken cancellationToken)
     {
         if (targetFile.EndsWith(".gz"))
@@ -44,95 +65,70 @@ public static class Compression
         }
     }
 
-    public static Task CompressFolder(string folder, string archiveFile, CompressionType compressionType,
-        bool measureTime = false)
+    public static Task CompressFolder(string baseFolder, string folder, string archiveFile,
+        CompressionType compressionType, CancellationToken cancellationToken, bool measureTime = false)
     {
-        var task = new Task(() =>
+        if (compressionType != CompressionType.P7Zip)
+            throw new NotImplementedException("unimplemented compression type");
+
+        var startInfo = new ProcessStartInfo(Get7Zip())
         {
-            using var archive = TarArchive.Create();
-            AddFilesRecursivelyWithPrefix(archive, folder, new List<Regex>());
+            CreateNoWindow = true,
+            WorkingDirectory = baseFolder,
+        };
+        startInfo.ArgumentList.Add("a");
+        startInfo.ArgumentList.Add("-mx=9");
+        startInfo.ArgumentList.Add("-ms=on");
+        startInfo.ArgumentList.Add(Path.GetFullPath(archiveFile));
+        startInfo.ArgumentList.Add(folder);
 
-            SaveWithCompression(archive, compressionType, archiveFile, measureTime);
-        });
-
-        task.Start();
-
-        return task;
+        return RunCompressionTool(startInfo, measureTime, cancellationToken);
     }
 
-    public static Task CompressMultipleItems(IEnumerable<string> toCompress, string archiveFile,
-        CompressionType compressionType, IReadOnlyCollection<Regex> ignore, bool measureTime = false)
+    public static Task CompressMultipleItems(string baseFolder, IEnumerable<string> toCompress, string archiveFile,
+        CompressionType compressionType, IReadOnlyCollection<string> ignorePatterns,
+        CancellationToken cancellationToken, bool measureTime = false)
     {
-        var task = new Task(() =>
+        if (compressionType != CompressionType.P7Zip)
+            throw new NotImplementedException("unimplemented compression type");
+
+        var startInfo = new ProcessStartInfo(Get7Zip())
         {
-            using var archive = TarArchive.Create();
+            CreateNoWindow = true,
+            WorkingDirectory = baseFolder,
+        };
+        startInfo.ArgumentList.Add("a");
+        startInfo.ArgumentList.Add("-mx=9");
+        startInfo.ArgumentList.Add("-ms=on");
+        startInfo.ArgumentList.Add(Path.GetFullPath(archiveFile));
 
-            foreach (var item in toCompress)
-            {
-                if (Directory.Exists(item))
-                {
-                    AddFilesRecursivelyWithPrefix(archive, item, ignore);
-                }
-                else
-                {
-                    archive.AddEntry(item, item);
-                }
-            }
-
-            SaveWithCompression(archive, compressionType, archiveFile, measureTime);
-        });
-
-        task.Start();
-
-        return task;
-    }
-
-    private static void AddFilesRecursivelyWithPrefix(IWritableArchive archive, string folder,
-        IReadOnlyCollection<Regex> ignore, string pattern = "*.*",
-        bool ignoreHidden = true)
-    {
-        foreach (var subFolder in Directory.EnumerateDirectories(folder, pattern))
+        foreach (var item in toCompress)
         {
-            if (ignoreHidden && Path.GetFileName(subFolder).StartsWith("."))
-                continue;
-
-            if (ignore.Any(r => r.IsMatch(subFolder)))
-                continue;
-
-            AddFilesRecursivelyWithPrefix(archive, subFolder, ignore, pattern, ignoreHidden);
+            startInfo.ArgumentList.Add(item);
         }
 
-        foreach (var file in Directory.EnumerateFiles(folder, pattern, SearchOption.TopDirectoryOnly))
+        foreach (var ignore in ignorePatterns)
         {
-            if (ignoreHidden && Path.GetFileName(file).StartsWith("."))
-                continue;
-
-            if (ignore.Any(r => r.IsMatch(file)))
-                continue;
-
-            archive.AddEntry(file, file);
+            // TODO: do we need to convert "/" to "\" for Windows?
+            startInfo.ArgumentList.Add($"-xr!{ignore}");
         }
+
+        return RunCompressionTool(startInfo, measureTime, cancellationToken);
     }
 
-    private static void SaveWithCompression(IWritableArchive archive, CompressionType compressionType,
-        string archiveFile, bool measure)
+    private static async Task RunCompressionTool(ProcessStartInfo startInfo, bool measure,
+        CancellationToken cancellationToken)
     {
         var elapsed = Stopwatch.StartNew();
 
-        SharpCompress.Common.CompressionType tarCompression;
+        var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken, true);
 
-        switch (compressionType)
+        if (result.ExitCode != 0)
         {
-            case CompressionType.TarLZip:
-                tarCompression = SharpCompress.Common.CompressionType.LZip;
-                break;
-            default:
-                throw new ArgumentOutOfRangeException(nameof(compressionType), compressionType, null);
+            throw new Exception($"Running 7-zip failed (exit: {result.ExitCode}): {result.FullOutput}");
         }
 
-        archive.SaveTo(archiveFile, new TarWriterOptions(tarCompression, true));
-
         if (measure)
-            ColourConsole.WriteDebugLine($"Compressing {archiveFile} took {elapsed.Elapsed}");
+            ColourConsole.WriteDebugLine($"Compressing took {elapsed.Elapsed}");
     }
 }

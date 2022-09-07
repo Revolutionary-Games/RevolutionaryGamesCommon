@@ -1,10 +1,9 @@
 ﻿namespace ScriptsBase.Models;
 
-using System;
-
 public enum CompressionType
 {
-    TarLZip,
+    /// <summary>
+    ///   Compressed using 7-zip executable
+    /// </summary>
+    P7Zip,
 }
-
-
