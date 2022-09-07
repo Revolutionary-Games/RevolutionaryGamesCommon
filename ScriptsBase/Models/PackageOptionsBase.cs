@@ -4,11 +4,24 @@ using System.Collections.Generic;
 using CommandLine;
 
 [Verb("package", HelpText = "Package the project for distribution")]
-public class PackageOptionsBase : ScriptOptionsBase
+public abstract class PackageOptionsBase : ScriptOptionsBase
 {
     [Option('o', "output", Default = "builds", HelpText = "Output folder to package to")]
     public string OutputFolder { get; set; } = "builds";
 
+    [Option('s', "source", Default = null, HelpText = "Include source code in export")]
+    public bool? SourceCode { get; set; }
+
+    [Option('r', "retries", Default = 2, HelpText = "How many times to retry export if it fails")]
+    public int Retries { get; set; }
+
+    [Option("clean-zip", Default = false, HelpText = "Delete package zips before writing them again")]
+    public bool CleanZips { get; set; }
+
     [Value(0, MetaName = "Platforms", HelpText = "Platforms to package for (leave blank for default)")]
-    public IList<string> Platforms { get; set; } = new List<string>();
+    public IList<PackagePlatform> Platforms { get; set; } = new List<PackagePlatform>();
+
+    public abstract bool Compress { get; }
+
+
 }

@@ -77,23 +77,23 @@ public static class ColourConsole
     public static void WriteDebugLine(string message)
     {
         if (DebugPrintingEnabled)
-            WriteLineWithColour(message, ConsoleColor.DarkGray);
+            WriteLineWithColour(message, ConsoleColor.Gray);
     }
 
     public static void WriteDebug(string message)
     {
         if (DebugPrintingEnabled)
-            WriteWithColour(message, ConsoleColor.DarkGray);
+            WriteWithColour(message, ConsoleColor.Gray);
     }
 
     public static void WriteNormalLine(string message)
     {
-        WriteLineWithColour(message, ConsoleColor.Gray);
+        WriteLineWithColour(message, ConsoleColor.DarkGray);
     }
 
     public static void WriteNormal(string message)
     {
-        WriteWithColour(message, ConsoleColor.Gray);
+        WriteWithColour(message, ConsoleColor.DarkGray);
     }
 
     public static void WriteLineWithColour(string message, ConsoleColor colour)

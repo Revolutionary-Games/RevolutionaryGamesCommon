@@ -303,6 +303,24 @@ public static class GitRunHelpers
     }
 
     [UnsupportedOSPlatform("browser")]
+    public static async Task<string> Log(string folder, int limit, CancellationToken cancellationToken)
+    {
+        var startInfo = PrepareToRunGit(folder, true);
+        startInfo.ArgumentList.Add("log");
+        startInfo.ArgumentList.Add("-n");
+        startInfo.ArgumentList.Add(limit.ToString());
+
+        var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken);
+        if (result.ExitCode != 0)
+        {
+            throw new Exception(
+                $"Failed to run log in repo, process exited with error: {result.FullOutput}");
+        }
+
+        return result.Output.Trim();
+    }
+
+    [UnsupportedOSPlatform("browser")]
     public static async Task<string> DiffNameOnly(string folder, bool cached, CancellationToken cancellationToken,
         bool useWindowsWorkaround = true)
     {

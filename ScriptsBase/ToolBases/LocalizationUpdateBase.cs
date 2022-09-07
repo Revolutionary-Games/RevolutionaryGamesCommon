@@ -1,4 +1,4 @@
-﻿namespace ScriptsBase.Utilities;
+﻿namespace ScriptsBase.ToolBases;
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Models;
 using SharedBase.Utilities;
+using Utilities;
 
 /// <summary>
 ///   Base class for handling updating localization files
