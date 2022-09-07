@@ -122,22 +122,22 @@ public abstract class PackageToolBase<T>
                 return false;
             }
 
-            if (!await OnPostProcessExportedFolder(platform, folder, cancellationToken))
-            {
-                ColourConsole.WriteErrorLine($"Failed to post process folder: {folder}");
-                return false;
-            }
-
             if (!await CopyExtraFiles(platform, folder, cancellationToken))
             {
                 ColourConsole.WriteErrorLine($"Failed to copy extra files to {folder}");
                 return false;
             }
 
+            if (!await OnPostProcessExportedFolder(platform, folder, cancellationToken))
+            {
+                ColourConsole.WriteErrorLine($"Failed to post process folder: {folder}");
+                return false;
+            }
+
             if (options.Compress)
             {
                 var zipFile = Path.Join(options.OutputFolder,
-                    $"{GetFolderNameForExport(platform)}{CompressionType.CompressedExtension()}");
+                    $"{GetFolderNameForExport(platform)}{GetCompressedExtensionForPlatform(platform)}");
 
                 if (options.CleanZips && File.Exists(zipFile))
                     File.Delete(zipFile);
@@ -201,6 +201,11 @@ public abstract class PackageToolBase<T>
     }
 
     protected abstract string GetFolderNameForExport(PackagePlatform platform);
+
+    protected virtual string GetCompressedExtensionForPlatform(PackagePlatform platform)
+    {
+        return CompressionType.CompressedExtension();
+    }
 
     protected abstract Task<bool> Export(PackagePlatform platform, string folder, CancellationToken cancellationToken);
 
