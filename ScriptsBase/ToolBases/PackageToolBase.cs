@@ -86,95 +86,16 @@ public abstract class PackageToolBase<T>
         {
             ColourConsole.WriteInfoLine($"Starting package for: {platform}");
 
-            if (!await PrepareToExport(platform, cancellationToken))
+            try
             {
-                ColourConsole.WriteErrorLine($"Failed to prepare to export to platform: {platform}");
-                return false;
-            }
-
-            var folder = Path.Join(options.OutputFolder, GetFolderNameForExport(platform));
-
-            Directory.CreateDirectory(folder);
-
-            bool succeeded = false;
-
-            for (int i = 0; i < options.Retries + 1; ++i)
-            {
-                if (!await Export(platform, folder, cancellationToken) || !Directory.Exists(folder))
-                {
-                    if (i < options.Retries)
-                    {
-                        ColourConsole.WriteNormalLine($"Failed to export {platform} to {folder}, will retry");
-
-                        await Task.Delay(TimeSpan.FromSeconds(2), cancellationToken);
-                    }
-
-                    continue;
-                }
-
-                succeeded = true;
-                break;
-            }
-
-            if (!succeeded)
-            {
-                ColourConsole.WriteErrorLine($"Export for platform {platform} failed too many times");
-                return false;
-            }
-
-            if (!await CopyExtraFiles(platform, folder, cancellationToken))
-            {
-                ColourConsole.WriteErrorLine($"Failed to copy extra files to {folder}");
-                return false;
-            }
-
-            if (!await OnPostProcessExportedFolder(platform, folder, cancellationToken))
-            {
-                ColourConsole.WriteErrorLine($"Failed to post process folder: {folder}");
-                return false;
-            }
-
-            if (options.Compress)
-            {
-                var zipFile = Path.Join(options.OutputFolder,
-                    $"{GetFolderNameForExport(platform)}{GetCompressedExtensionForPlatform(platform)}");
-
-                if (options.CleanZips && File.Exists(zipFile))
-                    File.Delete(zipFile);
-
-                if (!await Compress(platform, folder, zipFile, cancellationToken) || !File.Exists(zipFile))
-                {
-                    ColourConsole.WriteErrorLine($"Failed to compress {platform} to {zipFile}");
+                if (!await PackageForPlatform(cancellationToken, platform))
                     return false;
-                }
-
-                string hash =
-                    FileUtilities.HashToHex(await FileUtilities.CalculateSha3OfFile(zipFile, cancellationToken));
-
-                var message1 = $"Created {platform} archive: {zipFile}";
-                var message2 = $"SHA3: {hash}";
-
-                AddReprintMessage(string.Empty);
-                AddReprintMessage(message1);
-                AddReprintMessage(message2);
-
-                ColourConsole.WriteSuccessLine(message1);
-                ColourConsole.WriteNormalLine(message2);
             }
-            else
+            catch (Exception e)
             {
-                ColourConsole.WriteNormalLine("Skipping compressing");
-
-                var message1 = $"Created {platform} at {folder}";
-
-                AddReprintMessage(string.Empty);
-                AddReprintMessage(message1);
-
-                ColourConsole.WriteSuccessLine(message1);
+                ColourConsole.WriteErrorLine($"Error while packaging: {e}");
+                return false;
             }
-
-            ColourConsole.WriteSuccessLine($"{platform} package succeeded");
-            ColourConsole.WriteNormalLine(string.Empty);
         }
 
         if (!await OnAfterExport(cancellationToken))
@@ -313,9 +234,122 @@ public abstract class PackageToolBase<T>
         return Task.FromResult(true);
     }
 
+    protected virtual Task<bool> OnPostFolderHandled(PackagePlatform platform, string folderOrArchive,
+        CancellationToken cancellationToken)
+    {
+        return Task.FromResult(true);
+    }
+
     protected virtual Task<bool> OnAfterExport(CancellationToken cancellationToken)
     {
         return Task.FromResult(true);
+    }
+
+    private async Task<bool> PackageForPlatform(CancellationToken cancellationToken, PackagePlatform platform)
+    {
+        if (!await PrepareToExport(platform, cancellationToken))
+        {
+            ColourConsole.WriteErrorLine($"Failed to prepare to export to platform: {platform}");
+            return false;
+        }
+
+        var folder = Path.Join(options.OutputFolder, GetFolderNameForExport(platform));
+
+        Directory.CreateDirectory(folder);
+
+        bool succeeded = false;
+
+        for (int i = 0; i < options.Retries + 1; ++i)
+        {
+            if (!await Export(platform, folder, cancellationToken) || !Directory.Exists(folder))
+            {
+                if (i < options.Retries)
+                {
+                    ColourConsole.WriteNormalLine($"Failed to export {platform} to {folder}, will retry");
+
+                    await Task.Delay(TimeSpan.FromSeconds(2), cancellationToken);
+                }
+
+                continue;
+            }
+
+            succeeded = true;
+            break;
+        }
+
+        if (!succeeded)
+        {
+            ColourConsole.WriteErrorLine($"Export for platform {platform} failed too many times");
+            return false;
+        }
+
+        if (!await CopyExtraFiles(platform, folder, cancellationToken))
+        {
+            ColourConsole.WriteErrorLine($"Failed to copy extra files to {folder}");
+            return false;
+        }
+
+        if (!await OnPostProcessExportedFolder(platform, folder, cancellationToken))
+        {
+            ColourConsole.WriteErrorLine($"Failed to post process folder: {folder}");
+            return false;
+        }
+
+        string folderOrArchive;
+
+        if (options.Compress)
+        {
+            var zipFile = Path.Join(options.OutputFolder,
+                $"{GetFolderNameForExport(platform)}{GetCompressedExtensionForPlatform(platform)}");
+
+            if (options.CleanZips && File.Exists(zipFile))
+                File.Delete(zipFile);
+
+            if (!await Compress(platform, folder, zipFile, cancellationToken) || !File.Exists(zipFile))
+            {
+                ColourConsole.WriteErrorLine($"Failed to compress {platform} to {zipFile}");
+                return false;
+            }
+
+            string hash =
+                FileUtilities.HashToHex(await FileUtilities.CalculateSha3OfFile(zipFile, cancellationToken));
+
+            var message1 = $"Created {platform} archive: {zipFile}";
+            var message2 = $"SHA3: {hash}";
+
+            AddReprintMessage(string.Empty);
+            AddReprintMessage(message1);
+            AddReprintMessage(message2);
+
+            ColourConsole.WriteSuccessLine(message1);
+            ColourConsole.WriteNormalLine(message2);
+
+            folderOrArchive = zipFile;
+        }
+        else
+        {
+            ColourConsole.WriteNormalLine("Skipping compressing");
+
+            var message1 = $"Created {platform} at {folder}";
+
+            AddReprintMessage(string.Empty);
+            AddReprintMessage(message1);
+
+            ColourConsole.WriteSuccessLine(message1);
+
+            folderOrArchive = folder;
+        }
+
+        if (!await OnPostFolderHandled(platform, folderOrArchive, cancellationToken))
+        {
+            ColourConsole.WriteErrorLine(
+                $"Failed to run post processing on created folder/archive for platform: {platform}");
+            return false;
+        }
+
+        ColourConsole.WriteSuccessLine($"{platform} package succeeded");
+        ColourConsole.WriteNormalLine(string.Empty);
+        return true;
     }
 
     private void PrintReprints()

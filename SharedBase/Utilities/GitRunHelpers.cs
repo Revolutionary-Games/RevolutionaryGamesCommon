@@ -213,6 +213,27 @@ public static class GitRunHelpers
         }
     }
 
+    [UnsupportedOSPlatform("browser")]
+    public static async Task<string> GetCurrentBranch(string folder, CancellationToken cancellationToken)
+    {
+        var startInfo = PrepareToRunGit(folder, true);
+        startInfo.ArgumentList.Add("rev-parse");
+
+        // Try to force it being shown as a hash
+        startInfo.ArgumentList.Add("--symbolic-full-name");
+        startInfo.ArgumentList.Add("--abbrev-ref");
+        startInfo.ArgumentList.Add("HEAD");
+
+        var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken);
+        if (result.ExitCode != 0)
+        {
+            throw new Exception(
+                $"Failed to run rev-parse in repo, process exited with error: {result.FullOutput}");
+        }
+
+        return result.Output.Trim();
+    }
+
     /// <summary>
     ///   Handles the differences between checking a github PR or just a remote ref branch
     /// </summary>

@@ -15,4 +15,9 @@ public static class CopyHelpers
     {
         File.Copy(file, Path.Join(folder, Path.GetFileName(file)), overwrite);
     }
+
+    public static void MoveToFolder(string file, string folder, bool overwrite = true)
+    {
+        File.Move(file, Path.Join(folder, Path.GetFileName(file)), overwrite);
+    }
 }

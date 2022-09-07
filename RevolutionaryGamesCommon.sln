@@ -19,6 +19,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScriptsBase", "ScriptsBase\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Scripts", "Scripts\Scripts.csproj", "{1AA749DC-B17C-492A-86E2-47349E971057}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DevCenterCommunication", "DevCenterCommunication\DevCenterCommunication.csproj", "{C74779D6-D4FF-486D-B35D-6EA91BA72496}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -60,5 +62,9 @@ Global
 		{1AA749DC-B17C-492A-86E2-47349E971057}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1AA749DC-B17C-492A-86E2-47349E971057}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1AA749DC-B17C-492A-86E2-47349E971057}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C74779D6-D4FF-486D-B35D-6EA91BA72496}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C74779D6-D4FF-486D-B35D-6EA91BA72496}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C74779D6-D4FF-486D-B35D-6EA91BA72496}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C74779D6-D4FF-486D-B35D-6EA91BA72496}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

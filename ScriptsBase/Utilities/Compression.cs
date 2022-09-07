@@ -39,7 +39,7 @@ public static class Compression
 
     public static async Task GzipToTarget(string sourceFile, string targetFile, CancellationToken cancellationToken)
     {
-        if (targetFile.EndsWith(".gz"))
+        if (!targetFile.EndsWith(".gz"))
             throw new ArgumentException("Target should end in .gz");
 
         await using var reader = File.OpenRead(sourceFile);
