@@ -73,6 +73,7 @@ public class LocalizationCheckBase : CodeCheck
             {
                 PoSuffix = $".po{LOCALE_TEMP_SUFFIX}",
                 PotSuffix = $".pot{LOCALE_TEMP_SUFFIX}",
+                Quiet = true,
             }, cancellationToken);
 
             if (!result)

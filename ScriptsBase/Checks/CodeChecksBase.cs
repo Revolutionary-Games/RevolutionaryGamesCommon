@@ -8,6 +8,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Karambolo.PO;
 using Models;
 using SharedBase.Utilities;
 using Utilities;
@@ -118,6 +119,7 @@ public abstract class CodeChecksBase<T>
         }
 
         SetupRunDataObject();
+        EnsureAllComponentsAreLoaded();
 
         try
         {
@@ -261,5 +263,33 @@ public abstract class CodeChecksBase<T>
         }
 
         return 0;
+    }
+
+    /// <summary>
+    ///   Because we rebuild ourselves when checking, we need to be sure that we have loaded all of our DLLs before we
+    ///   start checks. That's what this method does by calling methods from all DLLs we need.
+    /// </summary>
+    private void EnsureAllComponentsAreLoaded()
+    {
+        var po = new POParser();
+
+        // This needs enough dummy data to get everything loaded
+        po.Parse(@"# A comment
+#
+msgid """"
+msgstr """"
+""Project-Id-Version: PROJECT VERSION\n""
+""Report-Msgid-Bugs-To: EMAIL@ADDRESS\n""
+""Language: en\n""
+""MIME-Version: 1.0\n""
+""Content-Type: text/plain; charset=UTF-8\n""
+""Content-Transfer-Encoding: 8bit\n""
+""Plural-Forms: nplurals=2; plural=n != 1;\n""
+
+#: some file:3
+#, fuzzy
+msgid ""MSG_ID""
+msgstr ""Translation""
+");
     }
 }

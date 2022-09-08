@@ -16,7 +16,7 @@ using Utilities;
 public abstract class LocalizationUpdateBase<T>
     where T : LocalizationOptionsBase
 {
-    private readonly T options;
+    protected readonly T options;
 
     private readonly Dictionary<string, string> alreadyFoundTools = new();
 
@@ -52,7 +52,8 @@ public abstract class LocalizationUpdateBase<T>
 
     public async Task<bool> Run(CancellationToken cancellationToken)
     {
-        ColourConsole.WriteInfoLine($"Extracting translations template {TranslationTemplateFileName}");
+        if (!options.Quiet)
+            ColourConsole.WriteInfoLine($"Extracting translations template {TranslationTemplateFileName}");
 
         if (!await RunTemplateUpdate(cancellationToken))
             return false;
@@ -64,8 +65,11 @@ public abstract class LocalizationUpdateBase<T>
             return false;
         }
 
-        ColourConsole.WriteSuccessLine("Template updated");
-        ColourConsole.WriteInfoLine($"Updating individual languages ({PoSuffix} files)");
+        if (!options.Quiet)
+        {
+            ColourConsole.WriteSuccessLine("Template updated");
+            ColourConsole.WriteInfoLine($"Updating individual languages ({PoSuffix} files)");
+        }
 
         foreach (var locale in Locales)
         {
@@ -78,7 +82,8 @@ public abstract class LocalizationUpdateBase<T>
 
         await PostProcessTranslations(cancellationToken);
 
-        ColourConsole.WriteSuccessLine("Done updating locales");
+        if (!options.Quiet)
+            ColourConsole.WriteSuccessLine("Done updating locales");
         return true;
     }
 
@@ -93,13 +98,15 @@ public abstract class LocalizationUpdateBase<T>
 
         if (File.Exists(target))
         {
-            ColourConsole.WriteNormalLine($"Updating locale {locale}");
+            if (!options.Quiet)
+                ColourConsole.WriteNormalLine($"Updating locale {locale}");
 
             return RunTranslationUpdate(locale, target, cancellationToken);
         }
 
         // TODO: this is untested
-        ColourConsole.WriteNormalLine($"Creating locale {locale}");
+        if (!options.Quiet)
+            ColourConsole.WriteNormalLine($"Creating locale {locale}");
         return RunTranslationCreate(locale, target, cancellationToken);
     }
 
@@ -162,13 +169,22 @@ public abstract class LocalizationUpdateBase<T>
     {
         var startInfo = GetParametersToRunExtraction();
 
-        // Showing the output about where it extracts stuff from is probably good always
-        var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken, false);
+        // Showing the output about where it extracts stuff is good by default
+        var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken, options.Quiet);
 
         if (result.ExitCode != 0)
         {
-            ColourConsole.WriteErrorLine(
-                $"Failed to run text extraction (exit: {result.ExitCode}) see messages above");
+            if (options.Quiet)
+            {
+                ColourConsole.WriteErrorLine(
+                    $"Failed to run text extraction (exit: {result.ExitCode}): {result.FullOutput}");
+            }
+            else
+            {
+                ColourConsole.WriteErrorLine(
+                    $"Failed to run text extraction (exit: {result.ExitCode}) see messages above");
+            }
+
             return false;
         }
 

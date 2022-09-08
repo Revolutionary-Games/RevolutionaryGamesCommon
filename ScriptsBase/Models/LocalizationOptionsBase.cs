@@ -10,4 +10,7 @@ public class LocalizationOptionsBase : ScriptOptionsBase
 
     [Option("po-suffix", Default = null, HelpText = "Override the default .po file suffix")]
     public string? PoSuffix { get; set; }
+
+    [Option('q', "quiet", Default = false, HelpText = "Disable showing translation output")]
+    public bool Quiet { get; set; }
 }
