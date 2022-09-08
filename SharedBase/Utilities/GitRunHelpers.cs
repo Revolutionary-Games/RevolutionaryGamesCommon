@@ -159,7 +159,7 @@ public static class GitRunHelpers
     /// <exception cref="Exception">If getting the commit hash fails</exception>
     [UnsupportedOSPlatform("browser")]
     public static async Task<string> GetCurrentCommit(string folder, CancellationToken cancellationToken,
-        int attempts = 4)
+        int attempts = 8)
     {
         int i = 0;
         while (true)
