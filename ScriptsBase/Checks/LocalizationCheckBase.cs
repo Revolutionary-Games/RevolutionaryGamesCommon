@@ -2,14 +2,13 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FileTypes;
 using Karambolo.PO;
-using SharedBase.Utilities;
+using Models;
 using Utilities;
 
 /// <summary>
@@ -22,7 +21,21 @@ public class LocalizationCheckBase : CodeCheck
 
     protected bool issuesFound;
 
+    private readonly Func<LocalizationOptionsBase, CancellationToken, Task<bool>> runLocalizationTool;
+
     private readonly POParser parser = CreateParser();
+
+    /// <summary>
+    ///   Creates a new localization check
+    /// </summary>
+    /// <param name="runLocalizationTool">
+    ///   A callback that runs the localization update tool with given options.
+    ///   Required for this to detect outdated things in localization files
+    /// </param>
+    public LocalizationCheckBase(Func<LocalizationOptionsBase, CancellationToken, Task<bool>> runLocalizationTool)
+    {
+        this.runLocalizationTool = runLocalizationTool;
+    }
 
     public static POParser CreateParser()
     {
@@ -50,15 +63,22 @@ public class LocalizationCheckBase : CodeCheck
         {
             CreateDuplicatesOfFiles(poFiles, cancellationToken);
 
-            // Run a script to write updates to the temp files
-            var startInfo = GetLocalizationUpdateCommand();
+            // Run the localization update. This is this way as running multiple instances of a dotnet script
+            // while stuff is compiling will fail
+            runData.OutputInfoWithMutex("Running sub-tool to update localization files");
 
-            var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken, true);
+            // TODO: the following will output even without having the console mutes (as it has no clue CodeCheckRun
+            // exists)
+            var result = await runLocalizationTool(new LocalizationOptionsBase
+            {
+                PoSuffix = $".po{LOCALE_TEMP_SUFFIX}",
+                PotSuffix = $".pot{LOCALE_TEMP_SUFFIX}",
+            }, cancellationToken);
 
-            if (result.ExitCode != 0)
+            if (!result)
             {
                 runData.ReportError("Failed to run localization generation script " +
-                    $"to check if current files are up to date: {result.FullOutput}");
+                    "to check if current files are up to date");
                 return;
             }
 
@@ -164,22 +184,6 @@ public class LocalizationCheckBase : CodeCheck
             DeleteDuplicatesOfFiles(poFiles);
             DeletePotDuplicates();
         }
-    }
-
-    protected virtual ProcessStartInfo GetLocalizationUpdateCommand()
-    {
-        var startInfo = new ProcessStartInfo("dotnet");
-        startInfo.ArgumentList.Add("run");
-        startInfo.ArgumentList.Add("--project");
-        startInfo.ArgumentList.Add("Scripts");
-        startInfo.ArgumentList.Add("--");
-        startInfo.ArgumentList.Add("localization");
-        startInfo.ArgumentList.Add("--po-suffix");
-        startInfo.ArgumentList.Add($".po{LOCALE_TEMP_SUFFIX}");
-        startInfo.ArgumentList.Add("--pot-suffix");
-        startInfo.ArgumentList.Add($".pot{LOCALE_TEMP_SUFFIX}");
-
-        return startInfo;
     }
 
     private static IEnumerable<string> EnumerateAllPoFiles(string start)
