@@ -47,22 +47,7 @@ public static class Compression
         await using var fileWriter = File.OpenWrite(targetFile);
         await using var gzWriter = new GZipStream(fileWriter, CompressionLevel.Optimal);
 
-        var buffer = new byte[1024 * 16];
-
-        Task? writeTask = null;
-
-        while (true)
-        {
-            var read = await reader.ReadAsync(buffer, cancellationToken);
-
-            if (writeTask != null)
-                await writeTask;
-
-            if (read == 0)
-                break;
-
-            writeTask = gzWriter.WriteAsync(buffer, 0, read, cancellationToken);
-        }
+        await reader.CopyToAsync(gzWriter, cancellationToken);
     }
 
     public static Task CompressFolder(string baseFolder, string folder, string archiveFile,
