@@ -21,4 +21,6 @@ public class CommunicationConstants
     ///   Maximum size of a devbuild file
     /// </summary>
     public const long MAX_DEV_BUILD_UPLOAD_SIZE = 50 * GlobalConstants.MEBIBYTE;
+
+    public const int MAXIMUM_TOKEN_LENGTH = 10000;
 }
