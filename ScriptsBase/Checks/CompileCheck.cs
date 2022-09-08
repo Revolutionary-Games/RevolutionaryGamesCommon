@@ -1,4 +1,4 @@
-namespace ScriptsBase.Checks;
+﻿namespace ScriptsBase.Checks;
 
 using System;
 using System.Diagnostics;
@@ -19,6 +19,10 @@ public class CompileCheck : CodeCheck
         var startInfo = new ProcessStartInfo("dotnet");
         startInfo.ArgumentList.Add("build");
         startInfo.ArgumentList.Add(runData.SolutionFile);
+
+        // TODO: should we just have build here on Windows (or skipped entirely)? As the Scripts project is likely
+        // locked as it is running this code
+
         startInfo.ArgumentList.Add("/t:Clean,Build");
         startInfo.ArgumentList.Add("/warnaserror");
 
