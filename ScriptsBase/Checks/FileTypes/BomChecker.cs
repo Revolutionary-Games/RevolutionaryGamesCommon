@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 public class BomChecker : FileCheck
 {
-    private static readonly byte[] BomBytes = { 239, 187, 191 };
+    public static readonly byte[] BomBytes = { 239, 187, 191 };
 
     private readonly Mode checkMode;
 
