@@ -177,6 +177,12 @@ public abstract class PackageToolBase<T>
 
     protected virtual async Task<bool> CompressSourceCode(CancellationToken cancellationToken)
     {
+        if (options.CleanZips && File.Exists(CompressedSourceLocation))
+        {
+            ColourConsole.WriteNormalLine($"Deleting {CompressedSourceLocation} before creating it again");
+            File.Delete(CompressedSourceLocation);
+        }
+
         ColourConsole.WriteNormalLine("Compressing source code...");
         try
         {
@@ -200,6 +206,12 @@ public abstract class PackageToolBase<T>
     protected virtual async Task<bool> Compress(PackagePlatform platform, string folder, string archiveFile,
         CancellationToken cancellationToken)
     {
+        if (options.CleanZips && File.Exists(archiveFile))
+        {
+            ColourConsole.WriteNormalLine($"Deleting {archiveFile} before creating it again");
+            File.Delete(archiveFile);
+        }
+
         ColourConsole.WriteInfoLine($"Compressing {archiveFile}");
         try
         {
