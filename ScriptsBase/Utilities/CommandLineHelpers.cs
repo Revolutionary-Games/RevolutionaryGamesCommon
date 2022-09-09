@@ -86,5 +86,8 @@ public static class CommandLineHelpers
     public static void HandleDefaultOptions(ScriptOptionsBase baseOptions)
     {
         ColourConsole.DebugPrintingEnabled = baseOptions.Verbose;
+
+        if (baseOptions.DisableColour)
+            ColourConsole.DisableColour();
     }
 }

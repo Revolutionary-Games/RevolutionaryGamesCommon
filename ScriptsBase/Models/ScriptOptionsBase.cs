@@ -9,4 +9,7 @@ public abstract class ScriptOptionsBase
 {
     [Option('v', "verbose", Required = false, HelpText = "Set output to verbose messages")]
     public bool Verbose { get; set; }
+
+    [Option("disable-colour", Default = false, HelpText = "Disable colour output")]
+    public bool DisableColour { get; set; }
 }

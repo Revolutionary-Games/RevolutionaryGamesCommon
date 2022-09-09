@@ -14,14 +14,16 @@ public static class ColourConsole
     /// </summary>
     public const bool UseCustomColourHandling = true;
 
-    public static readonly Lazy<bool> ColourIsPrevented = new(CheckNoColourEnvironmentVariable);
-
     /// <summary>
     ///   Resets terminal to default colour
     /// </summary>
     private const string ResetForegroundColour = "\x1B[39m\x1B[22m";
 
     private const string ResetBackgroundColour = "\x1B[49m";
+
+    private static readonly Lazy<bool> ColourIsPrevented = new(CheckNoColourEnvironmentVariable);
+
+    private static bool forceDisableColour;
 
     /// <summary>
     ///   Enables or disables the debug write methods in this class.
@@ -99,7 +101,7 @@ public static class ColourConsole
 
     public static void WriteLineWithColour(string message, ConsoleColor colour)
     {
-        if (ColourIsPrevented.Value)
+        if (forceDisableColour || ColourIsPrevented.Value)
         {
             Console.WriteLine(message);
             return;
@@ -127,7 +129,7 @@ public static class ColourConsole
 
     public static void WriteWithColour(string message, ConsoleColor colour)
     {
-        if (ColourIsPrevented.Value)
+        if (forceDisableColour || ColourIsPrevented.Value)
         {
             Console.Write(message);
             return;
@@ -155,7 +157,7 @@ public static class ColourConsole
 
     public static void ResetColor()
     {
-        if (ColourIsPrevented.Value)
+        if (forceDisableColour || ColourIsPrevented.Value)
         {
             return;
         }
@@ -169,6 +171,14 @@ public static class ColourConsole
         // }
 
         Console.ResetColor();
+    }
+
+    /// <summary>
+    ///   Disables all colour output
+    /// </summary>
+    public static void DisableColour()
+    {
+        forceDisableColour = true;
     }
 
     private static string GetAnsiForegroundColour(ConsoleColor color)
