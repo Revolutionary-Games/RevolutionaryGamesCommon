@@ -6,13 +6,13 @@ using CommandLine;
 [Verb("package", HelpText = "Package the project for distribution")]
 public abstract class PackageOptionsBase : ScriptOptionsBase
 {
-    [Option('o', "output", Default = "builds", HelpText = "Output folder to package to")]
+    [Option('o', "output", Default = "builds", MetaValue = "FOLDER", HelpText = "Output folder to package to")]
     public string OutputFolder { get; set; } = "builds";
 
     [Option('s', "source", Default = null, HelpText = "Include source code in export")]
     public bool? SourceCode { get; set; }
 
-    [Option('r', "retries", Default = 2, HelpText = "How many times to retry export if it fails")]
+    [Option('r', "retries", Default = 2, MetaValue = "RETRIES", HelpText = "How many times to retry export if it fails")]
     public int Retries { get; set; }
 
     [Option("clean-zip", Default = false, HelpText = "Delete package zips before writing them again")]

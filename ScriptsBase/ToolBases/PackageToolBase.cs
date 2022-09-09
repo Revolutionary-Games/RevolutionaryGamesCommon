@@ -41,7 +41,7 @@ public abstract class PackageToolBase<T>
 
     protected string CompressedSourceLocation => Path.Join(options.OutputFolder, CompressedSourceName);
 
-    public async Task<bool> Run(CancellationToken cancellationToken)
+    public virtual async Task<bool> Run(CancellationToken cancellationToken)
     {
         if (options.Platforms.Count < 1)
         {
@@ -374,5 +374,7 @@ public abstract class PackageToolBase<T>
         {
             ColourConsole.WriteNormalLine(message);
         }
+
+        reprintMessages.Clear();
     }
 }
