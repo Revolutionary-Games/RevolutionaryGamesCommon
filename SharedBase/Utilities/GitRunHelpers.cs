@@ -151,66 +151,43 @@ public static class GitRunHelpers
     /// </summary>
     /// <param name="folder">The repository folder</param>
     /// <param name="cancellationToken">Cancellation token for the git process</param>
-    /// <param name="attempts">
-    ///   How many times to attempt getting the commit. This seems to spuriously fail with 0 exit code and
-    ///   no output so this parameter guards against that.
-    /// </param>
     /// <returns>The current commit hash</returns>
     /// <exception cref="Exception">If getting the commit hash fails</exception>
     [UnsupportedOSPlatform("browser")]
-    public static async Task<string> GetCurrentCommit(string folder, CancellationToken cancellationToken,
-        int attempts = 8)
+    public static async Task<string> GetCurrentCommit(string folder, CancellationToken cancellationToken)
     {
-        int i = 0;
-        while (true)
+        var startInfo = PrepareToRunGit(folder, true);
+        startInfo.ArgumentList.Add("rev-parse");
+
+        // Try to force it being shown as a hash
+        startInfo.ArgumentList.Add("--verify");
+        startInfo.ArgumentList.Add("HEAD");
+
+        var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken);
+        if (result.ExitCode != 0)
         {
-            if (i > 0)
-                await Task.Delay(TimeSpan.FromSeconds(i), cancellationToken);
-
-            ++i;
-
-            var startInfo = PrepareToRunGit(folder, true);
-            startInfo.ArgumentList.Add("rev-parse");
-
-            // Try to force it being shown as a hash
-            startInfo.ArgumentList.Add("--verify");
-            startInfo.ArgumentList.Add("HEAD");
-
-            var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken);
-            if (result.ExitCode != 0)
-            {
-                if (i < attempts)
-                    continue;
-
-                throw new Exception(
-                    $"Failed to run rev-parse in repo, process exited with error: {result.FullOutput}");
-            }
-
-            var resultText = result.Output.Trim();
-
-            if (string.IsNullOrEmpty(resultText))
-            {
-                if (i < attempts)
-                    continue;
-
-                throw new Exception(
-                    $"Failed to run rev-parse in repo, empty output (code: {result.ExitCode}). " +
-                    $"Error output (if any): {result.ErrorOut}, normal output: {result.Output}");
-            }
-
-            // Looks like sometimes the result is truncated hash, try to detect that here and fail
-            if (resultText.Length < 20)
-            {
-                if (i < attempts)
-                    continue;
-
-                throw new Exception(
-                    $"Failed to run rev-parse in repo, output is not full hash length (code: {result.ExitCode}). " +
-                    $"Error output (if any): {result.ErrorOut}, normal output: {result.Output}");
-            }
-
-            return resultText;
+            throw new Exception(
+                $"Failed to run rev-parse in repo, process exited with error: {result.FullOutput}");
         }
+
+        var resultText = result.Output.Trim();
+
+        if (string.IsNullOrEmpty(resultText))
+        {
+            throw new Exception(
+                $"Failed to run rev-parse in repo, empty output (code: {result.ExitCode}). " +
+                $"Error output (if any): {result.ErrorOut}, normal output: {result.Output}");
+        }
+
+        // Looks like sometimes the result is truncated hash, try to detect that here and fail
+        if (resultText.Length < 20)
+        {
+            throw new Exception(
+                $"Failed to run rev-parse in repo, output is not full hash length (code: {result.ExitCode}). " +
+                $"Error output (if any): {result.ErrorOut}, normal output: {result.Output}");
+        }
+
+        return resultText;
     }
 
     [UnsupportedOSPlatform("browser")]
@@ -231,7 +208,16 @@ public static class GitRunHelpers
                 $"Failed to run rev-parse in repo, process exited with error: {result.FullOutput}");
         }
 
-        return result.Output.Trim();
+        var resultText = result.Output.Trim();
+
+        if (string.IsNullOrEmpty(resultText))
+        {
+            throw new Exception(
+                $"Failed to run rev-parse in repo (for branch name), empty output (code: {result.ExitCode}). " +
+                $"Error output (if any): {result.ErrorOut}, normal output: {result.Output}");
+        }
+
+        return resultText;
     }
 
     /// <summary>
