@@ -155,7 +155,7 @@ public static class ColourConsole
         }
     }
 
-    public static void ResetColor()
+    public static void ResetColour()
     {
         if (forceDisableColour || ColourIsPrevented.Value)
         {
