@@ -20,10 +20,22 @@ public class CompileCheck : CodeCheck
         startInfo.ArgumentList.Add("build");
         startInfo.ArgumentList.Add(runData.SolutionFile);
 
-        // TODO: should we just have build here on Windows (or skipped entirely)? As the Scripts project is likely
-        // locked as it is running this code
+        // Our files are locked on Windows when scripts are executing so we can't do a full rebuild
+        // TODO: find a better workaround. See: https://github.com/Revolutionary-Games/Thrive/issues/3766
+        if (OperatingSystem.IsWindows())
+        {
+            runData.OutputWarningWithMutex(
+                "NOTE: on Windows this compile check can't rebuild due to the scripts being in use currently. " +
+                "As such you should manually rebuild with warnings enabled to make sure there aren't warnings");
+            runData.OutputInfoWithMutex("See: https://github.com/Revolutionary-Games/Thrive/issues/3766");
 
-        startInfo.ArgumentList.Add("/t:Clean,Build");
+            startInfo.ArgumentList.Add("/t:Build");
+        }
+        else
+        {
+            startInfo.ArgumentList.Add("/t:Clean,Build");
+        }
+
         startInfo.ArgumentList.Add("/warnaserror");
 
         var mutex = runData.BuildMutex;
