@@ -18,7 +18,7 @@ public abstract class PackageOptionsBase : ScriptOptionsBase
     [Option("clean-zip", Default = false, HelpText = "Delete package zips before writing them again")]
     public bool CleanZips { get; set; }
 
-    [Value(0, MetaName = "Platforms", HelpText = "Platforms to package for (leave blank for default)")]
+    [Value(0, MetaName = "PLATFORMS", HelpText = "Platforms to package for (leave blank for default)")]
     public IList<PackagePlatform> Platforms { get; set; } = new List<PackagePlatform>();
 
     public abstract bool Compress { get; }

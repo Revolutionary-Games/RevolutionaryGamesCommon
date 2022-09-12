@@ -27,14 +27,21 @@ public static class ConsoleHelpers
     ///   Waits until a new line of input is available
     /// </summary>
     /// <param name="cancellationToken">A cancellation token that should become canceled if CTRL-C is pressed</param>
+    /// <param name="customPrompt">If not null will be used instead of the normal prompt</param>
     /// <returns>True if execution should continue, false if cancellation was requested</returns>
     /// <remarks>
     ///   <para>
     ///     The cancellation token can be setup for example with <see cref="CreateSimpleConsoleCancellationSource"/>
     ///   </para>
     /// </remarks>
-    public static async Task<bool> WaitForInputToContinue(CancellationToken cancellationToken)
+    public static async Task<bool> WaitForInputToContinue(CancellationToken cancellationToken,
+        string? customPrompt = null)
     {
+        customPrompt ??= $"{Environment.NewLine}Please press enter to continue, or CTRL+C to cancel";
+
+        if (!string.IsNullOrEmpty(customPrompt))
+            ColourConsole.WriteNormalLine(customPrompt);
+
         CleanConsoleStateForInput();
 
         var readKeyTask = new Task(() => _ = Console.ReadLine());
@@ -54,6 +61,20 @@ public static class ConsoleHelpers
             return false;
 
         return true;
+    }
+
+    public static Task<string> PromptForUserInput(string prompt, CancellationToken cancellationToken)
+    {
+        ColourConsole.WriteNormalLine($"> {prompt}: ");
+
+        CleanConsoleStateForInput();
+
+        var readKeyTask =
+            new Task<string>(() => Console.ReadLine() ?? throw new Exception("No more stdin input lines"));
+
+        readKeyTask.Start();
+
+        return readKeyTask.WaitAsync(cancellationToken);
     }
 
     public static CancellationTokenSource CreateSimpleConsoleCancellationSource()
