@@ -1,6 +1,7 @@
 ﻿namespace ScriptsBase.Utilities;
 
 using System;
+using System.IO;
 using Models;
 
 /// <summary>
@@ -37,5 +38,14 @@ public static class ThriveProperties
             default:
                 throw new ArgumentOutOfRangeException(nameof(platform), platform, null);
         }
+    }
+
+    public static string GetGodotTemplateInstallPath(string godotVersionFull)
+    {
+        if (!OperatingSystem.IsLinux())
+            throw new NotImplementedException("Currently only implemented for Linux");
+
+        return Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+            $".local/share/godot/templates/{godotVersionFull}");
     }
 }
