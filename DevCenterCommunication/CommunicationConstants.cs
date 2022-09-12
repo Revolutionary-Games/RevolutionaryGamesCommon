@@ -23,4 +23,8 @@ public class CommunicationConstants
     public const long MAX_DEV_BUILD_UPLOAD_SIZE = 50 * GlobalConstants.MEBIBYTE;
 
     public const int MAXIMUM_TOKEN_LENGTH = 10000;
+
+    public const int MAX_DEBUG_SYMBOL_OFFER_BATCH = 50;
+
+    public const long MAX_DEBUG_SYMBOL_SIZE = GlobalConstants.MEBIBYTE * 500;
 }
