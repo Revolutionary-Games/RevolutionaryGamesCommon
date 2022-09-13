@@ -3,6 +3,8 @@ namespace SharedBase.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
+using System.Linq;
 using System.Runtime.Versioning;
 using System.Text;
 using System.Threading;
@@ -88,6 +90,45 @@ public static class ProcessRunHelpers
                 throw;
             }
         }
+    }
+
+    /// <summary>
+    ///   Adds a new folder to the PATH variable for a process start info if missing
+    /// </summary>
+    /// <param name="startInfo">The start info to modify</param>
+    /// <param name="extraPathItem">The PATH item that needs to exist</param>
+    /// <param name="includeCurrentPath">If true the current PATH environment variable is read as a default value</param>
+    /// <returns>True if the PATH was modified, false if no modification was necessary</returns>
+    /// <exception cref="ArgumentException">If the extra folder doesn't exist</exception>
+    [UnsupportedOSPlatform("browser")]
+    public static bool AddToPathInStartInfo(ProcessStartInfo startInfo, string extraPathItem,
+        bool includeCurrentPath = true)
+    {
+        if (!Directory.Exists(extraPathItem))
+            throw new ArgumentException("Folder to add to PATH must exist", nameof(extraPathItem));
+
+        var defaultValue = new KeyValuePair<string, string?>("PATH",
+            includeCurrentPath ? Environment.GetEnvironmentVariable("PATH") ?? string.Empty : string.Empty);
+
+        var path = startInfo.Environment.FirstOrDefault(p => p.Key.ToUpperInvariant() == "PATH", defaultValue);
+
+        // Don't need to do anything if already exists
+        if (path.Value?.Contains(extraPathItem) == true)
+            return false;
+
+        string newValue;
+
+        if (string.IsNullOrEmpty(path.Value))
+        {
+            newValue = $"{extraPathItem}";
+        }
+        else
+        {
+            newValue = $"{extraPathItem}{Path.PathSeparator}{path.Value}";
+        }
+
+        startInfo.Environment[path.Key] = newValue;
+        return true;
     }
 
     /// <summary>
