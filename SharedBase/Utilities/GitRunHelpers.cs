@@ -227,11 +227,6 @@ public static class GitRunHelpers
     /// <param name="refToCheckout">Ref from Github that should be checked out locally</param>
     /// <param name="skipLFS">If true LFS handling is skipped</param>
     /// <param name="cancellationToken">Cancel the operation early</param>
-    /// <remarks>
-    ///   <para>
-    ///     If this is updated "ci_executor.rb" needs also know how to checkout the new things
-    ///   </para>
-    /// </remarks>
     [UnsupportedOSPlatform("browser")]
     public static async Task SmartlyCheckoutRef(string folder, string refToCheckout, bool skipLFS,
         CancellationToken cancellationToken)
