@@ -240,10 +240,14 @@ public static class ProcessRunHelpers
             }
             catch (Exception)
             {
-                result.ErrorDisposingProcess = true;
+                result.ErrorDisposingProcessOrSettingResult = true;
             }
 
-            taskCompletionSource.SetResult(result);
+            if (!taskCompletionSource.TrySetResult(result))
+            {
+                // This should only happen if the process was canceled
+                result.ErrorDisposingProcessOrSettingResult = true;
+            }
         }
 
         async void WaitBeforeExiting()
@@ -529,6 +533,6 @@ public static class ProcessRunHelpers
 
         public bool ErrorInInputLineClosing { get; internal set; }
 
-        public bool ErrorDisposingProcess { get; internal set; }
+        public bool ErrorDisposingProcessOrSettingResult { get; internal set; }
     }
 }
