@@ -26,7 +26,7 @@ public static class CopyHelpers
     public static void CopyFoldersRecursivelyWithSymlinks(string fromFolder, string targetFolder,
         bool overwrite = false)
     {
-        if (Directory.Exists(fromFolder))
+        if (!Directory.Exists(fromFolder))
             throw new ArgumentException("copy from must be an existing folder", nameof(fromFolder));
 
         Directory.CreateDirectory(targetFolder);
