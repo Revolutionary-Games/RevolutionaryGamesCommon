@@ -44,6 +44,21 @@ public static class ConsoleHelpers
 
         CleanConsoleStateForInput();
 
+        if (Console.IsInputRedirected)
+        {
+            ColourConsole.WriteNormalLine("Input detected as redirected, trying to verify...");
+
+            try
+            {
+                Console.ReadKey(false);
+            }
+            catch (InvalidOperationException)
+            {
+                ColourConsole.WriteWarningLine("Input is redirected (from file), continuing immediately");
+                return true;
+            }
+        }
+
         var readKeyTask = new Task(() => _ = Console.ReadLine());
 
         readKeyTask.Start();
