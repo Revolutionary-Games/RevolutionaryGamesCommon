@@ -1,6 +1,7 @@
 namespace ScriptsBase.Utilities;
 
 using System;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -78,14 +79,61 @@ public static class ConsoleHelpers
         return true;
     }
 
-    public static Task<string> PromptForUserInput(string prompt, CancellationToken cancellationToken)
+    public static Task<string> PromptForUserInput(string prompt, bool showInputText,
+        CancellationToken cancellationToken)
     {
-        ColourConsole.WriteNormalLine($"> {prompt}: ");
+        ColourConsole.WriteNormal($"> {prompt}: ");
 
         CleanConsoleStateForInput();
 
         var readKeyTask =
-            new Task<string>(() => Console.ReadLine() ?? throw new Exception("No more stdin input lines"));
+            new Task<string>(() =>
+            {
+                // When input text is hidden we need to use a more advanced reading method
+                if (!showInputText)
+                {
+                    var stringBuilder = new StringBuilder();
+
+                    while (true)
+                    {
+                        // Intercept is true to not show the input text
+                        try
+                        {
+                            var info = Console.ReadKey(true);
+
+                            cancellationToken.ThrowIfCancellationRequested();
+
+                            if (info.Key == ConsoleKey.Enter)
+                                break;
+
+                            if (info.Key == ConsoleKey.C && (info.Modifiers & ConsoleModifiers.Control) != 0)
+                                throw new OperationCanceledException();
+
+                            if (info.KeyChar == 0)
+                            {
+                                ColourConsole.WriteErrorLine($"Unsupported key was pressed (unknown text): {info.Key}");
+                                continue;
+                            }
+
+                            stringBuilder.Append(info.KeyChar);
+                        }
+                        catch (InvalidOperationException e)
+                        {
+                            ColourConsole.WriteNormalLine(
+                                $"Single key read is not supported, falling back to reading a line: {e}");
+                            return Console.ReadLine() ?? throw new Exception("No more stdin input lines");
+                        }
+                    }
+
+                    // As our prompt doesn't end with a newline write one now after reading
+                    // This isn't needed in the ReadLine case as that echoes the user's newline press to the terminal
+                    // already, so if we also output a newline there's a duplicate newline
+                    ColourConsole.WriteNormalLine(string.Empty);
+                    return stringBuilder.ToString();
+                }
+
+                return Console.ReadLine() ?? throw new Exception("No more stdin input lines");
+            });
 
         readKeyTask.Start();
 
