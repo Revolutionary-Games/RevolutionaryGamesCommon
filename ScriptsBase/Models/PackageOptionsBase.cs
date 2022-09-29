@@ -2,6 +2,7 @@
 
 using System.Collections.Generic;
 using CommandLine;
+using SharedBase.Models;
 
 [Verb("package", HelpText = "Package the project for distribution")]
 public abstract class PackageOptionsBase : ScriptOptionsBase
