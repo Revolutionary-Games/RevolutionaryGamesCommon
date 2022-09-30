@@ -31,16 +31,24 @@ public class SignedDataHandler
     }
 
     [UnsupportedOSPlatform("browser")]
-    public async Task<string?> VerifySignature(byte[] data, byte[] providedSignature,
+    public Task<string?> VerifySignature(byte[] data, byte[] providedSignature,
         IEnumerable<string> allowedKeyFiles)
+    {
+        return VerifySignature(data, providedSignature,
+            allowedKeyFiles.Select(k => new Tuple<Func<Task<byte[]>>, string>(() => File.ReadAllBytesAsync(k), k)));
+    }
+
+    [UnsupportedOSPlatform("browser")]
+    public async Task<string?> VerifySignature(byte[] data, byte[] providedSignature,
+        IEnumerable<Tuple<Func<Task<byte[]>>, string>> allowedKeyData)
     {
         var now = DateTime.Now;
 
         bool foundCertificate = false;
 
-        foreach (var potentialKeyFile in allowedKeyFiles)
+        foreach (var (potentialKeyDataRetriever, keyName) in allowedKeyData)
         {
-            using var certificate = new X509Certificate2(await File.ReadAllBytesAsync(potentialKeyFile),
+            using var certificate = new X509Certificate2(await potentialKeyDataRetriever(),
                 (SecureString?)null, X509KeyStorageFlags.EphemeralKeySet);
 
             // Ignore certificates that are expired or not valid yet
@@ -52,12 +60,12 @@ public class SignedDataHandler
             var key = certificate.GetRSAPublicKey();
 
             if (key == null)
-                throw new InvalidOperationException($"No public RSA key loadable from {potentialKeyFile}");
+                throw new InvalidOperationException($"No public RSA key loadable from {keyName}");
 
             if (key.VerifyData(data, providedSignature, HashAlgorithmName.SHA512, RSASignaturePadding.Pkcs1))
             {
                 // Signature is correct with this key
-                return potentialKeyFile;
+                return keyName;
             }
         }
 
