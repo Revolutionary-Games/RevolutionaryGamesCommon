@@ -40,4 +40,14 @@ public class LauncherThriveInformation
     {
         return Versions.FirstOrDefault(v => v.Id == id);
     }
+
+    public bool IsLatest(ThriveVersionLauncherInfo version)
+    {
+        return LatestStable == version.Id;
+    }
+
+    public ThriveVersionLauncherInfo LatestVersion()
+    {
+        return Versions.First(v => v.Id == LatestStable);
+    }
 }
