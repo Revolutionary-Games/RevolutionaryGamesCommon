@@ -9,15 +9,21 @@ using System.ComponentModel.DataAnnotations;
 /// </summary>
 public class DownloadableInfo
 {
-    public DownloadableInfo(string fileSha3, Dictionary<string, Uri> mirrors)
+    public DownloadableInfo(string fileSha3, string localFileName, Dictionary<string, Uri> mirrors)
     {
         FileSha3 = fileSha3;
+        LocalFileName = localFileName;
         Mirrors = mirrors;
     }
 
     [Required]
     [StringLength(500, MinimumLength = 10)]
     public string FileSha3 { get; }
+
+    /// <summary>
+    ///   The filename to use locally after downloading this
+    /// </summary>
+    public string LocalFileName { get; }
 
     /// <summary>
     ///   List of mirrors where this can be downloaded from. The key is the mirror name identifier (which must also

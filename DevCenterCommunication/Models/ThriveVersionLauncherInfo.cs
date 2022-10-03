@@ -36,4 +36,9 @@ public class ThriveVersionLauncherInfo
     [MinLength(1)]
     [MaxLength(50)]
     public Dictionary<PackagePlatform, DownloadableInfo> Platforms { get; }
+
+    /// <summary>
+    ///   True when this is a stable version (non-beta)
+    /// </summary>
+    public bool Stable { get; set; } = true;
 }
