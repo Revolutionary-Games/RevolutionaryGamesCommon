@@ -1,4 +1,4 @@
-namespace Scripts;
+﻿namespace Scripts;
 
 using System.Collections.Generic;
 using ScriptsBase.Checks;
