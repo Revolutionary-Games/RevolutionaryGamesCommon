@@ -2,7 +2,7 @@
 
 using System;
 using System.IO;
-using Models;
+using SharedBase.Models;
 
 /// <summary>
 ///   Properties about Thrive that are needed by multiple project's scripts

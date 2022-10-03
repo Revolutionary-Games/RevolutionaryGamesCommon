@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Models;
+using SharedBase.Models;
 using SharedBase.Utilities;
 using Utilities;
 
