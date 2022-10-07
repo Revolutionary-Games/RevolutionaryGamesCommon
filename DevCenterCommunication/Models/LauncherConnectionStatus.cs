@@ -1,6 +1,7 @@
 namespace DevCenterCommunication.Models;
 
 using System;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
 public class LauncherConnectionStatus
@@ -27,9 +28,11 @@ public class LauncherConnectionStatus
     [JsonPropertyName("valid")]
     public bool Valid { get; set; }
 
+    [Required]
     [JsonPropertyName("username")]
     public string Username { get; set; }
 
+    [Required]
     [JsonPropertyName("email")]
     public string Email { get; set; }
 
