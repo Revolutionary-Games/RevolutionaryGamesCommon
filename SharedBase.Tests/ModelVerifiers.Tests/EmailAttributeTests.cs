@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text;
 using SharedBase.ModelVerifiers;
-using Utilities;
+using SharedBase.Utilities;
 using Xunit;
 
 public class EmailAttributeTests
