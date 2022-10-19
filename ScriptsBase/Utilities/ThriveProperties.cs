@@ -40,6 +40,21 @@ public static class ThriveProperties
         }
     }
 
+    public static string GetThriveExecutableName(PackagePlatform platform)
+    {
+        switch (platform)
+        {
+            case PackagePlatform.Mac:
+            case PackagePlatform.Linux:
+                return "Thrive";
+            case PackagePlatform.Windows:
+            case PackagePlatform.Windows32:
+                return "Thrive.exe";
+            default:
+                throw new ArgumentOutOfRangeException(nameof(platform), platform, null);
+        }
+    }
+
     public static string GetGodotTemplateInstallPath(string godotVersionFull)
     {
         if (!OperatingSystem.IsLinux())
