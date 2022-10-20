@@ -23,14 +23,14 @@ public static class ProcessRunHelpers
     [UnsupportedOSPlatform("browser")]
     public static Task<ProcessResult> RunProcessAsync(ProcessStartInfo startInfo,
         CancellationToken cancellationToken, bool captureOutput = true, int startRetries = 5,
-        bool waitForLastOutput = true)
+        bool waitForLastOutput = true, Encoding? inputOutputEncoding = null)
     {
         while (true)
         {
             try
             {
                 return StartProcessInternal(startInfo, cancellationToken, null, captureOutput, null, null,
-                    waitForLastOutput).Task;
+                    waitForLastOutput, inputOutputEncoding).Task;
             }
             catch (InvalidOperationException)
             {
@@ -47,14 +47,14 @@ public static class ProcessRunHelpers
     [UnsupportedOSPlatform("browser")]
     public static Task<ProcessResult> RunProcessWithOutputStreamingAsync(ProcessStartInfo startInfo,
         CancellationToken cancellationToken, Action<string> onOutput, Action<string> onErrorOut, int startRetries = 5,
-        bool waitForLastOutput = true)
+        bool waitForLastOutput = true, Encoding? inputOutputEncoding = null)
     {
         while (true)
         {
             try
             {
                 return StartProcessInternal(startInfo, cancellationToken, null, true, onOutput, onErrorOut,
-                    waitForLastOutput).Task;
+                    waitForLastOutput, inputOutputEncoding).Task;
             }
             catch (InvalidOperationException)
             {
@@ -71,14 +71,15 @@ public static class ProcessRunHelpers
     [UnsupportedOSPlatform("browser")]
     public static Task<ProcessResult> RunProcessWithStdInAndOutputStreamingAsync(ProcessStartInfo startInfo,
         CancellationToken cancellationToken, IReadOnlyCollection<string> inputLines, Action<string> onOutput,
-        Action<string> onErrorOut, int startRetries = 5, bool waitForLastOutput = true)
+        Action<string> onErrorOut, int startRetries = 5, bool waitForLastOutput = true,
+        Encoding? inputOutputEncoding = null)
     {
         while (true)
         {
             try
             {
                 return StartProcessInternal(startInfo, cancellationToken, inputLines, true, onOutput, onErrorOut,
-                    waitForLastOutput).Task;
+                    waitForLastOutput, inputOutputEncoding).Task;
             }
             catch (InvalidOperationException)
             {
@@ -152,6 +153,9 @@ public static class ProcessRunHelpers
     ///   If true will wait for last outputs to be received once process exits.
     ///   If false, will immediately become ready. Only does something if <see cref="captureOutput"/> is true.
     /// </param>
+    /// <param name="inputOutputEncoding">
+    ///   The encoding used for the input and output streams when they are redirected
+    /// </param>
     /// <returns>A task completion source with a task that finishes with the process result</returns>
     /// <exception cref="InvalidOperationException">When process can't be started properly</exception>
     /// <remarks>
@@ -163,16 +167,22 @@ public static class ProcessRunHelpers
     [UnsupportedOSPlatform("browser")]
     private static TaskCompletionSource<ProcessResult> StartProcessInternal(ProcessStartInfo startInfo,
         CancellationToken cancellationToken, IEnumerable<string>? inputLines, bool captureOutput,
-        Action<string>? onOutput, Action<string>? onErrorOut, bool waitForLastOutput)
+        Action<string>? onOutput, Action<string>? onErrorOut, bool waitForLastOutput, Encoding? inputOutputEncoding)
     {
+        inputOutputEncoding ??= Encoding.UTF8;
+
         if (captureOutput)
         {
+            startInfo.StandardOutputEncoding = inputOutputEncoding;
             startInfo.RedirectStandardOutput = true;
+
+            startInfo.StandardErrorEncoding = inputOutputEncoding;
             startInfo.RedirectStandardError = true;
         }
 
         if (inputLines != null)
         {
+            startInfo.StandardInputEncoding = inputOutputEncoding;
             startInfo.RedirectStandardInput = true;
         }
 
