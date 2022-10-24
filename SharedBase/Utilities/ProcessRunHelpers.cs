@@ -2,6 +2,7 @@ namespace SharedBase.Utilities;
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -219,8 +220,18 @@ public static class ProcessRunHelpers
         // process cancellation task won't be able to cancel the task that didn't start yet)
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (!process.Start())
-            throw new InvalidOperationException($"Could not start process: {process}");
+        try
+        {
+            if (!process.Start())
+                throw new InvalidOperationException($"Could not start process: {process}");
+        }
+        catch (Exception)
+        {
+            // Stop the wait task from waiting forever by marking this as exited
+            result.Exited = true;
+            result.ExitCode = -1;
+            throw;
+        }
 
         if (captureOutput)
             StartProcessOutputRead(process, cancellationToken);
