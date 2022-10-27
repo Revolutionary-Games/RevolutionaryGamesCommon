@@ -15,4 +15,9 @@ public class DehydratedObjectIdentification
     [MinLength(5)]
     [MaxLength(100)]
     public string Sha3 { get; set; }
+
+    public override string ToString()
+    {
+        return $"sha3:{Sha3}";
+    }
 }
