@@ -22,9 +22,9 @@ public class DehydrateCache
     }
 
     [JsonConstructor]
-    public DehydrateCache(string baseFolder, Dictionary<string, ItemData> files)
+    public DehydrateCache(Dictionary<string, ItemData> files)
     {
-        BaseFolder = baseFolder;
+        BaseFolder = string.Empty;
         Files = files;
     }
 
