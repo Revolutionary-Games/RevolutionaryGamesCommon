@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
+using Models;
 
 /// <summary>
 ///   Cache helper for dehydrate (devbuild) operations
@@ -117,5 +118,13 @@ public class DehydrateCache
         /// </summary>
         [JsonPropertyName("data")]
         public DehydrateCache? Data { get; set; }
+
+        public DehydratedObjectIdentification GetDehydratedObjectIdentifier()
+        {
+            if (string.IsNullOrEmpty(Sha3))
+                throw new InvalidOperationException("ItemData object is not a single item with a hash");
+
+            return new DehydratedObjectIdentification(Sha3);
+        }
     }
 }
