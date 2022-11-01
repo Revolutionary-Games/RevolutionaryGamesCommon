@@ -1,5 +1,6 @@
 namespace DevCenterCommunication.Models;
 
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -48,6 +49,11 @@ public class LauncherThriveInformation
 
     public ThriveVersionLauncherInfo LatestVersion()
     {
-        return Versions.First(v => v.Id == LatestStable);
+        return LatestVersionOrNull() ?? throw new InvalidOperationException("No latest version found");
+    }
+
+    public ThriveVersionLauncherInfo? LatestVersionOrNull()
+    {
+        return Versions.FirstOrDefault(v => v.Id == LatestStable);
     }
 }

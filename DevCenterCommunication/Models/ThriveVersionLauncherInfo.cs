@@ -20,7 +20,7 @@ public class ThriveVersionLauncherInfo
     /// <summary>
     ///   Internal unique ID of the release for use in the launcher
     /// </summary>
-    [Range(1, int.MaxValue - 1)]
+    [Range(0, int.MaxValue - 1)]
     public int Id { get; }
 
     /// <summary>
@@ -40,5 +40,7 @@ public class ThriveVersionLauncherInfo
     /// <summary>
     ///   True when this is a stable version (non-beta)
     /// </summary>
-    public bool Stable { get; set; } = true;
+    public bool Stable { get; set; }
+
+    public bool SupportsFailedStartupDetection { get; set; }
 }

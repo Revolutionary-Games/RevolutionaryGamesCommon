@@ -17,10 +17,9 @@ public class LauncherVersionInfo
 
     [Required]
     [MaxLength(300)]
-    public Uri DownloadsPage { get; set; } = new("https://github.com/Revolutionary-Games/Thrive-Launcher/releases");
+    public Uri DownloadsPage { get; set; } = new("https://revolutionarygamesstudio.com/");
 
-    // TODO: put in creating this info
     [Required]
     [MaxLength(50)]
-    public Dictionary<string, DownloadableInfo> AutoUpdateDownloads { get; set; } = new();
+    public Dictionary<LauncherAutoUpdateChannel, DownloadableInfo> AutoUpdateDownloads { get; set; } = new();
 }
