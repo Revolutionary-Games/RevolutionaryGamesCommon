@@ -11,8 +11,8 @@ public class IsUriAttribute : RequiredAttribute
 {
     protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
     {
-        // Allow null values
-        if (ReferenceEquals(value, null))
+        // Allow null values and also immediately allow if the object is already a Uri
+        if (value is null or Uri)
             return ValidationResult.Success;
 
         if (value is not string asString)

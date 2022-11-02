@@ -13,7 +13,7 @@ public class IsUriAttributeTests
     [InlineData("http://example.com")]
     [InlineData(null)]
     [InlineData("")]
-    public void IsUri_AllowsValid(string uri)
+    public void IsUri_AllowsValid(string? uri)
     {
         var model = new Model1
         {
