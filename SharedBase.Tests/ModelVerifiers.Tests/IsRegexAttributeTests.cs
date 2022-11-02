@@ -12,11 +12,11 @@ public class IsRegexAttributeTests
     [InlineData("just a thing")]
     [InlineData("some (regex)+stuff\\s here.*")]
     [InlineData(null)]
-    public void IsRegex_AllowsValid(string email)
+    public void IsRegex_AllowsValid(string regex)
     {
         var model = new Model1
         {
-            Regex = email,
+            Regex = regex,
         };
 
         var errors = new List<ValidationResult>();
@@ -30,11 +30,11 @@ public class IsRegexAttributeTests
     [InlineData("[ab")]
     [InlineData("\\")]
     [InlineData("")]
-    public void IsRegex_DisallowsInvalid(string email)
+    public void IsRegex_DisallowsInvalid(string invalidRegex)
     {
         var model = new Model1
         {
-            Regex = email,
+            Regex = invalidRegex,
         };
 
         var errors = new List<ValidationResult>();
