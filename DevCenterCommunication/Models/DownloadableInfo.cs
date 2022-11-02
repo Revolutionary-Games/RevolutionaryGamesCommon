@@ -3,6 +3,7 @@ namespace DevCenterCommunication.Models;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using SharedBase.ModelVerifiers;
 
 /// <summary>
 ///   A file with a known hash that can be downloaded from one or more mirror sites
@@ -23,6 +24,8 @@ public class DownloadableInfo
     /// <summary>
     ///   The filename to use locally after downloading this
     /// </summary>
+    [Required]
+    [StringLength(100, MinimumLength = 4)]
     public string LocalFileName { get; }
 
     /// <summary>
@@ -36,7 +39,7 @@ public class DownloadableInfo
 
     // For future potential use we may need to make torrent downloads of Thrive if we can't find mirrors with big
     // enough filesize limits
-    [MaxLength(500)]
+    [ToStringMaxLength]
     public Uri? TorrentDownload { get; set; }
 
     [StringLength(500, MinimumLength = 10)]

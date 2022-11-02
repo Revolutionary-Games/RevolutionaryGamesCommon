@@ -2,6 +2,7 @@ namespace DevCenterCommunication.Models;
 
 using System;
 using System.ComponentModel.DataAnnotations;
+using SharedBase.ModelVerifiers;
 
 /// <summary>
 ///   Info about a download mirror
@@ -14,10 +15,11 @@ public class DownloadMirrorInfo
         ReadableName = readableName;
     }
 
-    [MaxLength(300)]
+    [ToStringMaxLength]
     public Uri? BannerImage { get; set; }
 
-    [MaxLength(300)]
+    [Required]
+    [ToStringMaxLength]
     public Uri InfoLink { get; }
 
     [Required]

@@ -3,6 +3,7 @@ namespace DevCenterCommunication.Models;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using SharedBase.ModelVerifiers;
 
 public class LauncherVersionInfo
 {
@@ -16,7 +17,7 @@ public class LauncherVersionInfo
     public string LatestVersion { get; }
 
     [Required]
-    [MaxLength(300)]
+    [ToStringMaxLength]
     public Uri DownloadsPage { get; set; } = new("https://revolutionarygamesstudio.com/");
 
     [Required]

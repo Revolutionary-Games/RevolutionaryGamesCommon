@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using DevCenterCommunication.Models;
+using RecursiveDataAnnotationsValidation;
 using SharedBase.Models;
 using Xunit;
 
@@ -15,8 +16,9 @@ public class ThriveVersionLauncherInfoTests
         var model = new ThriveVersionLauncherInfo(1, "1.0.0", new Dictionary<PackagePlatform, DownloadableInfo>());
 
         var validationResult = new List<ValidationResult>();
+        var validator = new RecursiveDataAnnotationValidator();
 
-        Assert.False(Validator.TryValidateObject(model, new ValidationContext(model), validationResult, true));
+        Assert.False(validator.TryValidateObjectRecursive(model, new ValidationContext(model), validationResult));
         Assert.NotEmpty(validationResult);
         Assert.Contains(nameof(ThriveVersionLauncherInfo.Platforms), validationResult[0].MemberNames);
     }
@@ -27,7 +29,7 @@ public class ThriveVersionLauncherInfoTests
         var model = new ThriveVersionLauncherInfo(1, "1", new Dictionary<PackagePlatform, DownloadableInfo>
         {
             {
-                PackagePlatform.Linux, new DownloadableInfo("1234", "test", new Dictionary<string, Uri>
+                PackagePlatform.Linux, new DownloadableInfo("12345678910", "test", new Dictionary<string, Uri>
                 {
                     { "test", new Uri("https://example.com") },
                 })
@@ -35,8 +37,9 @@ public class ThriveVersionLauncherInfoTests
         });
 
         var validationResult = new List<ValidationResult>();
+        var validator = new RecursiveDataAnnotationValidator();
 
-        Assert.False(Validator.TryValidateObject(model, new ValidationContext(model), validationResult, true));
+        Assert.False(validator.TryValidateObjectRecursive(model, new ValidationContext(model), validationResult));
         Assert.NotEmpty(validationResult);
         Assert.Contains(nameof(ThriveVersionLauncherInfo.ReleaseNumber), validationResult[0].MemberNames);
     }
@@ -47,7 +50,7 @@ public class ThriveVersionLauncherInfoTests
         var model = new ThriveVersionLauncherInfo(1, "1.0.0", new Dictionary<PackagePlatform, DownloadableInfo>
         {
             {
-                PackagePlatform.Linux, new DownloadableInfo("1234", "test", new Dictionary<string, Uri>
+                PackagePlatform.Linux, new DownloadableInfo("12345678910", "test", new Dictionary<string, Uri>
                 {
                     { "test", new Uri("https://example.com") },
                 })
@@ -55,8 +58,9 @@ public class ThriveVersionLauncherInfoTests
         });
 
         var validationResult = new List<ValidationResult>();
+        var validator = new RecursiveDataAnnotationValidator();
 
-        Assert.True(Validator.TryValidateObject(model, new ValidationContext(model), validationResult, true));
+        Assert.True(validator.TryValidateObjectRecursive(model, new ValidationContext(model), validationResult));
         Assert.Empty(validationResult);
     }
 }
