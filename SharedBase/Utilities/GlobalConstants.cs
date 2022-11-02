@@ -11,4 +11,6 @@ public static class GlobalConstants
     public const int KIBIBYTE = 1024;
     public const int MEBIBYTE = KIBIBYTE * KIBIBYTE;
     public const int GIBIBYTE = MEBIBYTE * 1024;
+
+    public const int DEFAULT_MAX_LENGTH_FOR_TO_STRING_ATTRIBUTE = 500;
 }
