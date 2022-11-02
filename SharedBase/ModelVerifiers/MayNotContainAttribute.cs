@@ -6,12 +6,12 @@ using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
 /// <summary>
-///   Requires that a property is not null and contains the specified item
+///   Requires that a property is null or does not contain any of the specified items
 /// </summary>
 [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
-public class MustContainAttribute : RequiredAttribute
+public class MayNotContainAttribute : RequiredAttribute
 {
-    public MustContainAttribute(params string[] values)
+    public MayNotContainAttribute(params string[] values)
     {
         Values = values;
     }
@@ -21,28 +21,23 @@ public class MustContainAttribute : RequiredAttribute
     protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
     {
         if (ReferenceEquals(value, null))
-        {
-            return new ValidationResult(
-                ErrorMessage ??
-                $"The {validationContext.DisplayName} field should not be null.",
-                new[] { validationContext.MemberName! });
-        }
+            return ValidationResult.Success;
 
         foreach (var valueToCheck in Values)
         {
             if (string.IsNullOrEmpty(valueToCheck))
             {
                 throw new InvalidOperationException(
-                    $"{nameof(MustContainAttribute)} is configured wrong with an empty value to check");
+                    $"{nameof(MayNotContainAttribute)} is configured wrong with an empty value to check");
             }
 
             if (value is string valueString)
             {
-                if (!valueString.Contains(valueToCheck))
+                if (valueString.Contains(valueToCheck))
                 {
                     return new ValidationResult(
                         ErrorMessage ??
-                        $"The {validationContext.DisplayName} field must contain {valueToCheck}.",
+                        $"The {validationContext.DisplayName} field may not contain '{valueToCheck}'.",
                         new[] { validationContext.MemberName! });
                 }
             }
@@ -72,11 +67,11 @@ public class MustContainAttribute : RequiredAttribute
                     }
                 }
 
-                if (!found)
+                if (found)
                 {
                     return new ValidationResult(
                         ErrorMessage ??
-                        $"The {validationContext.DisplayName} field must contain {valueToCheck}.",
+                        $"The {validationContext.DisplayName} field may not contain '{valueToCheck}'.",
                         new[] { validationContext.MemberName! });
                 }
             }
@@ -84,8 +79,8 @@ public class MustContainAttribute : RequiredAttribute
             {
                 return new ValidationResult(
                     ErrorMessage ??
-                    $"The {validationContext.DisplayName} field is of unknown type to check that it contains " +
-                    "a required value.", new[] { validationContext.MemberName! });
+                    $"The {validationContext.DisplayName} field is of unknown type to check that it does not " +
+                    "contain a disallowed value.", new[] { validationContext.MemberName! });
             }
         }
 
