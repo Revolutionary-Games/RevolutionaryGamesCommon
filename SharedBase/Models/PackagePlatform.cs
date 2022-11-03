@@ -10,4 +10,5 @@ public enum PackagePlatform
     Windows,
     Windows32,
     Mac,
+    Web,
 }
