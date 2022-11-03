@@ -9,6 +9,9 @@ namespace DevCenterCommunication.Models;
 ///     This is currently limited to 256 values due to LauncherVersionAutoUpdateChannelDTO assuming this only takes 8
 ///     bits.
 ///   </para>
+///   <para>
+///     When new values are added they need to be handled in <see cref="LauncherAutoUpdateChannelExtensions"/>
+///   </para>
 /// </remarks>
 public enum LauncherAutoUpdateChannel
 {
