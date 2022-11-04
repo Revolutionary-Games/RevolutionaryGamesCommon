@@ -1,11 +1,11 @@
-﻿namespace ScriptsBase.Utilities;
+﻿namespace SharedBase.Utilities;
 
 using System;
 using System.IO;
-using SharedBase.Models;
+using Models;
 
 /// <summary>
-///   Properties about Thrive that are needed by multiple project's scripts
+///   Properties about Thrive that are needed by multiple project's scripts (and other tools)
 /// </summary>
 public static class ThriveProperties
 {
