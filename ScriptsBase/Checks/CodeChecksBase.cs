@@ -63,6 +63,7 @@ public abstract class CodeChecksBase<T>
     protected virtual IEnumerable<Regex> DefaultIgnoredFilePaths { get; } = new List<Regex>
     {
         new(@"\.vs/"),
+        new(@"\.vscode/"),
         new(@"\.idea/"),
         new(@"\.mono/"),
         new(@"\.import/"),
