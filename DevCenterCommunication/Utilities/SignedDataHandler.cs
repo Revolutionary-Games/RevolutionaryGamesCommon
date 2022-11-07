@@ -107,18 +107,20 @@ public class SignedDataHandler
 
     public async Task<(byte[] Data, byte[] Signature)> ReadDataWithSignature(Stream input)
     {
-        var dataLength = ReadNextElementSize(input);
+        var dataLength = await ReadNextElementSize(input);
 
         var data = new byte[dataLength];
 
-        if (await input.ReadAsync(data, 0, dataLength) != dataLength)
+        if (await ReadToBuffer(data, dataLength, input) != dataLength)
             throw new IOException("Could not read specified number of payload bytes");
 
-        var signatureLength = ReadNextElementSize(input);
+        var signatureLength = await ReadNextElementSize(input);
 
         var signature = new byte[signatureLength];
 
-        if (await input.ReadAsync(signature, 0, signatureLength) != signatureLength)
+        var readBytes = await ReadToBuffer(signature, signatureLength, input);
+
+        if (readBytes != signatureLength)
             throw new IOException("Could not read specified number of signature bytes");
 
         return (data, signature);
@@ -141,9 +143,9 @@ public class SignedDataHandler
         }
     }
 
-    public int ReadNextElementSize(Stream stream)
+    public async Task<int> ReadNextElementSize(Stream stream)
     {
-        var read = stream.Read(sizeReadBuffer, 0, sizeReadBuffer.Length);
+        var read = await ReadToBuffer(sizeReadBuffer, sizeReadBuffer.Length, stream);
 
         if (read != sizeReadBuffer.Length)
             throw new IOException("Failed to read enough bytes for next length field");
@@ -155,5 +157,25 @@ public class SignedDataHandler
         }
 
         return BitConverter.ToInt32(sizeReadBuffer);
+    }
+
+    private async Task<int> ReadToBuffer(byte[] buffer, int wantedBytes, Stream input)
+    {
+        int originalBytes = wantedBytes;
+        int offset = 0;
+
+        while (wantedBytes > 0)
+        {
+            var read = await input.ReadAsync(buffer, offset, wantedBytes);
+
+            // If we read 0 bytes, assume the read will permanently now fail and quit
+            if (read <= 0)
+                break;
+
+            wantedBytes -= read;
+            offset += read;
+        }
+
+        return originalBytes - wantedBytes;
     }
 }
