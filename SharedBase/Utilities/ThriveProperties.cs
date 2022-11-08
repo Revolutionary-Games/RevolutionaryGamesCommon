@@ -40,6 +40,30 @@ public static class ThriveProperties
         }
     }
 
+    public static string GetFolderNameForLauncher(PackagePlatform platform, string launcherVersion)
+    {
+        var platformName = GetBasePlatformFolderNameForLauncher(platform);
+
+        return $"ThriveLauncher_{launcherVersion}_{platformName}";
+    }
+
+    public static string GetBasePlatformFolderNameForLauncher(PackagePlatform platform)
+    {
+        switch (platform)
+        {
+            case PackagePlatform.Linux:
+                return "linux";
+            case PackagePlatform.Windows:
+                return "windows";
+            case PackagePlatform.Windows32:
+                return "windows_32-bit";
+            case PackagePlatform.Mac:
+                return "mac";
+            default:
+                throw new ArgumentOutOfRangeException(nameof(platform), platform, null);
+        }
+    }
+
     public static string GetThriveExecutableName(PackagePlatform platform)
     {
         switch (platform)

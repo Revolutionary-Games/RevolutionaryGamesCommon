@@ -4,6 +4,8 @@ using System;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
+using System.Xml.XPath;
 
 public static class AssemblyInfoReader
 {
@@ -57,5 +59,24 @@ public static class AssemblyInfoReader
         }
 
         return version;
+    }
+
+    public static string ReadVersionFromCsproj(string csprojFile)
+    {
+        var csproj = XElement.Load(csprojFile);
+
+        var version = csproj.XPathSelectElement("PropertyGroup//Version");
+
+        if (version == null)
+            throw new ArgumentException("Could not find version in the file");
+
+        var versionString = version.Value;
+
+        if (!Version.TryParse(versionString, out _))
+        {
+            throw new Exception($"Invalid version format for string: {version}");
+        }
+
+        return versionString;
     }
 }
