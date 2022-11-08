@@ -24,8 +24,9 @@ public class ConsoleLogger<TCategoryName> : ILogger<TCategoryName>
         return logLevel >= LogLevel;
     }
 
-    public IDisposable BeginScope<TState>(TState state)
+    public IDisposable? BeginScope<TState>(TState state)
+        where TState : notnull
     {
-        return default!;
+        return default;
     }
 }

@@ -25,6 +25,7 @@ public sealed class XunitLogger<T> : ILogger<T>, IDisposable
     }
 
     public IDisposable BeginScope<TState>(TState state)
+        where TState : notnull
     {
         return this;
     }
