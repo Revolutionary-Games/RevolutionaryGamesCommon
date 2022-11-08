@@ -169,7 +169,7 @@ public static class ProcessRunHelpers
         CancellationToken cancellationToken, IEnumerable<string>? inputLines, bool captureOutput,
         Action<string>? onOutput, Action<string>? onErrorOut, bool waitForLastOutput, Encoding? inputOutputEncoding)
     {
-        inputOutputEncoding ??= Encoding.UTF8;
+        inputOutputEncoding ??= new UTF8Encoding(false);
 
         if (captureOutput)
         {
