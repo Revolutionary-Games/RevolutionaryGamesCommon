@@ -16,12 +16,12 @@ using Utilities;
 public abstract class ContainerToolBase<T>
     where T : ContainerOptionsBase
 {
+    protected readonly T options;
+
     private readonly Regex builtImageId =
         new(@"COMMIT.*\n.*-->\s+[a-f0-9]+\s*\n([a-f0-9]+)\s+$", RegexOptions.IgnoreCase);
 
-    private readonly Regex dotnetSdkInstalledVersion = new(@"([\d\.]+)\s\[\/usr\/lib(64)?\/dotnet\/sdk\]");
-
-    private readonly T options;
+    private readonly Regex dotnetSdkInstalledVersion = new(@"([\d\.]+)\s\[\/usr\/(lib(64)?|share)\/dotnet\/sdk\]");
 
     protected ContainerToolBase(T options)
     {
@@ -83,46 +83,7 @@ public abstract class ContainerToolBase<T>
         return true;
     }
 
-    protected virtual Task<bool> PostCheckBuild(string tagOrId)
-    {
-        return Task.FromResult(true);
-    }
-
-    protected async Task<bool> CheckDotnetSdkWasInstalled(string tagOrId)
-    {
-        var startInfo = new ProcessStartInfo("podman");
-        startInfo.ArgumentList.Add("run");
-        startInfo.ArgumentList.Add("--rm");
-        startInfo.ArgumentList.Add(tagOrId);
-        startInfo.ArgumentList.Add("dotnet");
-        startInfo.ArgumentList.Add("--list-sdks");
-
-        var result = await ProcessRunHelpers.RunProcessAsync(startInfo, CancellationToken.None, true);
-
-        if (result.ExitCode != 0)
-        {
-            ColourConsole.WriteErrorLine(
-                $"Failed to run podman command to determine if dotnet SDK install succeeded: {result.FullOutput}");
-            return false;
-        }
-
-        var match = dotnetSdkInstalledVersion.Match(result.FullOutput);
-
-        if (!match.Success)
-        {
-            ColourConsole.WriteErrorLine(
-                "Could not determine that dotnet SDK was successfully installed in image, " +
-                $"output: {result.FullOutput}");
-            return false;
-        }
-
-        var installedVersion = match.Groups[1].Value;
-
-        ColourConsole.WriteInfoLine($"Verified image has installed dotnet SDK correctly ({installedVersion})");
-        return true;
-    }
-
-    private async Task<string?> Build(string buildType, string? tag, string? extraTag,
+    protected virtual async Task<string?> Build(string buildType, string? tag, string? extraTag,
         CancellationToken cancellationToken)
     {
         var folder = Path.Join(ImagesAndConfigsFolder, buildType);
@@ -200,6 +161,45 @@ public abstract class ContainerToolBase<T>
         ColourConsole.WriteSuccessLine($"Successfully built and tagged: {tag}");
 
         return tag;
+    }
+
+    protected virtual Task<bool> PostCheckBuild(string tagOrId)
+    {
+        return Task.FromResult(true);
+    }
+
+    protected async Task<bool> CheckDotnetSdkWasInstalled(string tagOrId)
+    {
+        var startInfo = new ProcessStartInfo("podman");
+        startInfo.ArgumentList.Add("run");
+        startInfo.ArgumentList.Add("--rm");
+        startInfo.ArgumentList.Add(tagOrId);
+        startInfo.ArgumentList.Add("dotnet");
+        startInfo.ArgumentList.Add("--list-sdks");
+
+        var result = await ProcessRunHelpers.RunProcessAsync(startInfo, CancellationToken.None, true);
+
+        if (result.ExitCode != 0)
+        {
+            ColourConsole.WriteErrorLine(
+                $"Failed to run podman command to determine if dotnet SDK install succeeded: {result.FullOutput}");
+            return false;
+        }
+
+        var match = dotnetSdkInstalledVersion.Match(result.FullOutput);
+
+        if (!match.Success)
+        {
+            ColourConsole.WriteErrorLine(
+                "Could not determine that dotnet SDK was successfully installed in image, " +
+                $"output: {result.FullOutput}");
+            return false;
+        }
+
+        var installedVersion = match.Groups[1].Value;
+
+        ColourConsole.WriteInfoLine($"Verified image has installed dotnet SDK correctly ({installedVersion})");
+        return true;
     }
 
     private async Task<bool> ExportAsFile(string tag, string version, CancellationToken cancellationToken)
