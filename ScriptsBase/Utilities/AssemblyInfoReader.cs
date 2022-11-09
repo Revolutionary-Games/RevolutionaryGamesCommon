@@ -79,4 +79,21 @@ public static class AssemblyInfoReader
 
         return versionString;
     }
+
+    public static (string Version, string Authors, string AssemblyTitle, string Copyright)
+        ReadAllProjectVersionMetadata(string csprojFile)
+    {
+        var csproj = XElement.Load(csprojFile);
+
+        var version = csproj.XPathSelectElement("PropertyGroup//Version") ??
+            throw new ArgumentException("Could not find Version");
+        var authors = csproj.XPathSelectElement("PropertyGroup//Authors") ??
+            throw new ArgumentException("Could not find Authors");
+        var assemblyTitle = csproj.XPathSelectElement("PropertyGroup//AssemblyTitle") ??
+            throw new ArgumentException("Could not find AssemblyTitle");
+        var copyright = csproj.XPathSelectElement("PropertyGroup//Copyright") ??
+            throw new ArgumentException("Could not find Copyright");
+
+        return (version.Value, authors.Value, assemblyTitle.Value, copyright.Value);
+    }
 }
