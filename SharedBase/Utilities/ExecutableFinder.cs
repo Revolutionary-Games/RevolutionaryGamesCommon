@@ -17,7 +17,7 @@ public static class ExecutableFinder
     /// </remarks>
     public static string? Which(string commandName)
     {
-        if (Environment.OSVersion.Platform == PlatformID.Win32Windows)
+        if (OperatingSystem.IsWindows())
         {
             if (commandName.EndsWith(".exe"))
             {
