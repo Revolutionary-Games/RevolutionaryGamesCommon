@@ -18,7 +18,7 @@ public static class Compression
 
         if (OperatingSystem.IsWindows())
         {
-            lookFor = "7za.exe";
+            lookFor = "7z.exe";
         }
 
         var result = ExecutableFinder.Which(lookFor);
