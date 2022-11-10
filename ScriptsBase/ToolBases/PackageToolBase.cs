@@ -257,7 +257,7 @@ public abstract class PackageToolBase<T>
         return Task.FromResult(true);
     }
 
-    private async Task<bool> PackageForPlatform(CancellationToken cancellationToken, PackagePlatform platform)
+    protected virtual async Task<bool> PackageForPlatform(CancellationToken cancellationToken, PackagePlatform platform)
     {
         if (!await PrepareToExport(platform, cancellationToken))
         {

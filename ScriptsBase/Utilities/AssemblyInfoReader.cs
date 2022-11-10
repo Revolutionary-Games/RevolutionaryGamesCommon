@@ -80,7 +80,7 @@ public static class AssemblyInfoReader
         return versionString;
     }
 
-    public static (string Version, string Authors, string AssemblyTitle, string Copyright)
+    public static (string Version, string Authors, string AssemblyTitle, string Copyright, string Description)
         ReadAllProjectVersionMetadata(string csprojFile)
     {
         var csproj = XElement.Load(csprojFile);
@@ -93,7 +93,9 @@ public static class AssemblyInfoReader
             throw new ArgumentException("Could not find AssemblyTitle");
         var copyright = csproj.XPathSelectElement("PropertyGroup//Copyright") ??
             throw new ArgumentException("Could not find Copyright");
+        var description = csproj.XPathSelectElement("PropertyGroup//Description") ??
+            throw new ArgumentException("Could not find Description");
 
-        return (version.Value, authors.Value, assemblyTitle.Value, copyright.Value);
+        return (version.Value, authors.Value, assemblyTitle.Value, copyright.Value, description.Value);
     }
 }
