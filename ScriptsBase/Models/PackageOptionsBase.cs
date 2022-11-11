@@ -10,6 +10,10 @@ public abstract class PackageOptionsBase : ScriptOptionsBase
     [Option('o', "output", Default = "builds", MetaValue = "FOLDER", HelpText = "Output folder to package to")]
     public string OutputFolder { get; set; } = "builds";
 
+    [Option("output-without-subfolders", Default = false,
+        HelpText = "If specified, output will be directly in the output folder without any subfolders")]
+    public bool OutputDirectlyToOutputFolder { get; set; }
+
     [Option('s', "source", Default = null, HelpText = "Include source code in export")]
     public bool? SourceCode { get; set; }
 

@@ -62,6 +62,13 @@ public abstract class PackageToolBase<T>
             return false;
         }
 
+        if (options.OutputDirectlyToOutputFolder && options.Platforms.Count > 1)
+        {
+            ColourConsole.WriteWarningLine(
+                "When outputting directly to the output folder packaging multiple platforms " +
+                "may result in unexpected results");
+        }
+
         Directory.CreateDirectory(options.OutputFolder);
 
         if (!await OnBeforeStartExport(cancellationToken))
@@ -148,6 +155,17 @@ public abstract class PackageToolBase<T>
             var baseFolder = Path.GetDirectoryName(target) ??
                 throw new Exception("Failed to get base folder from copy target");
 
+            // Skip copying if target equals the source
+            if (options.OutputDirectlyToOutputFolder)
+            {
+                if (Path.GetFullPath(target) == Path.GetFullPath(fileToPackage.OriginalFile))
+                {
+                    ColourConsole.WriteNormalLine(
+                        $"Skip copying {fileToPackage.OriginalFile} because target would be the same as the source");
+                    continue;
+                }
+            }
+
             try
             {
                 Directory.CreateDirectory(baseFolder);
@@ -165,6 +183,7 @@ public abstract class PackageToolBase<T>
 
         if (options.SourceCode == true)
         {
+            // TODO: this probably doesn't work with OutputDirectlyToOutputFolder
             ColourConsole.WriteDebugLine($"Copying source zip to {folder}");
             CopyHelpers.CopyToFolder(CompressedSourceLocation, folder);
         }
@@ -265,7 +284,16 @@ public abstract class PackageToolBase<T>
             return false;
         }
 
-        var folder = Path.Join(options.OutputFolder, GetFolderNameForExport(platform));
+        string folder;
+        if (options.OutputDirectlyToOutputFolder)
+        {
+            ColourConsole.WriteNormalLine("Outputting directly to the output folder without subfolders");
+            folder = options.OutputFolder;
+        }
+        else
+        {
+            folder = Path.Join(options.OutputFolder, GetFolderNameForExport(platform));
+        }
 
         Directory.CreateDirectory(folder);
 
