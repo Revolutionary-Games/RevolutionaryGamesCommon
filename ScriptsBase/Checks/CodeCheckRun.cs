@@ -42,7 +42,13 @@ public class CodeCheckRun
             foreach (var onlyCheckFile in OnlyCheckFiles)
             {
                 if (file.EndsWith(onlyCheckFile))
+                {
+                    // Apply ignores on top of the specific list of files to ignore
+                    if (IsFileIgnored(file))
+                        return false;
+
                     return true;
+                }
             }
 
             return false;
