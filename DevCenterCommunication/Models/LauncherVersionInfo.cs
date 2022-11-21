@@ -16,6 +16,11 @@ public class LauncherVersionInfo
     [StringLength(30, MinimumLength = 3)]
     public string LatestVersion { get; }
 
+    /// <summary>
+    ///   The time when the <see cref="LatestVersion"/> was set as the latest version
+    /// </summary>
+    public DateTime? LatestVersionPublishedAt { get; set; }
+
     [Required]
     [ToStringMaxLength]
     public Uri DownloadsPage { get; set; } = new("https://revolutionarygamesstudio.com/");
