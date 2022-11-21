@@ -16,7 +16,7 @@ public static class LauncherAutoUpdateChannelExtensions
             case LauncherAutoUpdateChannel.LinuxUnpacked:
                 return "ThriveLauncher.tar.gz";
             case LauncherAutoUpdateChannel.WindowsInstaller:
-                return "ThriveLauncher.exe";
+                return "ThriveLauncherUpdater.exe";
             case LauncherAutoUpdateChannel.MacDmg:
                 return "ThriveLauncher.dmg";
             default:
