@@ -27,7 +27,7 @@ public class LauncherThriveInformationTests
 
         Assert.False(validator.TryValidateObjectRecursive(model, new ValidationContext(model), validationResult));
         Assert.NotEmpty(validationResult);
-        Assert.Contains($"{nameof(LauncherThriveInformation.Versions)}.{nameof(ThriveVersionLauncherInfo.Platforms)}",
+        Assert.Contains($"{nameof(LauncherThriveInformation.Versions)}[0].{nameof(ThriveVersionLauncherInfo.Platforms)}",
             validationResult[0].MemberNames);
     }
 
