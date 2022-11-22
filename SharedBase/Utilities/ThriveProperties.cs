@@ -2,6 +2,7 @@
 
 using System;
 using System.IO;
+using global::Models;
 using Models;
 
 /// <summary>
@@ -40,11 +41,34 @@ public static class ThriveProperties
         }
     }
 
-    public static string GetFolderNameForLauncher(PackagePlatform platform, string launcherVersion)
+    public static string GetFolderNameForLauncher(PackagePlatform platform, string launcherVersion,
+        LauncherExportType exportType)
     {
         var platformName = GetBasePlatformFolderNameForLauncher(platform);
 
-        return $"ThriveLauncher_{launcherVersion}_{platformName}";
+        var typeSuffix = string.Empty;
+
+        switch (exportType)
+        {
+            case LauncherExportType.Standalone:
+                break;
+            case LauncherExportType.WithUpdater:
+                typeSuffix = "_updateable";
+                break;
+            case LauncherExportType.Steam:
+                typeSuffix = "_steam";
+                break;
+            case LauncherExportType.Itch:
+                typeSuffix = "_itch";
+                break;
+            case LauncherExportType.Flatpak:
+                typeSuffix = "_flatpak";
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(exportType), exportType, null);
+        }
+
+        return $"ThriveLauncher_{launcherVersion}_{platformName}{typeSuffix}";
     }
 
     public static string GetBasePlatformFolderNameForLauncher(PackagePlatform platform)
