@@ -11,6 +11,8 @@ public static class CompressionTypeHelpers
         {
             case CompressionType.P7Zip:
                 return ".7z";
+            case CompressionType.Zip:
+                return ".zip";
             default:
                 throw new ArgumentOutOfRangeException(nameof(type), type, null);
         }

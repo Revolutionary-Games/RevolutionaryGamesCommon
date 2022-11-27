@@ -34,11 +34,9 @@ public abstract class PackageToolBase<T>
     /// </summary>
     protected abstract IEnumerable<PackagePlatform> DefaultPlatforms { get; }
 
-    protected CompressionType CompressionType { get; set; } = CompressionType.P7Zip;
-
     protected abstract IEnumerable<string> SourceFilesToPackage { get; }
 
-    protected string CompressedSourceName => $"source{CompressionType.CompressedExtension()}";
+    protected string CompressedSourceName => $"source{CompressionType.P7Zip.CompressedExtension()}";
 
     protected string CompressedSourceLocation => Path.Join(options.OutputFolder, CompressedSourceName);
 
@@ -132,7 +130,7 @@ public abstract class PackageToolBase<T>
 
     protected virtual string GetCompressedExtensionForPlatform(PackagePlatform platform)
     {
-        return CompressionType.CompressedExtension();
+        return GetCompressionType(platform).CompressedExtension();
     }
 
     protected abstract Task<bool> Export(PackagePlatform platform, string folder, CancellationToken cancellationToken);
@@ -206,9 +204,8 @@ public abstract class PackageToolBase<T>
         ColourConsole.WriteNormalLine("Compressing source code...");
         try
         {
-            // TODO: check that the ignores work on Windows
             var task = Compression.CompressMultipleItems("./", SourceFilesToPackage, CompressedSourceLocation,
-                CompressionType, new List<string> { new("bin/"), new("obj/"), new(".*") }, cancellationToken,
+                CompressionType.P7Zip, new[] { "bin/", "obj/", ".*" }, cancellationToken,
                 ColourConsole.DebugPrintingEnabled);
             await task.WaitAsync(cancellationToken);
         }
@@ -233,12 +230,27 @@ public abstract class PackageToolBase<T>
         }
 
         ColourConsole.WriteInfoLine($"Compressing {archiveFile}");
+
         try
         {
-            var task = Compression.CompressFolder(Path.GetDirectoryName(folder) ?? string.Empty,
-                Path.GetFileName(folder), archiveFile, CompressionType, cancellationToken,
-                ColourConsole.DebugPrintingEnabled);
-            await task.WaitAsync(cancellationToken);
+            if (CompressWithoutTopLevelFolder(platform))
+            {
+                ColourConsole.WriteNormalLine("Compressing without including the top level folder");
+
+                // +1 needs to be added in the substring to avoid preceding /
+                var itemsToCompress = Directory.EnumerateFileSystemEntries(folder, "*", SearchOption.TopDirectoryOnly)
+                    .Select(e => e.Substring(folder.Length + 1));
+
+                await Compression.CompressMultipleItems(folder, itemsToCompress, archiveFile,
+                    GetCompressionType(platform), new[] { ".*" }, cancellationToken,
+                    ColourConsole.DebugPrintingEnabled);
+            }
+            else
+            {
+                await Compression.CompressFolder(Path.GetDirectoryName(folder) ?? string.Empty,
+                    Path.GetFileName(folder), archiveFile, GetCompressionType(platform), cancellationToken,
+                    ColourConsole.DebugPrintingEnabled);
+            }
         }
         catch (Exception e)
         {
@@ -247,6 +259,16 @@ public abstract class PackageToolBase<T>
         }
 
         return true;
+    }
+
+    protected virtual CompressionType GetCompressionType(PackagePlatform platform)
+    {
+        return CompressionType.P7Zip;
+    }
+
+    protected virtual bool CompressWithoutTopLevelFolder(PackagePlatform platform)
+    {
+        return false;
     }
 
     protected virtual Task<bool> OnBeforeStartExport(CancellationToken cancellationToken)

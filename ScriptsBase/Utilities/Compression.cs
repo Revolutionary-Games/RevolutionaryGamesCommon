@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Models;
@@ -53,6 +55,12 @@ public static class Compression
     public static Task CompressFolder(string baseFolder, string folder, string archiveFile,
         CompressionType compressionType, CancellationToken cancellationToken, bool measureTime = false)
     {
+        if (compressionType == CompressionType.Zip)
+        {
+            return Task.Run(() => RunZipCreation(archiveFile, baseFolder, new[] { folder }, new string[] { },
+                measureTime, cancellationToken), cancellationToken);
+        }
+
         if (compressionType != CompressionType.P7Zip)
             throw new NotImplementedException("unimplemented compression type");
 
@@ -74,6 +82,13 @@ public static class Compression
         CompressionType compressionType, IReadOnlyCollection<string> ignorePatterns,
         CancellationToken cancellationToken, bool measureTime = false)
     {
+        if (compressionType == CompressionType.Zip)
+        {
+            return Task.Run(
+                () => RunZipCreation(archiveFile, baseFolder, toCompress, ignorePatterns, measureTime,
+                    cancellationToken), cancellationToken);
+        }
+
         if (compressionType != CompressionType.P7Zip)
             throw new NotImplementedException("unimplemented compression type");
 
@@ -115,5 +130,57 @@ public static class Compression
 
         if (measure)
             ColourConsole.WriteDebugLine($"Compressing took {elapsed.Elapsed}");
+    }
+
+    private static void RunZipCreation(string archiveFile, string baseFolder, IEnumerable<string> itemsToInclude,
+        IReadOnlyCollection<string> ignorePatterns, bool measureTime, CancellationToken cancellationToken)
+    {
+        var elapsed = Stopwatch.StartNew();
+
+        var convertedPatterns = ignorePatterns.Select(Wildcards.ConvertToRegex).ToList();
+
+        using var fileWriter = File.OpenWrite(archiveFile);
+        using var archive = new ZipArchive(fileWriter, ZipArchiveMode.Create);
+
+        foreach (var item in itemsToInclude)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            AppendZipEntries(Path.Join(baseFolder, item), baseFolder, archive, convertedPatterns, cancellationToken);
+        }
+
+        if (measureTime)
+            ColourConsole.WriteDebugLine($"Compressing took {elapsed.Elapsed}");
+    }
+
+    private static void AppendZipEntries(string item, string removePrefix, ZipArchive archive,
+        IReadOnlyCollection<Regex> ignorePatterns, CancellationToken cancellationToken)
+    {
+        if (Directory.Exists(item))
+        {
+            foreach (var entry in Directory.EnumerateFileSystemEntries(item))
+            {
+                var fileName = Path.GetFileName(entry);
+
+                if (ignorePatterns.Any(p => p.IsMatch(fileName)))
+                    continue;
+
+                AppendZipEntries(entry, removePrefix, archive, ignorePatterns, cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+        }
+        else
+        {
+            var entryName = item;
+
+            if (entryName.StartsWith(removePrefix))
+                entryName = entryName.Substring(removePrefix.Length);
+
+            entryName = entryName.Replace('\\', '/').TrimStart('/');
+
+            // Pretty unfortunate that this doesn't support async
+            // But this is used because this copies file attributes
+            archive.CreateEntryFromFile(item, entryName, CompressionLevel.Optimal);
+        }
     }
 }
