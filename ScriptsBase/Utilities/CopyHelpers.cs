@@ -58,4 +58,36 @@ public static class CopyHelpers
     {
         File.Move(file, Path.Join(folder, Path.GetFileName(file)), overwrite);
     }
+
+    /// <summary>
+    ///   Moves files and folders from one folder to another
+    /// </summary>
+    /// <param name="fromFolder">The folder to move everything from</param>
+    /// <param name="targetFolder">Target folder to put the moved files and folders in</param>
+    /// <param name="overwrite">If true overwriting files happens silently</param>
+    public static void MoveFolderContents(string fromFolder, string targetFolder, bool overwrite = false)
+    {
+        foreach (var fileSystemEntry in Directory.EnumerateFileSystemEntries(fromFolder))
+        {
+            if (Directory.Exists(fileSystemEntry))
+            {
+                var finalTarget = Path.Join(targetFolder, Path.GetFileName(fileSystemEntry));
+
+                if (Directory.Exists(finalTarget))
+                {
+                    Directory.Delete(finalTarget, true);
+                }
+                else if (File.Exists(finalTarget))
+                {
+                    File.Delete(finalTarget);
+                }
+
+                Directory.Move(fileSystemEntry, finalTarget);
+            }
+            else
+            {
+                MoveToFolder(fileSystemEntry, targetFolder, overwrite);
+            }
+        }
+    }
 }
