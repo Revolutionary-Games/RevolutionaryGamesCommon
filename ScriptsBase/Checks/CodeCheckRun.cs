@@ -1,5 +1,6 @@
 namespace ScriptsBase.Checks;
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -10,7 +11,7 @@ using Utilities;
 /// <summary>
 ///   Represents a code check run
 /// </summary>
-public class CodeCheckRun
+public sealed class CodeCheckRun : IDisposable
 {
     private readonly object outputLock = new();
     private readonly SemaphoreSlim dotnetToolRestoreMutex = new(1);
@@ -159,6 +160,11 @@ public class CodeCheckRun
         }
     }
 
+    public void Dispose()
+    {
+        Dispose(true);
+    }
+
     internal void SetIgnoredFiles(IEnumerable<Regex> patterns)
     {
         ignorePatterns = patterns.ToList();
@@ -167,5 +173,14 @@ public class CodeCheckRun
     internal void SetSpecificSetOfFilesToCheck(IList<string>? files)
     {
         OnlyCheckFiles = files;
+    }
+
+    private void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            dotnetToolRestoreMutex.Dispose();
+            BuildMutex.Dispose();
+        }
     }
 }
