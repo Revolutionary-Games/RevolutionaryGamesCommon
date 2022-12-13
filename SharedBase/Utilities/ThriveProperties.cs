@@ -41,6 +41,52 @@ public static class ThriveProperties
         }
     }
 
+    public static string GodotTargetFromPlatform(PackagePlatform platform, bool steam)
+    {
+        if (steam)
+        {
+            switch (platform)
+            {
+                case PackagePlatform.Linux:
+                    return "Linux/X11_steam";
+                case PackagePlatform.Windows:
+                    return "Windows Desktop_steam";
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(platform), platform, null);
+            }
+        }
+
+        switch (platform)
+        {
+            case PackagePlatform.Linux:
+                return "Linux/X11";
+            case PackagePlatform.Windows:
+                return "Windows Desktop";
+            case PackagePlatform.Windows32:
+                return "Windows Desktop (32-bit)";
+            case PackagePlatform.Mac:
+                return "Mac OSX";
+            default:
+                throw new ArgumentOutOfRangeException(nameof(platform), platform, null);
+        }
+    }
+
+    public static string GodotTargetExtension(PackagePlatform platform)
+    {
+        switch (platform)
+        {
+            case PackagePlatform.Linux:
+                return string.Empty;
+            case PackagePlatform.Windows32:
+            case PackagePlatform.Windows:
+                return ".exe";
+            case PackagePlatform.Mac:
+                return ".zip";
+            default:
+                throw new ArgumentOutOfRangeException(nameof(platform), platform, null);
+        }
+    }
+
     public static string GetFolderNameForLauncher(PackagePlatform platform, string launcherVersion,
         LauncherExportType exportType)
     {
