@@ -5,9 +5,21 @@ using System.Globalization;
 
 public static class ValuePrintHelpers
 {
-    public static string BytesToMiB(this float number, int decimals = 2, bool suffix = true)
+    public static string BytesToMiB(this float number, int decimals = 2, bool suffix = true,
+        bool alwaysShowDecimals = false)
     {
-        var result = Math.Round(number / GlobalConstants.MEBIBYTE, decimals).ToString(CultureInfo.CurrentCulture);
+        var asMib = Math.Round(number / GlobalConstants.MEBIBYTE, decimals);
+
+        string result;
+
+        if (alwaysShowDecimals)
+        {
+            result = asMib.ToString($"N{decimals}", CultureInfo.CurrentCulture);
+        }
+        else
+        {
+            result = asMib.ToString(CultureInfo.CurrentCulture);
+        }
 
         if (!suffix)
             return result;
@@ -15,13 +27,15 @@ public static class ValuePrintHelpers
         return result + " MiB";
     }
 
-    public static string BytesToMiB(this long number, int decimals = 2, bool suffix = true)
+    public static string BytesToMiB(this long number, int decimals = 2, bool suffix = true,
+        bool alwaysShowDecimals = false)
     {
-        return ((float)number).BytesToMiB(decimals, suffix);
+        return ((float)number).BytesToMiB(decimals, suffix, alwaysShowDecimals);
     }
 
-    public static string BytesToMiB(this int number, int decimals = 2, bool suffix = true)
+    public static string BytesToMiB(this int number, int decimals = 2, bool suffix = true,
+        bool alwaysShowDecimals = false)
     {
-        return ((float)number).BytesToMiB(decimals, suffix);
+        return ((float)number).BytesToMiB(decimals, suffix, alwaysShowDecimals);
     }
 }
