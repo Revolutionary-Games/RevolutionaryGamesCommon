@@ -58,6 +58,24 @@ public class FileUtilities
     }
 
     /// <summary>
+    ///   Opens a folder or file in the current platform's default program
+    /// </summary>
+    /// <param name="fileOrFolder">The folder or file to open</param>
+    [UnsupportedOSPlatform("browser")]
+    public static void OpenFileOrFolderInDefaultProgram(string fileOrFolder)
+    {
+        if (!fileOrFolder.StartsWith("file://"))
+            fileOrFolder = $"file://{Path.GetFullPath(fileOrFolder)}";
+
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = fileOrFolder,
+            UseShellExecute = true,
+            Verb = "open",
+        });
+    }
+
+    /// <summary>
     ///   Finds the first subfolder in folder
     /// </summary>
     /// <param name="folder">The folder to look in. Needs to exist</param>
