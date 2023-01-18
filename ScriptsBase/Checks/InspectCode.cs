@@ -96,7 +96,7 @@ public class InspectCode : JetBrainsCheck
                 continue;
 
             var file = node.Attributes?["File"]?.Value ?? throw new Exception("Issue node has no file");
-            var line = node.Attributes?["Line"]?.Value ?? throw new Exception("Issue node has no line");
+            var line = node.Attributes?["Line"]?.Value ?? "UNKNOWN LINE";
             var message = node.Attributes?["Message"]?.Value ?? throw new Exception("Issue node has no message");
             var offset = node.Attributes?["Offset"]?.Value;
 
