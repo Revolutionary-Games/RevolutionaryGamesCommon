@@ -65,6 +65,8 @@ public class PoContentCheck : FileCheck
                 yield return $"Translation key is empty. Empty key is after key: {previousTranslation}";
             }
 
+            string? lastText = null;
+
             foreach (var translation in entry)
             {
                 if (!string.IsNullOrEmpty(translation))
@@ -72,6 +74,7 @@ public class PoContentCheck : FileCheck
                     if (translation.Contains('_'))
                         hasUnderscore = true;
 
+                    lastText = translation;
                     hasSomething = true;
                     break;
                 }
@@ -85,6 +88,12 @@ public class PoContentCheck : FileCheck
             if (hasUnderscore && string.Join('\n', entry) == id)
             {
                 yield return $"Translation text for {id} is the same as the key";
+            }
+
+            if (isEnglish && lastText != null && lastText.TrimEnd() != lastText)
+            {
+                yield return $"Translation text for {id} ends with whitespace, which is not allowed. " +
+                    "Instead insert spacing or padding with code or Control Nodes.";
             }
 
             if (id.ToUpperInvariant() != id && !LocalizationUppercaseExceptions.Contains(id))
