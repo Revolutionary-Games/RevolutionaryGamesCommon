@@ -5,10 +5,10 @@ jobs:
     image: thrive/launcher:v4
     cache:
       loadFrom:
-        - v1-{Branch}-build
-      writeTo: v1-{Branch}-build
+        - v2-{Branch}-build
+      writeTo: v2-{Branch}-build
       system:
-        /root/.nuget: v1-nuget
+        /root/.nuget: v2-nuget
     steps:
       - run:
            command: dotnet restore
@@ -22,10 +22,10 @@ jobs:
     image: thrive/launcher:v4
     cache:
       loadFrom:
-        - v1-{Branch}-build
-      writeTo: v1-{Branch}-build
+        - v2-{Branch}-build
+      writeTo: v2-{Branch}-build
       system:
-        /root/.nuget: v1-nuget
+        /root/.nuget: v2-nuget
     steps:
       - run:
           name: Build list of changed files
