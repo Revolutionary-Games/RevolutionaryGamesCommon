@@ -5,13 +5,16 @@
 /// </summary>
 public class ExtractedTranslation
 {
-    public ExtractedTranslation(string translationKey, string sourceLocation)
+    public ExtractedTranslation(string translationKey, string sourceFile, int lineNumber)
     {
         TranslationKey = translationKey;
-        SourceLocation = sourceLocation;
+        SourceFile = sourceFile;
+        SourceLocation = $"{sourceFile}:{lineNumber}";
     }
 
     public string TranslationKey { get; }
+
+    public string SourceFile { get; }
     public string SourceLocation { get; }
 
     public override string ToString()

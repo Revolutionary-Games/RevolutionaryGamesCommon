@@ -25,10 +25,18 @@ public abstract class LocalizationUpdateBase<T>
 {
     protected readonly T options;
 
+    /// <summary>
+    ///   Multiple source string locations are packed onto a single line if the combined length is less than
+    ///   this.
+    /// </summary>
+    private const int PackedSourcesLineLength = 80;
+
     private readonly IReadOnlyCollection<Regex> untranslatablePatterns = new[]
     {
-        new Regex(@"^[+-.]*\d[\d.-]+$", RegexOptions.Compiled),
+        new Regex(@"^[+\-\.]*\d[\d\.\-]*%?$", RegexOptions.Compiled),
+        new Regex(@"^[+\-\.]+$", RegexOptions.Compiled),
         new Regex(@"^\s+$", RegexOptions.Compiled),
+        new Regex(@"^[+\-\d]*[\d\.\-+/\s]*%?$", RegexOptions.Compiled),
     };
 
     private readonly Dictionary<string, string> alreadyFoundTools = new();
@@ -238,8 +246,9 @@ public abstract class LocalizationUpdateBase<T>
             return false;
         }
 
-        // Group all keys
-        var groups = rawTranslations.GroupBy(t => t.TranslationKey);
+        // Sort the translations by the extraction file and group all items by translation keys
+        var groups = rawTranslations.OrderBy(t => t.SourceFile, StringComparer.InvariantCulture)
+            .GroupBy(t => t.TranslationKey);
 
         // Filtering for things we don't want to translate
         groups = groups.Where(g => IsFineToTranslate(g.Key));
@@ -315,16 +324,45 @@ public abstract class LocalizationUpdateBase<T>
             builder.Clear();
             alreadyUsedSourceLocations.Clear();
 
+            bool partialLineStarted = false;
+            int previousLength = 0;
+
             // Where this text is referenced
             foreach (var groupData in group)
             {
                 // Only add unique locations
-                if (alreadyUsedSourceLocations.Add(groupData.SourceLocation))
+                if (!alreadyUsedSourceLocations.Add(groupData.SourceLocation))
+                    continue;
+
+                bool wroteEntry = false;
+
+                // Write more than one source location references on the same line if they fit
+                if (partialLineStarted)
                 {
-                    builder.Append($"#: {pathPrefix}{groupData.SourceLocation}");
-                    builder.Append('\n');
+                    // Don't pack too much stuff based on the length of the line
+                    var thisLength = 1 + pathPrefix.Length + groupData.SourceLocation.Length;
+                    if (previousLength + thisLength <= PackedSourcesLineLength)
+                    {
+                        builder.Append($" {pathPrefix}{groupData.SourceLocation}");
+                        wroteEntry = true;
+                        previousLength += thisLength;
+                    }
                 }
+
+                if (wroteEntry)
+                    continue;
+
+                if (partialLineStarted)
+                    builder.Append('\n');
+
+                partialLineStarted = true;
+
+                builder.Append($"#: {pathPrefix}{groupData.SourceLocation}");
+                previousLength = 3 + pathPrefix.Length + groupData.SourceLocation.Length;
             }
+
+            if (partialLineStarted)
+                builder.Append('\n');
 
             // The text itself
             builder.Append($"msgid \"{group.Key}\"");
@@ -340,8 +378,5 @@ public abstract class LocalizationUpdateBase<T>
         }
 
         cancellationToken.ThrowIfCancellationRequested();
-
-        // Extra blank line at the end of the file
-        await writer.WriteAsync('\n');
     }
 }
