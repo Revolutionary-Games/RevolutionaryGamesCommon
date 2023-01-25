@@ -259,8 +259,7 @@ public abstract class LocalizationUpdateBase<T>
     private async Task WritePotFile(IEnumerable<IGrouping<string, ExtractedTranslation>> groups,
         CancellationToken cancellationToken)
     {
-        // This variable is not disposed as the StreamWriter will automatically close this when it is disposed
-        var file = File.OpenWrite(TranslationTemplateFile);
+        await using var file = File.Open(TranslationTemplateFile, FileMode.Create, FileAccess.Write);
         await using var writer = new StreamWriter(file, new UTF8Encoding(false));
 
         var now = DateTime.Now;
