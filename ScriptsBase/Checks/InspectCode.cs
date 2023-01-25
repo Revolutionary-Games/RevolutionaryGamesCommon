@@ -100,6 +100,9 @@ public class InspectCode : JetBrainsCheck
             var message = node.Attributes?["Message"]?.Value ?? throw new Exception("Issue node has no message");
             var offset = node.Attributes?["Offset"]?.Value;
 
+            if (IsAlwaysIgnoredJetBrainsIssue(type, message))
+                continue;
+
             if (!issuesFound)
             {
                 runData.ReportError("Code inspection detected issues:");
@@ -144,6 +147,23 @@ public class InspectCode : JetBrainsCheck
         }
 
         ClearFileLoadedForReporting();
+    }
+
+    /// <summary>
+    ///   Returns true for known problematic checks that JetBrains reports that cannot be fixed
+    /// </summary>
+    /// <param name="type">The type of problem to check</param>
+    /// <param name="message">The message of the problem</param>
+    /// <returns>True if the error should be always ignored</returns>
+    private bool IsAlwaysIgnoredJetBrainsIssue(string type, string message)
+    {
+        // Workaround for https://youtrack.jetbrains.com/issue/RSRP-490368
+        if (type == "UnknownProperty" && message.Contains("MSBuildThisFileDirectory"))
+        {
+            return true;
+        }
+
+        return false;
     }
 
     private void PrepareFileForReporting(string path)
