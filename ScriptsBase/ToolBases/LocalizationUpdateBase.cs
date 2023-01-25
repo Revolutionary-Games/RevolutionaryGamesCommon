@@ -315,7 +315,9 @@ public abstract class LocalizationUpdateBase<T>
         int depth = LocaleFolder.Count(c => c == '/') + 1;
 
         for (int i = 0; i < depth; ++i)
+        {
             pathPrefix += "../";
+        }
 
         var alreadyUsedSourceLocations = new HashSet<string>();
 
