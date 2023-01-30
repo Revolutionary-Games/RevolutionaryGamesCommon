@@ -53,6 +53,8 @@ public abstract class LocalizationUpdateBase<T>
 
     protected abstract string LocaleFolder { get; }
 
+    protected abstract bool AlphabeticallySortTranslationTemplate { get; }
+
     /// <summary>
     ///   Weblate disagrees with gettext tools regarding where to wrap, so we have to disable it
     /// </summary>
@@ -253,7 +255,10 @@ public abstract class LocalizationUpdateBase<T>
         // Filtering for things we don't want to translate
         groups = groups.Where(g => IsFineToTranslate(g.Key));
 
-        // TODO: do we want to alphabetically sort the translation keys or not? That could have some benefits.
+        if (AlphabeticallySortTranslationTemplate)
+        {
+            groups = groups.OrderBy(g => g.Key, StringComparer.Ordinal);
+        }
 
         await WritePotFile(groups, cancellationToken);
 
