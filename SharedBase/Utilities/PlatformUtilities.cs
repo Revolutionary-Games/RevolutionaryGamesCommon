@@ -25,6 +25,9 @@ public static class PlatformUtilities
         if (OperatingSystem.IsMacOS())
             return PackagePlatform.Mac;
 
+        if (OperatingSystem.IsBrowser())
+            return PackagePlatform.Web;
+
         throw new NotSupportedException("Unknown OS to get current platform for");
     }
 }

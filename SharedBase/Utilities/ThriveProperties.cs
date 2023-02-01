@@ -36,6 +36,8 @@ public static class ThriveProperties
                 return "windows_desktop_(32-bit)";
             case PackagePlatform.Mac:
                 return "mac_osx";
+            case PackagePlatform.Web:
+                return "web";
             default:
                 throw new ArgumentOutOfRangeException(nameof(platform), platform, null);
         }
@@ -66,6 +68,8 @@ public static class ThriveProperties
                 return "Windows Desktop (32-bit)";
             case PackagePlatform.Mac:
                 return "Mac OSX";
+            case PackagePlatform.Web:
+                return "Web";
             default:
                 throw new ArgumentOutOfRangeException(nameof(platform), platform, null);
         }
@@ -82,6 +86,8 @@ public static class ThriveProperties
                 return ".exe";
             case PackagePlatform.Mac:
                 return ".zip";
+            case PackagePlatform.Web:
+                return ".html";
             default:
                 throw new ArgumentOutOfRangeException(nameof(platform), platform, null);
         }
@@ -144,6 +150,9 @@ public static class ThriveProperties
             case PackagePlatform.Windows:
             case PackagePlatform.Windows32:
                 return "Thrive.exe";
+            case PackagePlatform.Web:
+                // Technically not an executable, but should be openable with the operating system's open action
+                return "Thrive.html";
             default:
                 throw new ArgumentOutOfRangeException(nameof(platform), platform, null);
         }
