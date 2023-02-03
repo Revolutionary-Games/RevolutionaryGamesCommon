@@ -14,9 +14,10 @@ public class JsonWriteHelper
     /// <param name="file">The file to write to</param>
     /// <param name="objectToSerialize">The object to serialize to the file</param>
     /// <param name="cancellationToken">Cancellation</param>
+    /// <param name="indent">When true the JSON is written in indented form</param>
     /// <returns>Task for when the operation is ready</returns>
     public static async Task WriteJsonWithBom(string file, object objectToSerialize,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken, bool indent = true)
     {
         // For some reason there seems to sometimes be corruption in the files we write, so delete the entire file
         // first before writing
@@ -30,7 +31,7 @@ public class JsonWriteHelper
 
         await JsonSerializer.SerializeAsync(writer, objectToSerialize, new JsonSerializerOptions
         {
-            WriteIndented = true,
+            WriteIndented = indent,
         }, cancellationToken);
 
         // Add a new line at the end as JSON writing doesn't do that by default
