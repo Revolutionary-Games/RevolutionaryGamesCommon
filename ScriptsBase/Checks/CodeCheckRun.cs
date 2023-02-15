@@ -175,6 +175,27 @@ public sealed class CodeCheckRun : IDisposable
         OnlyCheckFiles = files;
     }
 
+    internal void ApplyCommandLineIncludes(ICollection<string>? include, ICollection<string>? exclude)
+    {
+        if (include is { Count: > 0 })
+        {
+            OnlyCheckFiles ??= new List<string>();
+
+            foreach (var toInclude in include)
+            {
+                OnlyCheckFiles.Add(toInclude);
+            }
+        }
+
+        if (exclude is { Count: > 0 })
+        {
+            foreach (var toExclude in exclude)
+            {
+                ignorePatterns.Add(new Regex(toExclude));
+            }
+        }
+    }
+
     private void Dispose(bool disposing)
     {
         if (disposing)

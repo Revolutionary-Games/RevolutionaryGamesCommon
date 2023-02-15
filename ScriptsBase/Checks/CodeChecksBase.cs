@@ -232,6 +232,8 @@ public abstract class CodeChecksBase<T>
         RunData.SetIgnoredFiles(DefaultIgnoredFilePaths.Concat(FilePathsToAlwaysIgnore));
         RunData.SetSpecificSetOfFilesToCheck(OnlyChangedFileDetector.DetectOnlySomeFilesConfiguredForChecking()
             ?.ToList());
+        RunData.ApplyCommandLineIncludes(options.Include, options.Exclude);
+
         RunData.InstallDotnetTools = options.RestoreTools;
         RunData.SolutionFile = MainSolutionFile;
         RunData.ForceIgnoredJetbrainsInspections = ForceIgnoredJetbrainsInspections.ToList();

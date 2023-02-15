@@ -17,6 +17,14 @@ public class CheckOptionsBase : ScriptOptionsBase
         HelpText = "Run in pre-commit mode (automatically build list of changes)")]
     public bool PreCommitMode { get; set; }
 
+    [Option("include", Required = false,
+        HelpText = "Include files to run on (if specified overwrites the default behaviour of running on all files)")]
+    public IList<string>? Include { get; set; }
+
+    [Option("exclude", Required = false,
+        HelpText = "Exclude specified files (specify patterns as regexes)")]
+    public IList<string>? Exclude { get; set; }
+
     [Value(0, MetaName = "Checks", HelpText = "Checks to enable (leave blank for default checks)")]
     public IList<string> Checks { get; set; } = new List<string>();
 }
