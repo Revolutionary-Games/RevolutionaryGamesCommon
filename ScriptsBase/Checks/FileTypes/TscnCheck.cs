@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 public class TscnCheck : LineByLineFileChecker
 {
     /// <summary>
-    ///  Pretty generous, so can't detect like small models with only a few vertices, as text etc. is on a single line
+    ///   Pretty generous, so can't detect like small models with only a few vertices, as text etc. is on a single line
     /// </summary>
     private const int SCENE_EMBEDDED_LENGTH_HEURISTIC = 920;
 
