@@ -112,12 +112,12 @@ public class RewriteTool : CodeCheck
             if (node.Modifiers.Count < 1)
             {
                 runData.OutputTextWithMutex(
-                    $"{GetLocation(node.Span)} had an interface property with missing access modifiers");
+                    $"{GetLocation(node.Span)} had an interface method with missing access modifiers");
 
-                var publicToken = SyntaxFactory.Token(SyntaxKind.PublicKeyword);
+                var (publicToken, returnType) = CopyTriviaForPrependedNode(CreatePublicToken(), node.ReturnType);
 
                 var newNode = SyntaxFactory.MethodDeclaration(node.AttributeLists, new SyntaxTokenList(publicToken),
-                    node.ReturnType, node.ExplicitInterfaceSpecifier, node.Identifier, node.TypeParameterList,
+                    returnType, node.ExplicitInterfaceSpecifier, node.Identifier, node.TypeParameterList,
                     node.ParameterList, node.ConstraintClauses, node.Body, node.ExpressionBody, node.SemicolonToken);
 
                 return newNode;
@@ -134,12 +134,12 @@ public class RewriteTool : CodeCheck
             if (node.Modifiers.Count < 1)
             {
                 runData.OutputTextWithMutex(
-                    $"{GetLocation(node.Span)} had an interface method with missing access modifiers");
+                    $"{GetLocation(node.Span)} had an interface property with missing access modifiers");
 
-                var publicToken = SyntaxFactory.Token(SyntaxKind.PublicKeyword);
+                var (publicToken, type) = CopyTriviaForPrependedNode(CreatePublicToken(), node.Type);
 
                 var newNode = SyntaxFactory.PropertyDeclaration(node.AttributeLists, new SyntaxTokenList(publicToken),
-                    node.Type, node.ExplicitInterfaceSpecifier, node.Identifier, node.AccessorList, node.ExpressionBody,
+                    type, node.ExplicitInterfaceSpecifier, node.Identifier, node.AccessorList, node.ExpressionBody,
                     node.Initializer, node.SemicolonToken);
 
                 return newNode;
@@ -151,6 +151,30 @@ public class RewriteTool : CodeCheck
         private string GetLocation(TextSpan span)
         {
             return $"Line {sourceText.Lines.GetLinePosition(span.Start).Line + 1}";
+        }
+
+        private SyntaxToken CreatePublicToken()
+        {
+            return SyntaxFactory.Token(SyntaxKind.PublicKeyword);
+        }
+
+        private (T1 NewNode, T2 OldNode) CopyTriviaForPrependedNode<T1, T2>(T1 newNode, T2 oldNode)
+            where T1 : SyntaxNode
+            where T2 : SyntaxNode
+        {
+            var singleSpaceTrivia = SyntaxFactory.SyntaxTrivia(SyntaxKind.WhitespaceTrivia, " ");
+
+            return (newNode.WithLeadingTrivia(oldNode.GetLeadingTrivia()),
+                oldNode.WithLeadingTrivia(singleSpaceTrivia));
+        }
+
+        private (SyntaxToken NewNode, T2 OldNode) CopyTriviaForPrependedNode<T2>(SyntaxToken newNode, T2 oldNode)
+            where T2 : SyntaxNode
+        {
+            var singleSpaceTrivia = SyntaxFactory.SyntaxTrivia(SyntaxKind.WhitespaceTrivia, " ");
+
+            return (newNode.WithLeadingTrivia(oldNode.GetLeadingTrivia()),
+                oldNode.WithLeadingTrivia(singleSpaceTrivia));
         }
     }
 }
