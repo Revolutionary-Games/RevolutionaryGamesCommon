@@ -80,24 +80,33 @@ public class FileChecks : CodeCheck
 
         // Detect what git LFS has marked as binary and add those to known binary files
         // TODO: check if we should somehow run this asynchronously
-        var binaryAttributes = GitRunHelpers.ParseGitAttributeBinaryFiles("./", false, CancellationToken.None).Result;
+        binaryFileExtensions = GenerateKnownToBeIgnoredExtensions("./").Result;
+    }
 
-        binaryFileExtensions = KnownBinaryFiles.Concat(binaryAttributes).ToList();
+    /// <summary>
+    ///   Generate a list of known bad file endings to not handle (binary files)
+    /// </summary>
+    /// <param name="gitFolder">Folder to run git in to get info from git</param>
+    /// <returns>The list of known bad file endings</returns>
+    public static async Task<List<string>> GenerateKnownToBeIgnoredExtensions(string gitFolder)
+    {
+        var binaryAttributes =
+            await GitRunHelpers.ParseGitAttributeBinaryFiles(gitFolder, false, CancellationToken.None);
 
         // TODO: maybe we should also load .gitignore here?
+
+        return KnownBinaryFiles.Concat(binaryAttributes).ToList();
     }
 
-    public override async Task Run(CodeCheckRun runData, CancellationToken cancellationToken)
-    {
-        var files = EnumerateFilesRecursively(StartFileEnumerateFolder, runData);
-
-        if (!await RunChecksOnFiles(files, runData, cancellationToken))
-        {
-            runData.ReportError("Code format issues detected");
-        }
-    }
-
-    private IEnumerable<string> EnumerateFilesRecursively(string start, CodeCheckRun runData)
+    /// <summary>
+    ///   Enumerate non-ignored files recursively
+    /// </summary>
+    /// <param name="start">The folder to start</param>
+    /// <param name="runData">Run data to check excludes from</param>
+    /// <param name="binaryFileExtensions">Binary file extensions that are ignored</param>
+    /// <returns>All found files</returns>
+    public static IEnumerable<string> EnumerateFilesRecursively(string start, CodeCheckRun runData,
+        IReadOnlyCollection<string> binaryFileExtensions)
     {
         foreach (var file in Directory.EnumerateFiles(start))
         {
@@ -131,10 +140,20 @@ public class FileChecks : CodeCheck
 
         foreach (var folder in Directory.EnumerateDirectories(start))
         {
-            foreach (var recursiveCall in EnumerateFilesRecursively(folder, runData))
+            foreach (var recursiveCall in EnumerateFilesRecursively(folder, runData, binaryFileExtensions))
             {
                 yield return recursiveCall;
             }
+        }
+    }
+
+    public override async Task Run(CodeCheckRun runData, CancellationToken cancellationToken)
+    {
+        var files = EnumerateFilesRecursively(StartFileEnumerateFolder, runData, binaryFileExtensions);
+
+        if (!await RunChecksOnFiles(files, runData, cancellationToken))
+        {
+            runData.ReportError("Code format issues detected");
         }
     }
 
