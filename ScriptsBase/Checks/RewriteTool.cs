@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -32,12 +31,16 @@ public class RewriteTool : CodeCheck
         NoModifierPlacementType,
         "internal",
 
-        // TODO: this might not work, this is technically an allowed modifier but we don't use this anywhere
+        // TODO: this might not work (due to being multiple tokens)
+        // this is technically an allowed modifier but we don't use this anywhere, see the TODO comment below
         "protected internal",
         "protected",
         "private",
     };
 
+    /// <summary>
+    ///   This specifies the order of these types of members that can be contained in a class
+    /// </summary>
     public static readonly IReadOnlyCollection<SyntaxKind> SyntaxTypeOrder = new[]
     {
         SyntaxKind.FieldDeclaration,
@@ -55,13 +58,30 @@ public class RewriteTool : CodeCheck
         SyntaxKind.StructDeclaration,
     };
 
-    public static readonly IReadOnlyCollection<Regex> OrderOfMethodNames = new[]
+    /// <summary>
+    ///   Orders some methods specifically based on their names. Lower values are first.
+    ///   0 is default when nothing matches.
+    /// </summary>
+    public static readonly IReadOnlyCollection<(Regex Regex, int Order)> OrderOfMethodNames = new[]
     {
-        new Regex(@"^_Ready"),
-        new Regex(@"^ResolveNodeReferences"),
-        new Regex(@"^_EnterTree"),
-        new Regex(@"^_ExitTree"),
-        new Regex(@"^_.*"),
+        (new Regex(@"^_Ready"), -100),
+        (new Regex(@"^ResolveNodeReferences"), -99),
+        (new Regex(@"^ResolveDerivedTypeNodeReferences"), -98),
+        (new Regex(@"^_EnterTree"), -95),
+        (new Regex(@"^_ExitTree"), -94),
+        (new Regex(@"^Init"), -93),
+        (new Regex(@"^_(Physics)?Process"), -5),
+        (new Regex(@"^Update$"), -4),
+        (new Regex(@"^_Notification"), -3),
+        (new Regex(@"^_Draw"), -2),
+        (new Regex(@"^_.*"), -1),
+
+        (new Regex(@"^Equals?"), 40),
+        (new Regex(@"^Clone.*"), 50),
+        (new Regex(@"^Dispose"), 90),
+        (new Regex(@"^Get(Visual)?HashCode"), 95),
+        (new Regex(@"(Description|Detail)String$"), 99),
+        (new Regex(@"^ToString"), 100),
     };
 
     private const string StartFileEnumerateFolder = "./";
@@ -224,7 +244,8 @@ public class RewriteTool : CodeCheck
             if (expected == current)
             {
                 // This indicates a problem in the order comparison
-                runData.OutputWarningWithMutex("Expected and current order string representations are the same");
+                runData.OutputWarningWithMutex("Expected and current order string representations are the same. " +
+                    "This indicates a bug in the formatting tool.");
             }
 
             runData.OutputTextWithMutex($"Expected order:\n{expected}\nBut current order is:\n{current}");
@@ -253,8 +274,7 @@ public class RewriteTool : CodeCheck
                 first = false;
 
                 var name = GetNameFromMemberDeclaration(memberDeclarationSyntax);
-                if (name != null)
-                    stringBuilder.Append($" - {name}");
+                stringBuilder.Append($" - {name}");
             }
 
             if (stringBuilder.Length < 1)
@@ -263,7 +283,7 @@ public class RewriteTool : CodeCheck
             return stringBuilder.ToString();
         }
 
-        private static string? GetNameFromMemberDeclaration(MemberDeclarationSyntax memberDeclarationSyntax)
+        private static string GetNameFromMemberDeclaration(MemberDeclarationSyntax memberDeclarationSyntax)
         {
             switch (memberDeclarationSyntax)
             {
@@ -353,10 +373,6 @@ public class RewriteTool : CodeCheck
                         return 1;
                 }
 
-                // TODO: remove
-                if (xKindIndex == -1 || yKindIndex == -1)
-                    Debugger.Break();
-
                 // Compare access modifiers next
                 int xIndex;
                 if (x.Modifiers.Count > 0 && y.Modifiers.Count > 0)
@@ -419,8 +435,17 @@ public class RewriteTool : CodeCheck
                 // Modifiers are all the same, compare some special names
                 if (x is MethodDeclarationSyntax xMethod && y is MethodDeclarationSyntax yMethod)
                 {
-                    // xMethod.Identifier.ToString()
-                    // yMethod.Identifier.ToString()
+                    var xName = xMethod.Identifier.ToString();
+                    var yName = yMethod.Identifier.ToString();
+
+                    int xPriority = OrderOfMethodNames.FirstOrDefault(t => t.Regex.IsMatch(xName), (null!, 0)).Order;
+                    int yPriority = OrderOfMethodNames.FirstOrDefault(t => t.Regex.IsMatch(yName), (null!, 0)).Order;
+
+                    if (xPriority < yPriority)
+                        return -1;
+
+                    if (xPriority > yPriority)
+                        return 1;
                 }
 
                 // Everything we check for is equal
