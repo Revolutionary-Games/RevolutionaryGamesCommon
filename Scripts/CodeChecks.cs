@@ -15,6 +15,7 @@ public class CodeChecks : CodeChecksBase<Program.CheckOptions>
         { "compile", new CompileCheck() },
         { "inspectcode", new InspectCode() },
         { "cleanupcode", new CleanupCode() },
+        { "rewrite", new RewriteTool() },
     };
 
     protected override string MainSolutionFile => "RevolutionaryGamesCommon.sln";
