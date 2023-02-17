@@ -25,6 +25,8 @@ public class LauncherVersionInfo
     [ToStringMaxLength]
     public Uri DownloadsPage { get; set; } = new("https://revolutionarygamesstudio.com/");
 
+    // Created from JSON data
+    // ReSharper disable once CollectionNeverUpdated.Global
     [Required]
     [MaxLength(50)]
     public Dictionary<LauncherAutoUpdateChannel, DownloadableInfo> AutoUpdateDownloads { get; set; } = new();
