@@ -32,6 +32,8 @@ public abstract class FileCheck
         HandledFileEndings = fullList;
     }
 
+    public List<string>? IgnoredFiles { get; set; }
+
     /// <summary>
     ///   Contains a list of file endings (extensions) that this check handles
     /// </summary>
@@ -39,6 +41,12 @@ public abstract class FileCheck
 
     public bool HandlesFile(string file)
     {
+        if (IgnoredFiles != null)
+        {
+            if (IgnoredFiles.Any(file.EndsWith))
+                return false;
+        }
+
         return HandledFileEndings.Any(file.EndsWith);
     }
 
