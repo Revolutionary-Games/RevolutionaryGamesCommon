@@ -1,4 +1,4 @@
-{
+﻿{
   "sdk": {
     "rollForward": "latestMinor",
     "version": "7.0.0"
