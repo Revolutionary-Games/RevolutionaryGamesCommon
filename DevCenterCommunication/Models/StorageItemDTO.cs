@@ -18,6 +18,8 @@ public class StorageItemDTO : ClientSideTimedModel
     public long? OwnerId { get; set; }
     public long? ParentId { get; set; }
     public bool AllowParentless { get; set; }
+
+    public long? LastModifiedById { get; set; }
 }
 
 public class StorageItemInfo : ClientSideModel
