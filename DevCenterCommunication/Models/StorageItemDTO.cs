@@ -13,6 +13,7 @@ public class StorageItemDTO : ClientSideTimedModel
     public FileType Ftype { get; set; }
     public bool Special { get; set; }
     public long? Size { get; set; }
+    public bool ModificationLocked { get; set; }
     public FileAccess ReadAccess { get; set; }
     public FileAccess WriteAccess { get; set; }
     public long? OwnerId { get; set; }
