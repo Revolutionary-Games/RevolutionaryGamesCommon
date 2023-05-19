@@ -12,10 +12,11 @@ public class StorageItemDTO : ClientSideTimedModel
     // ReSharper disable once IdentifierTypo
     public FileType Ftype { get; set; }
     public bool Special { get; set; }
+    public bool Important { get; set; }
     public long? Size { get; set; }
-    public bool ModificationLocked { get; set; }
     public FileAccess ReadAccess { get; set; }
     public FileAccess WriteAccess { get; set; }
+    public bool ModificationLocked { get; set; }
     public long? OwnerId { get; set; }
     public long? ParentId { get; set; }
     public bool AllowParentless { get; set; }
