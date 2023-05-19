@@ -32,6 +32,24 @@ public abstract class FileCheck
         HandledFileEndings = fullList;
     }
 
+    /// <summary>
+    ///   Sets the types of files this check runs on. This variant takes just one list to specify all the types
+    ///   to run on.
+    /// </summary>
+    /// <param name="allHandledFileExtensions">All file extensions this runs on. May not be empty</param>
+    protected FileCheck(params string[] allHandledFileExtensions)
+    {
+        if (allHandledFileExtensions.Length < 1)
+            throw new ArgumentException("Must give at least  one file type to run on");
+
+        if (allHandledFileExtensions.Count(e => e == string.Empty) > 1)
+        {
+            throw new ArgumentException("Running on all files should be specified only once");
+        }
+
+        HandledFileEndings = allHandledFileExtensions;
+    }
+
     public List<string>? IgnoredFiles { get; set; }
 
     /// <summary>

@@ -19,6 +19,11 @@ public class BomChecker : FileCheck
         this.checkMode = checkMode;
     }
 
+    public BomChecker(Mode checkMode, params string[] handledFileEndings) : base(handledFileEndings)
+    {
+        this.checkMode = checkMode;
+    }
+
     public enum Mode
     {
         Required,
