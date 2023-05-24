@@ -17,6 +17,7 @@ public class StorageItemDTO : ClientSideTimedModel
     public FileAccess ReadAccess { get; set; }
     public FileAccess WriteAccess { get; set; }
     public bool ModificationLocked { get; set; }
+    public bool Deleted { get; set; }
     public long? OwnerId { get; set; }
     public long? ParentId { get; set; }
     public bool AllowParentless { get; set; }
