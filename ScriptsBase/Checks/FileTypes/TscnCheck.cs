@@ -5,6 +5,11 @@ using System.Text.RegularExpressions;
 
 public class TscnCheck : LineByLineFileChecker
 {
+    public const string TAB_CONTROL_TYPE = "Tabs";
+
+    public static readonly Regex GodotNodeRegex = new(@"^\[node\sname=""([^""]+)""\s(?:type=""([^""]+)"")?",
+        RegexOptions.Compiled);
+
     /// <summary>
     ///   Pretty generous, so can't detect like small models with only a few vertices, as text etc. is on a single line
     /// </summary>
@@ -13,12 +18,11 @@ public class TscnCheck : LineByLineFileChecker
     private const int NODE_NAME_UPPERCASE_REQUIRED_LENGTH = 25;
     private const int NODE_NAME_UPPERCASE_ACRONYM_ALLOWED_LENGTH = 4;
 
-    private static readonly Regex NodeNameRegex = new(@"\[node\s+name=""([^""]+)""");
+    private static readonly Regex EmbeddedFontSignature =
+        new(@"sub_resource type=""DynamicFont""", RegexOptions.Compiled);
 
-    private static readonly Regex EmbeddedFontSignature = new(@"sub_resource type=""DynamicFont""");
-
-    private static readonly Regex Whitespace = new(@"\s");
-    private static readonly Regex StartsWithUppercaseLetter = new(@"^[A-Z]");
+    private static readonly Regex Whitespace = new(@"\s", RegexOptions.Compiled);
+    private static readonly Regex StartsWithUppercaseLetter = new(@"^[A-Z]", RegexOptions.Compiled);
 
     public TscnCheck() : base(".tscn")
     {
@@ -38,7 +42,7 @@ public class TscnCheck : LineByLineFileChecker
                 "Don't embed fonts in scenes, instead place font resources in a separate .tres");
         }
 
-        var match = NodeNameRegex.Match(line);
+        var match = GodotNodeRegex.Match(line);
 
         if (match.Success)
         {
@@ -47,6 +51,17 @@ public class TscnCheck : LineByLineFileChecker
             if (Whitespace.IsMatch(name))
             {
                 yield return FormatErrorLineHelper(lineNumber, $"contains a name ({name}) that has a space.");
+            }
+
+            if (match.Groups.Count > 2)
+            {
+                var type = match.Groups[2].Value;
+
+                if (type == TAB_CONTROL_TYPE)
+                {
+                    // Ignore name requirements on tabs control names
+                    yield break;
+                }
             }
 
             if (name.Contains('_'))
