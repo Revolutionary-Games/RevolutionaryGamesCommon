@@ -35,4 +35,5 @@ public class StorageItemInfo : ClientSideModel
     public FileType Ftype { get; set; }
     public long? Size { get; set; }
     public FileAccess ReadAccess { get; set; }
+    public FileAccess WriteAccess { get; set; }
 }
