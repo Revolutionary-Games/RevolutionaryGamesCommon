@@ -14,6 +14,8 @@ public class DisallowedFileType : FileCheck
     {
     }
 
+    public Dictionary<string, string> ExtraErrorMessages { get; } = new();
+
     public override IAsyncEnumerable<string> Handle(string path)
     {
         var extension = Path.GetExtension(path);
@@ -21,6 +23,18 @@ public class DisallowedFileType : FileCheck
         if (string.IsNullOrEmpty(extension))
             extension = Path.GetFileName(path);
 
-        return new[] { $"Files of type {extension} should not exist" }.ToAsyncEnumerable();
+        return new[] { GetErrorMessage(extension) }.ToAsyncEnumerable();
+    }
+
+    private string GetErrorMessage(string extension)
+    {
+        var baseError = $"Files of type {extension} should not exist";
+
+        if (ExtraErrorMessages.TryGetValue(extension, out var extra))
+        {
+            return $"{baseError}. {extra}";
+        }
+
+        return baseError;
     }
 }
