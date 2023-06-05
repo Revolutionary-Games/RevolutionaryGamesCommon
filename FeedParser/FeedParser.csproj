@@ -10,7 +10,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AngleSharp" Version="1.0.1" />
+    <PackageReference Include="AngleSharp" Version="1.0.2" />
     <PackageReference Include="SmartFormat" Version="3.2.1" />
   </ItemGroup>
 
