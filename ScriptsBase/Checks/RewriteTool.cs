@@ -45,6 +45,7 @@ public class RewriteTool : CodeCheck
     {
         SyntaxKind.FieldDeclaration,
         SyntaxKind.ConstructorDeclaration,
+        SyntaxKind.DestructorDeclaration,
         SyntaxKind.DelegateDeclaration,
         SyntaxKind.EventFieldDeclaration,
         SyntaxKind.InterfaceDeclaration,
