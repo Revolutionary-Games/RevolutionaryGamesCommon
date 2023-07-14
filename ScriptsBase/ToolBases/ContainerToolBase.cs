@@ -1,7 +1,10 @@
 ﻿namespace ScriptsBase.ToolBases;
 
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,6 +19,8 @@ using Utilities;
 public abstract class ContainerToolBase<T>
     where T : ContainerOptionsBase
 {
+    public const int RePullImagesIfOlderThanDays = 14;
+
     protected readonly T options;
 
     private readonly Regex builtImageId =
@@ -30,7 +35,7 @@ public abstract class ContainerToolBase<T>
 
     protected abstract string ExportFileNameBase { get; }
     protected abstract string ImagesAndConfigsFolder { get; }
-    protected abstract string DefaultImageToBuild { get; }
+    protected abstract (string BuildRelativeFolder, string? TargetToStopAt) DefaultImageToBuild { get; }
     protected abstract string ImageNameBase { get; }
 
     public async Task<bool> Run(CancellationToken cancellationToken)
@@ -62,7 +67,14 @@ public abstract class ContainerToolBase<T>
                 extraTag = $"{ImageNameBase}:latest";
         }
 
-        var builtImage = await Build(DefaultImageToBuild, tag, extraTag, cancellationToken);
+        if (!await RefreshImagePullsIfNeeded(cancellationToken))
+        {
+            ColourConsole.WriteErrorLine("Pre-built image pulls failed");
+            return false;
+        }
+
+        var builtImage = await Build(DefaultImageToBuild.BuildRelativeFolder, DefaultImageToBuild.TargetToStopAt, tag,
+            extraTag, cancellationToken);
 
         if (builtImage == null)
         {
@@ -83,7 +95,13 @@ public abstract class ContainerToolBase<T>
         return true;
     }
 
-    protected virtual async Task<string?> Build(string buildType, string? tag, string? extraTag,
+    protected virtual async Task<bool> RefreshImagePullsIfNeeded(CancellationToken cancellationToken)
+    {
+        return await PulledImageCache.RefreshImagePullsIfNeeded(ImagesToPullIfTheyAreOld(),
+            TimeSpan.FromDays(RePullImagesIfOlderThanDays), cancellationToken);
+    }
+
+    protected virtual async Task<string?> Build(string buildType, string? targetToStopAt, string? tag, string? extraTag,
         CancellationToken cancellationToken)
     {
         var folder = Path.Join(ImagesAndConfigsFolder, buildType);
@@ -91,6 +109,12 @@ public abstract class ContainerToolBase<T>
         var startInfo = new ProcessStartInfo("podman");
         startInfo.ArgumentList.Add("build");
         startInfo.ArgumentList.Add(folder);
+
+        if (!string.IsNullOrEmpty(targetToStopAt))
+        {
+            startInfo.ArgumentList.Add("--target");
+            startInfo.ArgumentList.Add(targetToStopAt);
+        }
 
         bool capture = tag == null;
 
@@ -168,6 +192,12 @@ public abstract class ContainerToolBase<T>
         return Task.FromResult(true);
     }
 
+    /// <summary>
+    ///   Allows automatic pulling of new updates for images if local versions are old
+    /// </summary>
+    /// <returns>An enumerable of images to pull (these are cached automatically)</returns>
+    protected abstract IEnumerable<string> ImagesToPullIfTheyAreOld();
+
     protected async Task<bool> CheckDotnetSdkWasInstalled(string tagOrId)
     {
         var startInfo = new ProcessStartInfo("podman");
@@ -215,6 +245,8 @@ public abstract class ContainerToolBase<T>
         startInfo.ArgumentList.Add($"{tag}");
         startInfo.ArgumentList.Add("-o");
         startInfo.ArgumentList.Add(file);
+
+        ColourConsole.WriteNormalLine("Saving image as file");
 
         var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken, true);
 
