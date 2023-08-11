@@ -9,7 +9,7 @@ using System.Text.RegularExpressions;
 /// </summary>
 public class PoFormatCheck : LineByLineFileChecker
 {
-    public static readonly Regex FuzzyTranslationRegex = new(@"^#, fuzzy");
+    public static readonly Regex FuzzyTranslationRegex = new("^#, fuzzy");
     private static readonly Regex TrailingSpace = new(@"(?<=\S)[\t ]+$");
 
     // Unused now with the used proper gettext parser

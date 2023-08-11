@@ -22,7 +22,7 @@ public class TscnCheck : LineByLineFileChecker
         new(@"sub_resource type=""DynamicFont""", RegexOptions.Compiled);
 
     private static readonly Regex Whitespace = new(@"\s", RegexOptions.Compiled);
-    private static readonly Regex StartsWithUppercaseLetter = new(@"^[A-Z]", RegexOptions.Compiled);
+    private static readonly Regex StartsWithUppercaseLetter = new("^[A-Z]", RegexOptions.Compiled);
 
     public TscnCheck() : base(".tscn")
     {

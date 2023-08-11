@@ -65,24 +65,24 @@ public class RewriteTool : CodeCheck
     /// </summary>
     public static readonly IReadOnlyCollection<(Regex Regex, int Order)> OrderOfMethodNames = new[]
     {
-        (new Regex(@"^_Ready"), -100),
-        (new Regex(@"^ResolveNodeReferences"), -99),
-        (new Regex(@"^ResolveDerivedTypeNodeReferences"), -98),
-        (new Regex(@"^_EnterTree"), -95),
-        (new Regex(@"^_ExitTree"), -94),
-        (new Regex(@"^Init"), -93),
-        (new Regex(@"^_(Physics)?Process"), -5),
-        (new Regex(@"^Update$"), -4),
-        (new Regex(@"^_Notification"), -3),
-        (new Regex(@"^_Draw"), -2),
-        (new Regex(@"^_.*"), -1),
+        (new Regex("^_Ready"), -100),
+        (new Regex("^ResolveNodeReferences"), -99),
+        (new Regex("^ResolveDerivedTypeNodeReferences"), -98),
+        (new Regex("^_EnterTree"), -95),
+        (new Regex("^_ExitTree"), -94),
+        (new Regex("^Init"), -93),
+        (new Regex("^_(Physics)?Process"), -5),
+        (new Regex("^Update$"), -4),
+        (new Regex("^_Notification"), -3),
+        (new Regex("^_Draw"), -2),
+        (new Regex("^_.*"), -1),
 
-        (new Regex(@"^Equals?"), 40),
-        (new Regex(@"^Clone.*"), 50),
-        (new Regex(@"^Dispose"), 90),
-        (new Regex(@"^Get(Visual)?HashCode"), 95),
-        (new Regex(@"(Description|Detail)String$"), 99),
-        (new Regex(@"^ToString"), 100),
+        (new Regex("^Equals?"), 40),
+        (new Regex("^Clone.*"), 50),
+        (new Regex("^Dispose"), 90),
+        (new Regex("^Get(Visual)?HashCode"), 95),
+        (new Regex("(Description|Detail)String$"), 99),
+        (new Regex("^ToString"), 100),
     };
 
     private const string StartFileEnumerateFolder = "./";

@@ -43,7 +43,7 @@ public class PoContentCheck : FileCheck
 
             foreach (var diagnostic in result.Diagnostics)
             {
-                yield return diagnostic.ToString();
+                yield return diagnostic.ToString() ?? "unknown error";
             }
 
             yield break;

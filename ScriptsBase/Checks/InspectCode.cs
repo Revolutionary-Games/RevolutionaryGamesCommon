@@ -33,8 +33,8 @@ public class InspectCode : JetBrainsCheck
     /// </summary>
     public static IEnumerable<string> InspectCodeIgnoredFilesWildcards { get; } = new List<string>
     {
-        new(@"*.min.css"),
-        new(@"*.dll"),
+        new("*.min.css"),
+        new("*.dll"),
     };
 
     protected override async Task RunJetBrainsTool(CodeCheckRun runData, CancellationToken cancellationToken)
