@@ -20,10 +20,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Services.Tests" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\FeedParser.Shared\FeedParser.Shared.csproj" />
     <ProjectReference Include="..\FeedParser\FeedParser.csproj" />
   </ItemGroup>
