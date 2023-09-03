@@ -19,12 +19,7 @@ public class JsonWriteHelper
     public static async Task WriteJsonWithBom(string file, object objectToSerialize,
         CancellationToken cancellationToken, bool indent = true)
     {
-        // For some reason there seems to sometimes be corruption in the files we write, so delete the entire file
-        // first before writing
-        if (File.Exists(file))
-            File.Delete(file);
-
-        await using var writer = File.OpenWrite(file);
+        await using var writer = File.Open(file, FileMode.Create);
 
         // As we use the pure serialize here, we need to manually add the BOM
         await writer.WriteAsync(BomChecker.BomBytes, cancellationToken);

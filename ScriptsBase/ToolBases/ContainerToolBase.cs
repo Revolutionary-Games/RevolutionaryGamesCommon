@@ -37,6 +37,8 @@ public abstract class ContainerToolBase<T>
     protected abstract (string BuildRelativeFolder, string? TargetToStopAt) DefaultImageToBuild { get; }
     protected abstract string ImageNameBase { get; }
 
+    protected abstract bool SaveByDefault { get; }
+
     public async Task<bool> Run(CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(options.Version))
@@ -66,14 +68,16 @@ public abstract class ContainerToolBase<T>
                 extraTag = $"{ImageNameBase}:latest";
         }
 
-        if (!await RefreshImagePullsIfNeeded(cancellationToken))
+        var (potentialPullSucceeded, skipCache) = await RefreshImagePullsIfNeeded(cancellationToken);
+
+        if (!potentialPullSucceeded)
         {
             ColourConsole.WriteErrorLine("Pre-built image pulls failed");
             return false;
         }
 
         var builtImage = await Build(DefaultImageToBuild.BuildRelativeFolder, DefaultImageToBuild.TargetToStopAt, tag,
-            extraTag, cancellationToken);
+            extraTag, skipCache, cancellationToken);
 
         if (builtImage == null)
         {
@@ -81,7 +85,7 @@ public abstract class ContainerToolBase<T>
             return false;
         }
 
-        if (options.Export == true)
+        if (options.Export == true || (options.Export == null && SaveByDefault))
         {
             if (!await ExportAsFile(builtImage, options.Version, cancellationToken))
             {
@@ -94,14 +98,15 @@ public abstract class ContainerToolBase<T>
         return true;
     }
 
-    protected virtual async Task<bool> RefreshImagePullsIfNeeded(CancellationToken cancellationToken)
+    protected virtual async Task<(bool Success, bool RefreshBuildCache)> RefreshImagePullsIfNeeded(
+        CancellationToken cancellationToken)
     {
         return await PulledImageCache.RefreshImagePullsIfNeeded(ImagesToPullIfTheyAreOld(),
             TimeSpan.FromDays(RePullImagesIfOlderThanDays), cancellationToken);
     }
 
     protected virtual async Task<string?> Build(string buildType, string? targetToStopAt, string? tag, string? extraTag,
-        CancellationToken cancellationToken)
+        bool skipCache, CancellationToken cancellationToken)
     {
         var folder = Path.Join(ImagesAndConfigsFolder, buildType);
 
@@ -113,6 +118,12 @@ public abstract class ContainerToolBase<T>
         {
             startInfo.ArgumentList.Add("--target");
             startInfo.ArgumentList.Add(targetToStopAt);
+        }
+
+        if (skipCache)
+        {
+            ColourConsole.WriteDebugLine("Doing podman build with --no-cache");
+            startInfo.ArgumentList.Add("--no-cache");
         }
 
         bool capture = tag == null;

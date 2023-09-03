@@ -58,19 +58,20 @@ public class PulledImageCache
         }
     }
 
-    public static async Task<bool> RefreshImagePullsIfNeeded(IEnumerable<string> images, TimeSpan rePullOlderThan,
-        CancellationToken cancellationToken)
+    public static async Task<(bool Success, bool DisableBuildCache)> RefreshImagePullsIfNeeded(
+        IEnumerable<string> images, TimeSpan rePullOlderThan, CancellationToken cancellationToken)
     {
         var imagesToCheck = images.ToList();
 
         if (imagesToCheck.Count < 1)
         {
             ColourConsole.WriteDebugLine("No images configured to re-pull automatically");
-            return true;
+            return (true, false);
         }
 
         var cache = await Load();
         bool failure = false;
+        bool skipCache = false;
 
         foreach (var image in imagesToCheck)
         {
@@ -86,6 +87,7 @@ public class PulledImageCache
                 }
 
                 ColourConsole.WriteNormalLine($"{image} has not been pulled recently, will pull it");
+                skipCache = true;
             }
             else
             {
@@ -106,10 +108,11 @@ public class PulledImageCache
                 {
                     ColourConsole.WriteErrorLine(
                         $"Failed to pull image '{image}' with podman (exit: {result.ExitCode})");
-                    return false;
+                    return (false, false);
                 }
 
                 cache.UpdatePullTime(image);
+
 
                 ColourConsole.WriteSuccessLine($"Pulled podman image '{image}'");
             }
@@ -124,7 +127,7 @@ public class PulledImageCache
 
         await cache.Save();
 
-        return !failure;
+        return (!failure, skipCache);
     }
 
     public bool TryGetValue(string imageName, out DateTime lastPulled)
@@ -157,7 +160,7 @@ public class PulledImageCache
         {
             Directory.CreateDirectory(GetSaveFolder());
 
-            await using var writer = File.OpenWrite(GetSavePath());
+            await using var writer = File.Open(GetSavePath(), FileMode.Create);
 
             await JsonSerializer.SerializeAsync(writer, cacheData);
         }

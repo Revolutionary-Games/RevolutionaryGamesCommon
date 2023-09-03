@@ -11,7 +11,7 @@ public class ContainerOptionsBase : ScriptOptionsBase
     [Option("tag", Required = false, Default = true, HelpText = "Set to tag the built image")]
     public bool? Tag { get; set; }
 
-    [Option('e', "export", Required = false, Default = true, HelpText = "Export the built image as a tar.xz")]
+    [Option('e', "export", Required = false, Default = null, HelpText = "Export the built image as a tar.xz")]
     public bool? Export { get; set; }
 
     [Value(0, MetaName = "Version", Default = "latest", HelpText = "Version to build/tag as")]

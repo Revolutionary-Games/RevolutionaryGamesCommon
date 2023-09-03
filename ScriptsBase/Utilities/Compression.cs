@@ -46,7 +46,7 @@ public static class Compression
 
         await using var reader = File.OpenRead(sourceFile);
 
-        await using var fileWriter = File.OpenWrite(targetFile);
+        await using var fileWriter = File.Open(targetFile, FileMode.Create);
         await using var gzWriter = new GZipStream(fileWriter, CompressionLevel.Optimal);
 
         await reader.CopyToAsync(gzWriter, cancellationToken);
@@ -139,7 +139,7 @@ public static class Compression
 
         var convertedPatterns = ignorePatterns.Select(Wildcards.ConvertToRegex).ToList();
 
-        using var fileWriter = File.OpenWrite(archiveFile);
+        using var fileWriter = File.Open(archiveFile, FileMode.Create);
         using var archive = new ZipArchive(fileWriter, ZipArchiveMode.Create);
 
         foreach (var item in itemsToInclude)
