@@ -113,7 +113,6 @@ public class PulledImageCache
 
                 cache.UpdatePullTime(image);
 
-
                 ColourConsole.WriteSuccessLine($"Pulled podman image '{image}'");
             }
             catch (Exception e)
