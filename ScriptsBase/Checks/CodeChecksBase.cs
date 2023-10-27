@@ -77,6 +77,8 @@ public abstract class CodeChecksBase<T>
         new(@"\.bak$"),
         new(@"\.git/"),
         new("/?builds/", RegexOptions.IgnoreCase),
+        new("/?build/", RegexOptions.IgnoreCase),
+        new("/?build-debug/", RegexOptions.IgnoreCase),
         new("/?dist/", RegexOptions.IgnoreCase),
         new(LocalizationCheckBase.LOCALE_TEMP_SUFFIX + "$"),
         new(JetBrainsCheck.JET_BRAINS_CACHE + "/"),
