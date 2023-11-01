@@ -18,7 +18,7 @@ public static class PipPackageVersionChecker
 
     public static async Task<(bool Matches, string Installed, string Wanted)> CompareInstalledBabelThriveVersion(
         CancellationToken cancellationToken,
-        string requirementsFile = "docker/ci/requirements.txt")
+        string requirementsFile = "podman/ci/requirements.txt")
     {
         var installed = await GetInstalledBabelThriveVersion(cancellationToken);
         var wanted = await GetWantedBabelThriveVersion(requirementsFile, cancellationToken);
