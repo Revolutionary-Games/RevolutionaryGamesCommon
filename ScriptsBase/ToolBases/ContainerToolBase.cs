@@ -144,7 +144,7 @@ public abstract class ContainerToolBase<T>
             }
         }
 
-        var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken, capture);
+        var result = await RunImageBuild(startInfo, capture, cancellationToken);
 
         if (result.ExitCode != 0)
         {
@@ -195,6 +195,12 @@ public abstract class ContainerToolBase<T>
         ColourConsole.WriteSuccessLine($"Successfully built and tagged: {tag}");
 
         return tag;
+    }
+
+    protected virtual Task<ProcessRunHelpers.ProcessResult> RunImageBuild(ProcessStartInfo startInfo, bool capture,
+        CancellationToken cancellationToken)
+    {
+        return ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken, capture);
     }
 
     protected virtual Task<bool> PostCheckBuild(string tagOrId)
