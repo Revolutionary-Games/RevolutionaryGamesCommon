@@ -31,7 +31,7 @@ public static class ProcessRunHelpers
 
     [UnsupportedOSPlatform("browser")]
     public static Task<ProcessResult> RunProcessAsync(ProcessStartInfo startInfo,
-        CancellationToken cancellationToken, bool captureOutput = true, bool captureStdErrorInStdOut = true,
+        CancellationToken cancellationToken, bool captureOutput, bool captureStdErrorInStdOut,
         int startRetries = 5, bool waitForLastOutput = true, Encoding? inputOutputEncoding = null)
     {
         while (true)
