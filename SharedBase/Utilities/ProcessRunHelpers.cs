@@ -25,12 +25,21 @@ public static class ProcessRunHelpers
         CancellationToken cancellationToken, bool captureOutput = true, int startRetries = 5,
         bool waitForLastOutput = true, Encoding? inputOutputEncoding = null)
     {
+        return RunProcessAsync(startInfo, cancellationToken, captureOutput, true, startRetries, waitForLastOutput,
+            inputOutputEncoding);
+    }
+
+    [UnsupportedOSPlatform("browser")]
+    public static Task<ProcessResult> RunProcessAsync(ProcessStartInfo startInfo,
+        CancellationToken cancellationToken, bool captureOutput = true, bool captureStdErrorInStdOut = true,
+        int startRetries = 5, bool waitForLastOutput = true, Encoding? inputOutputEncoding = null)
+    {
         while (true)
         {
             try
             {
-                return StartProcessInternal(startInfo, cancellationToken, null, captureOutput, null, null,
-                    waitForLastOutput, inputOutputEncoding).Task;
+                return StartProcessInternal(startInfo, cancellationToken, null, captureOutput, captureStdErrorInStdOut,
+                    null, null, waitForLastOutput, inputOutputEncoding).Task;
             }
             catch (InvalidOperationException)
             {
@@ -53,7 +62,7 @@ public static class ProcessRunHelpers
         {
             try
             {
-                return StartProcessInternal(startInfo, cancellationToken, null, true, onOutput, onErrorOut,
+                return StartProcessInternal(startInfo, cancellationToken, null, true, false, onOutput, onErrorOut,
                     waitForLastOutput, inputOutputEncoding).Task;
             }
             catch (InvalidOperationException)
@@ -78,7 +87,7 @@ public static class ProcessRunHelpers
         {
             try
             {
-                return StartProcessInternal(startInfo, cancellationToken, inputLines, true, onOutput, onErrorOut,
+                return StartProcessInternal(startInfo, cancellationToken, inputLines, true, false, onOutput, onErrorOut,
                     waitForLastOutput, inputOutputEncoding).Task;
             }
             catch (InvalidOperationException)
@@ -144,6 +153,11 @@ public static class ProcessRunHelpers
     ///   If true the output of the process is redirected to us rather than whatever terminal environment
     ///   we are running in
     /// </param>
+    /// <param name="captureErrorToStdOut">
+    ///   If true then when output lines are captured they are also passed to the stdout capturing. If
+    ///   <see cref="captureOutput"/> is false or there's custom actions (<see cref="onOutput"/>) defined, this
+    ///   parameter does nothing.
+    /// </param>
     /// <param name="onOutput">
     ///   If specified will be called with each output line (without line terminator), instead of pooling the data
     ///   to the process results.
@@ -167,7 +181,8 @@ public static class ProcessRunHelpers
     [UnsupportedOSPlatform("browser")]
     private static TaskCompletionSource<ProcessResult> StartProcessInternal(ProcessStartInfo startInfo,
         CancellationToken cancellationToken, IEnumerable<string>? inputLines, bool captureOutput,
-        Action<string>? onOutput, Action<string>? onErrorOut, bool waitForLastOutput, Encoding? inputOutputEncoding)
+        bool captureErrorToStdOut, Action<string>? onOutput, Action<string>? onErrorOut, bool waitForLastOutput,
+        Encoding? inputOutputEncoding)
     {
         inputOutputEncoding ??= new UTF8Encoding(false);
 
@@ -186,7 +201,7 @@ public static class ProcessRunHelpers
             startInfo.RedirectStandardInput = true;
         }
 
-        var result = new ProcessResult();
+        var result = new ProcessResult(captureErrorToStdOut);
         var taskCompletionSource = new TaskCompletionSource<ProcessResult>();
 
         var process = new Process
@@ -206,7 +221,7 @@ public static class ProcessRunHelpers
             }
             else
             {
-                SetupBufferedProcessOutputRead(result, process, waitSkipSource);
+                SetupBufferedProcessOutputRead(result, process, captureErrorToStdOut, waitSkipSource);
             }
         }
         else
@@ -365,7 +380,7 @@ public static class ProcessRunHelpers
     }
 
     [UnsupportedOSPlatform("browser")]
-    private static void SetupBufferedProcessOutputRead(ProcessResult result, Process process,
+    private static void SetupBufferedProcessOutputRead(ProcessResult result, Process process, bool includeErrorInStdOut,
         TaskCompletionSource? waitSkipSource)
     {
         process.OutputDataReceived += (_, args) =>
@@ -391,6 +406,13 @@ public static class ProcessRunHelpers
                     waitSkipSource?.TrySetResult();
 
                 return;
+            }
+
+            // This makes error output appear logically in the place where it is supposed to
+            if (includeErrorInStdOut)
+            {
+                result.StdOut.Append(args.Data);
+                result.StdOut.Append('\n');
             }
 
             result.ErrorOut.Append(args.Data);
@@ -520,6 +542,21 @@ public static class ProcessRunHelpers
         /// </summary>
         internal int PendingStreamsToEnd = 2;
 
+        private readonly bool stdoutIncludesError;
+
+        /// <summary>
+        ///   Creates a new process result
+        /// </summary>
+        /// <param name="stdoutIncludesError">
+        ///   If true then it is assumed that <see cref="StdOut"/> also gets the
+        ///   <see cref="ErrorOut"/> interleaved in it (and it won't be separately included in the
+        ///   <see cref="FullOutput"/>.
+        /// </param>
+        public ProcessResult(bool stdoutIncludesError)
+        {
+            this.stdoutIncludesError = stdoutIncludesError;
+        }
+
         public int ExitCode { get; set; }
 
         public StringBuilder StdOut { get; set; } = new();
@@ -527,11 +564,15 @@ public static class ProcessRunHelpers
 
         public string Output => StdOut.ToString();
 
+        /// <summary>
+        ///   The full output of this process. If the error stream was not interleaved then it is appended after the
+        ///   normal output
+        /// </summary>
         public string FullOutput
         {
             get
             {
-                if (ErrorOut.Length < 1)
+                if (stdoutIncludesError || ErrorOut.Length < 1)
                     return StdOut.ToString();
 
                 return $"{StdOut}\n{ErrorOut}";
@@ -544,8 +585,8 @@ public static class ProcessRunHelpers
         /// </summary>
         public bool Exited { get; set; }
 
-        // The following are only kind of useful flags to see if something went wrong. These mostly really for internal
-        // use
+        // The following are only kind of useful flags to see if something went wrong. These are mostly really for
+        // internal use, though
 
         public bool AllInputLinesWritten { get; internal set; }
 
