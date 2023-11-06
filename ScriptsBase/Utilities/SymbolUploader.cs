@@ -144,7 +144,7 @@ public class SymbolUploader
             var response = await client.PostAsJsonAsync("/api/v1/DebugSymbol/offerSymbols", new DebugSymbolOfferRequest
             {
                 SymbolPaths = chunk.Select(t => t.Name).ToList(),
-            }, cancellationToken: cancellationToken);
+            }, cancellationToken);
 
             var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
 
@@ -192,7 +192,7 @@ public class SymbolUploader
             {
                 SymbolPath = upload.Name,
                 Size = upload.Size,
-            }, cancellationToken: cancellationToken);
+            }, cancellationToken);
 
             var responseContent = await response.Content.ReadAsStringAsync(cancellationToken);
 

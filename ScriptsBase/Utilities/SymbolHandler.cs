@@ -149,11 +149,13 @@ public class SymbolHandler
 
             if (!Directory.Exists(WINDOWS_DIA_PATH))
             {
+                // ReSharper disable once StringLiteralTypo
                 throw new Exception($"Expected Visual Studio msdia dll path doesn't exist: {WINDOWS_DIA_PATH}");
             }
 
             if (ProcessRunHelpers.AddToPathInStartInfo(startInfo, WINDOWS_DIA_PATH))
             {
+                // ReSharper disable once StringLiteralTypo
                 ColourConsole.WriteNormalLine($"Adding {WINDOWS_DIA_PATH} to PATH for msdia dll files");
             }
 
