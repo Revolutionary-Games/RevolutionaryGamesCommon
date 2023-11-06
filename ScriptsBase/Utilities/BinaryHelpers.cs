@@ -22,6 +22,8 @@ public static class BinaryHelpers
         startInfo.ArgumentList.Add("--keep-section=.hash");
         startInfo.ArgumentList.Add("--keep-section=.gnu.hash");
 
+        startInfo.ArgumentList.Add(file);
+
         var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken, true);
 
         if (result.ExitCode != 0)

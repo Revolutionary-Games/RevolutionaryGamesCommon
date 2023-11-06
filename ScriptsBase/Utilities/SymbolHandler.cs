@@ -52,7 +52,11 @@ public class SymbolHandler
     {
         var startInfo = StartInfoForSymbolExtractor(mingw);
 
-        var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken, true);
+        ColourConsole.WriteDebugLine($"Trying to run symbol extractor: {startInfo.FileName}");
+
+        startInfo.ArgumentList.Add(Path.GetFullPath(file));
+
+        var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken, true, false);
 
         if (result.ExitCode != 0 || result.StdOut.Length < 1)
         {
@@ -129,10 +133,10 @@ public class SymbolHandler
 
         if (match.Success)
         {
-            if (match.Captures.Count != 4)
+            if (match.Groups.Count != 5)
                 throw new Exception("Programming error in regex matching");
 
-            return (match.Captures[0].Value, match.Captures[1].Value, match.Captures[2].Value, match.Captures[3].Value);
+            return (match.Groups[1].Value, match.Groups[2].Value, match.Groups[3].Value, match.Groups[4].Value);
         }
 
         throw new ArgumentException("Failed to read symbol info");
