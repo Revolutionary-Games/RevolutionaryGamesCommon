@@ -15,4 +15,18 @@ public class PrecompiledObjectDTO : ClientSideTimedModel
     public bool Public { get; set; } = true;
 
     public bool Deleted { get; set; }
+
+    public PrecompiledObjectDTO Clone()
+    {
+        return new PrecompiledObjectDTO
+        {
+            Id = Id,
+            CreatedAt = CreatedAt,
+            UpdatedAt = UpdatedAt,
+            Name = Name,
+            TotalStorageSize = TotalStorageSize,
+            Public = Public,
+            Deleted = Deleted,
+        };
+    }
 }
