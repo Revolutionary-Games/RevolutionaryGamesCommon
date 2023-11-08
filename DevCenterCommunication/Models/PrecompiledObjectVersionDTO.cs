@@ -5,6 +5,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 using Enums;
 using SharedBase.Models;
+using SharedBase.ModelVerifiers;
 
 public class PrecompiledObjectVersionDTO : IIdentifiable
 {
@@ -15,15 +16,18 @@ public class PrecompiledObjectVersionDTO : IIdentifiable
 
     [Required]
     [StringLength(100, MinimumLength = 1)]
+    [MayNotContain("/")]
     public string Version { get; set; } = null!;
 
     public PackagePlatform Platform { get; set; }
 
     public PrecompiledTag Tags { get; set; }
+
     public bool Uploaded { get; set; }
 
     /// <summary>
-    ///   Size in bytes of this object in storage. Shouldn't be set when starting an upload
+    ///   Size in bytes of this object in storage. Needs to be set when starting an upload (so the uploader needs to)
+    ///   compress the item locally.
     /// </summary>
     public long Size { get; set; }
 
