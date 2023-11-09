@@ -41,6 +41,8 @@ public class PrecompiledObjectVersionDTO : IIdentifiable
     /// </summary>
     public long? CreatedById { get; set; }
 
+    // TODO: make sure that this is a good hash to not have collisions (within a single OwnedById as this is
+    // used as a key in deleted item detection in PrecompiledObjectVersionsList.razor)
     [JsonIgnore]
     public long Id => (OwnedById + ((long)Platform << 58)) ^ ((long)Tags << 32) ^ (Version.GetHashCode() << 16);
 }
