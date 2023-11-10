@@ -10,7 +10,7 @@ public class DevCenterAccessingOptionsBase : ScriptOptionsBase
     public const string DEFAULT_DEVCENTER_URL = "https://dev.revolutionarygamesstudio.com";
     public const int DEFAULT_PARALLEL_UPLOADS = 3;
 
-    [Option('k', "key", Required = true, MetaValue = "KEY",
+    [Option('k', "key", Required = false, MetaValue = "API_TOKEN",
         HelpText = "Set to a DevCenter user API token to use for upload")]
     public string? Key { get; set; }
 
