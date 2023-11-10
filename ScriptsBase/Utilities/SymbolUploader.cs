@@ -50,7 +50,7 @@ public class SymbolUploader
 
         if (foundSymbolFiles.Count < 1)
         {
-            ColourConsole.WriteWarningLine("No symbol files found. Has Godot build been run?");
+            ColourConsole.WriteWarningLine("No symbol files found. Has build / package script been run?");
             return true;
         }
 

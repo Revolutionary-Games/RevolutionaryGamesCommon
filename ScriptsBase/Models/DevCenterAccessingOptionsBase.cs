@@ -14,6 +14,7 @@ public class DevCenterAccessingOptionsBase : ScriptOptionsBase
         HelpText = "Set to a DevCenter user API token to use for upload")]
     public string? Key { get; set; }
 
+    // TODO: rename this to DevCenterUrl
     [Option("devcenter-url", Required = false, Default = DEFAULT_DEVCENTER_URL,
         MetaValue = "DEVCENTER_URL", HelpText = "DevCenter URL to upload to.")]
     public string Url { get; set; } = DEFAULT_DEVCENTER_URL;
