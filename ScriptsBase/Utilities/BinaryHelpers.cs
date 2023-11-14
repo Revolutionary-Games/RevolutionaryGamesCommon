@@ -28,7 +28,7 @@ public static class BinaryHelpers
 
         if (result.ExitCode != 0)
         {
-            ColourConsole.WriteErrorLine($"Failed to run 'strip' command: {result.FullOutput}");
+            ColourConsole.WriteErrorLine($"Failed to run 'strip' command (is it installed?): {result.FullOutput}");
             throw new Exception($"Strip command failed, {result.ExitCode}");
         }
     }
