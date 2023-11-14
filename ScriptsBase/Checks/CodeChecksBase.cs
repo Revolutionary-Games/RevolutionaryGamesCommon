@@ -80,6 +80,8 @@ public abstract class CodeChecksBase<T>
         new("/?build/", RegexOptions.IgnoreCase),
         new("/?build-debug/", RegexOptions.IgnoreCase),
         new("/?dist/", RegexOptions.IgnoreCase),
+        new("/?native_libs/"),
+        new("/?symbols/", RegexOptions.IgnoreCase),
         new(LocalizationCheckBase.LOCALE_TEMP_SUFFIX + "$"),
         new(JetBrainsCheck.JET_BRAINS_CACHE + "/"),
     }.Concat(InspectCode.InspectCodeIgnoredFiles).ToList();
