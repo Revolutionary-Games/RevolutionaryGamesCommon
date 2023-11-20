@@ -14,7 +14,7 @@ public class EmailAttributeTests
     [InlineData("a@b.com")]
     [InlineData("a@b")]
     [InlineData(null)]
-    public void Email_AllowsValid(string email)
+    public void Email_AllowsValid(string? email)
     {
         var model = new Model1
         {

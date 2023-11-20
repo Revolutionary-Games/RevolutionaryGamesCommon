@@ -12,7 +12,7 @@ public class IsRegexAttributeTests
     [InlineData("just a thing")]
     [InlineData("some (regex)+stuff\\s here.*")]
     [InlineData(null)]
-    public void IsRegex_AllowsValid(string regex)
+    public void IsRegex_AllowsValid(string? regex)
     {
         var model = new Model1
         {
