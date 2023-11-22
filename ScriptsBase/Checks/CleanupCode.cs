@@ -29,6 +29,8 @@ public class CleanupCode : JetBrainsCheck
 
         AddJetbrainsToolRunIncludes(runData, startInfo);
 
+        AddJetbrainsToolRunExcludes(runData.ExtraIgnoredJetbrainsCleanUpWildcards, startInfo);
+
         var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken, JET_BRAINS_CAPTURE_OUTPUT);
 
         if (result.ExitCode != 0)

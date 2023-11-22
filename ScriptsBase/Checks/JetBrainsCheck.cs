@@ -70,6 +70,19 @@ public abstract class JetBrainsCheck : CodeCheck
         }
     }
 
+    protected static void AddJetbrainsToolRunExcludes(IEnumerable<string>? excludes, ProcessStartInfo startInfo)
+    {
+        if (excludes == null)
+            return;
+
+        var formattedExcludes = string.Join(';', excludes);
+
+        if (string.IsNullOrEmpty(formattedExcludes))
+            return;
+
+        startInfo.ArgumentList.Add($"--exclude={formattedExcludes}");
+    }
+
     protected static void ReportRunFailure(ProcessRunHelpers.ProcessResult result, string tool, CodeCheckRun runData)
     {
         // ReSharper disable HeuristicUnreachableCode

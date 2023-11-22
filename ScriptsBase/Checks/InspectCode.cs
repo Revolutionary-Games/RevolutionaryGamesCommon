@@ -53,10 +53,8 @@ public class InspectCode : JetBrainsCheck
 
         // TODO: add files not specified to be checked in CodeCheckRun if any files are specified as not checked
         // if that's a good idea
-        var formattedExcludes = string.Join(';',
-            InspectCodeIgnoredFilesWildcards.Concat(runData.ExtraIgnoredJetbrainsInspectWildcards));
-
-        startInfo.ArgumentList.Add($"--exclude={formattedExcludes}");
+        AddJetbrainsToolRunExcludes(
+            InspectCodeIgnoredFilesWildcards.Concat(runData.ExtraIgnoredJetbrainsInspectWildcards), startInfo);
 
         var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken, JET_BRAINS_CAPTURE_OUTPUT);
 

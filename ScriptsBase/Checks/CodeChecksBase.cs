@@ -50,6 +50,11 @@ public abstract class CodeChecksBase<T>
     /// </summary>
     protected virtual IEnumerable<string> ExtraIgnoredJetbrainsInspectWildcards => new string[] { };
 
+    /// <summary>
+    ///   Extra ignore wildcards for JetBrains cleanup code
+    /// </summary>
+    protected virtual IEnumerable<string> ExtraIgnoredJetbrainsCleanUpWildcards => new string[] { };
+
     protected virtual IEnumerable<string> DefaultChecks => ValidChecks.Keys;
 
     /// <summary>
@@ -242,6 +247,7 @@ public abstract class CodeChecksBase<T>
         RunData.SolutionFile = MainSolutionFile;
         RunData.ForceIgnoredJetbrainsInspections = ForceIgnoredJetbrainsInspections.ToList();
         RunData.ExtraIgnoredJetbrainsInspectWildcards = ExtraIgnoredJetbrainsInspectWildcards.ToList();
+        RunData.ExtraIgnoredJetbrainsCleanUpWildcards = ExtraIgnoredJetbrainsCleanUpWildcards.ToList();
     }
 
     private int SetupCheckObjectsForRun(IEnumerable<string> checkNames, List<CodeCheck> selectedChecks)

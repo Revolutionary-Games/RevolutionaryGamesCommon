@@ -30,6 +30,7 @@ public sealed class CodeCheckRun : IDisposable
     public IList<string>? OnlyCheckFiles { get; private set; }
     public IList<string> ForceIgnoredJetbrainsInspections { get; set; } = new List<string>();
     public IList<string> ExtraIgnoredJetbrainsInspectWildcards { get; set; } = new List<string>();
+    public IList<string> ExtraIgnoredJetbrainsCleanUpWildcards { get; set; } = new List<string>();
 
     /// <summary>
     ///   Checks if a file should be processed
