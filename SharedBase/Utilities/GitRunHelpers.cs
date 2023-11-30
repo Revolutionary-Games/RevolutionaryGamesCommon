@@ -323,6 +323,22 @@ public static class GitRunHelpers
     }
 
     [UnsupportedOSPlatform("browser")]
+    public static async Task<string> SubmoduleInfo(string folder, CancellationToken cancellationToken)
+    {
+        var startInfo = PrepareToRunGit(folder, true);
+        startInfo.ArgumentList.Add("submodule");
+
+        var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken);
+        if (result.ExitCode != 0)
+        {
+            throw new Exception(
+                $"Failed to run submodule list in repo, process exited with error: {result.FullOutput}");
+        }
+
+        return result.Output.Trim();
+    }
+
+    [UnsupportedOSPlatform("browser")]
     public static async Task<string> DiffNameOnly(string folder, bool cached, CancellationToken cancellationToken,
         bool useWindowsWorkaround = true)
     {
