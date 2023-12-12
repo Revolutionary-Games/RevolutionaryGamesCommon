@@ -32,10 +32,18 @@ public class SymbolUploader
 
     private readonly object outputLock = new();
 
-    public SymbolUploader(SymbolUploadOptionsBase options, string rootPathToSymbols)
+    public SymbolUploader(SymbolUploadOptionsBase options, string rootPathToSymbols,
+        bool addSymbolPrefixToRootPath = true)
     {
         this.options = options;
-        this.rootPathToSymbols = rootPathToSymbols;
+        if (addSymbolPrefixToRootPath)
+        {
+            this.rootPathToSymbols = Path.Join(rootPathToSymbols, SymbolHandler.SYMBOLS_FOLDER);
+        }
+        else
+        {
+            this.rootPathToSymbols = rootPathToSymbols;
+        }
 
         if (string.IsNullOrEmpty(options.Key))
             throw new Exception("Key to access ThriveDevCenter is required");
