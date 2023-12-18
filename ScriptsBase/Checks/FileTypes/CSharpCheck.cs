@@ -227,8 +227,7 @@ public class CSharpCheck : FileCheck
 
                     if (contentAfterTag)
                     {
-                        AddError(
-                            $"Line {lineNumber} has a <para> section where the content is not on the next line.");
+                        AddError($"Line {lineNumber} has a <para> section where the content is not on the next line.");
                     }
                 }
 
