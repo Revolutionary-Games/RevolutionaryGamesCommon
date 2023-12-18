@@ -8,8 +8,8 @@ using System.IO;
 /// </summary>
 public abstract class LineByLineFileChecker : FileCheck
 {
-    public LineByLineFileChecker(string firstHandledFileEnding, params string[] extraHandledFileEndings) : base(
-        firstHandledFileEnding, extraHandledFileEndings)
+    public LineByLineFileChecker(string firstHandledFileEnding, params string[] extraHandledFileEndings) :
+        base(firstHandledFileEnding, extraHandledFileEndings)
     {
     }
 

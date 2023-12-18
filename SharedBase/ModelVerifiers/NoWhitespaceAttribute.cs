@@ -22,8 +22,7 @@ public class NoWhitespaceAttribute : RequiredAttribute
         {
             if (WhitespaceRegex.IsMatch(valueString))
             {
-                return new ValidationResult(
-                    ErrorMessage ??
+                return new ValidationResult(ErrorMessage ??
                     $"The {validationContext.DisplayName} field may not contain whitespace.",
                     new[] { validationContext.MemberName! });
             }
@@ -45,8 +44,7 @@ public class NoWhitespaceAttribute : RequiredAttribute
                 }
 
                 if (WhitespaceRegex.IsMatch(existingValue.ToString() ??
-                        throw new InvalidOperationException(
-                            "Value in an enumerable can't be converted to a string")))
+                        throw new InvalidOperationException("Value in an enumerable can't be converted to a string")))
                 {
                     found = true;
                     break;
@@ -55,16 +53,14 @@ public class NoWhitespaceAttribute : RequiredAttribute
 
             if (found)
             {
-                return new ValidationResult(
-                    ErrorMessage ??
+                return new ValidationResult(ErrorMessage ??
                     $"The {validationContext.DisplayName} field may not contain whitespace.",
                     new[] { validationContext.MemberName! });
             }
         }
         else
         {
-            return new ValidationResult(
-                ErrorMessage ??
+            return new ValidationResult(ErrorMessage ??
                 $"The {validationContext.DisplayName} field is of unknown type to check that it does not " +
                 "contain whitespace.", new[] { validationContext.MemberName! });
         }

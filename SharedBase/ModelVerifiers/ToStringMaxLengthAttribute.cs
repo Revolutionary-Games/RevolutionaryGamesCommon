@@ -34,8 +34,7 @@ public class ToStringMaxLengthAttribute : RequiredAttribute
 
         if (asString.Length > MaxLength)
         {
-            return new ValidationResult(
-                ErrorMessage ??
+            return new ValidationResult(ErrorMessage ??
                 $"The {validationContext.DisplayName} field is too long (length: {asString.Length}). " +
                 $"It may not be longer than {MaxLength} characters.",
                 new[] { validationContext.MemberName! });

@@ -17,8 +17,7 @@ public class IsUriAttribute : RequiredAttribute
 
         if (value is not string asString)
         {
-            throw new InvalidOperationException(
-                $"Can't apply {nameof(IsUriAttribute)} to a non-string type");
+            throw new InvalidOperationException($"Can't apply {nameof(IsUriAttribute)} to a non-string type");
         }
 
         // We allow blanks as Required attribute disallows empty strings
@@ -27,8 +26,7 @@ public class IsUriAttribute : RequiredAttribute
 
         if (!Uri.TryCreate(asString, UriKind.Absolute, out _))
         {
-            return new ValidationResult(
-                ErrorMessage ??
+            return new ValidationResult(ErrorMessage ??
                 $"The {validationContext.DisplayName} field must be a valid URL.",
                 new[] { validationContext.MemberName! });
         }

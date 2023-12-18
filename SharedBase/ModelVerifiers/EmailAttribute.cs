@@ -20,16 +20,14 @@ public class EmailAttribute : RequiredAttribute
 
         if (asString == null)
         {
-            throw new InvalidOperationException(
-                $"Can't apply {nameof(EmailAttribute)} to a non-string type");
+            throw new InvalidOperationException($"Can't apply {nameof(EmailAttribute)} to a non-string type");
         }
 
         var atIndex = asString.IndexOf('@');
 
         if (atIndex < 1 || atIndex + 1 >= asString.Length)
         {
-            return new ValidationResult(
-                ErrorMessage ??
+            return new ValidationResult(ErrorMessage ??
                 $"The {validationContext.DisplayName} field must be an email address" +
                 "(missing @ character at valid position).",
                 new[] { validationContext.MemberName! });
@@ -37,8 +35,7 @@ public class EmailAttribute : RequiredAttribute
 
         if (asString.Length is > GlobalConstants.MaxEmailLength or < GlobalConstants.MinEmailLength)
         {
-            return new ValidationResult(
-                ErrorMessage ??
+            return new ValidationResult(ErrorMessage ??
                 $"The {validationContext.DisplayName} field must be an email address" +
                 "(address is too long or too short).",
                 new[] { validationContext.MemberName! });
@@ -46,8 +43,7 @@ public class EmailAttribute : RequiredAttribute
 
         if (!asString.Trim().Equals(asString))
         {
-            return new ValidationResult(
-                ErrorMessage ??
+            return new ValidationResult(ErrorMessage ??
                 $"The {validationContext.DisplayName} field must be an email address" +
                 "(there is trailing or preceding whitespace).",
                 new[] { validationContext.MemberName! });

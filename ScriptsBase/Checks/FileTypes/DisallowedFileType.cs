@@ -9,8 +9,8 @@ using System.Linq;
 /// </summary>
 public class DisallowedFileType : FileCheck
 {
-    public DisallowedFileType(string firstHandledFileEnding, params string[] extraHandledFileEndings) : base(
-        firstHandledFileEnding, extraHandledFileEndings)
+    public DisallowedFileType(string firstHandledFileEnding, params string[] extraHandledFileEndings) :
+        base(firstHandledFileEnding, extraHandledFileEndings)
     {
     }
 

@@ -13,8 +13,8 @@ public class BomChecker : FileCheck
 
     private readonly Mode checkMode;
 
-    public BomChecker(Mode checkMode, string firstHandledFileEnding, params string[] extraHandledFileEndings) : base(
-        firstHandledFileEnding, extraHandledFileEndings)
+    public BomChecker(Mode checkMode, string firstHandledFileEnding, params string[] extraHandledFileEndings) :
+        base(firstHandledFileEnding, extraHandledFileEndings)
     {
         this.checkMode = checkMode;
     }

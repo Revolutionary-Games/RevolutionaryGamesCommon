@@ -41,8 +41,7 @@ public class LauncherThriveInformationTests
                 new(1, "1.0.0", new Dictionary<PackagePlatform, DownloadableInfo>
                 {
                     {
-                        PackagePlatform.Linux, new DownloadableInfo(
-                            "12345678910",
+                        PackagePlatform.Linux, new DownloadableInfo("12345678910",
                             "Thrive_1.0.0.0_linux",
                             new Dictionary<string, Uri>
                             {

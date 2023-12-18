@@ -6,8 +6,8 @@ using System.IO;
 
 public class EndsWithNewLineCheck : FileCheck
 {
-    public EndsWithNewLineCheck(string firstHandledFileEnding, params string[] extraHandledFileEndings) : base(
-        firstHandledFileEnding, extraHandledFileEndings)
+    public EndsWithNewLineCheck(string firstHandledFileEnding, params string[] extraHandledFileEndings) :
+        base(firstHandledFileEnding, extraHandledFileEndings)
     {
     }
 

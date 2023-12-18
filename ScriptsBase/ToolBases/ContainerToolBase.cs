@@ -236,8 +236,7 @@ public abstract class ContainerToolBase<T>
 
         if (!match.Success)
         {
-            ColourConsole.WriteErrorLine(
-                "Could not determine that dotnet SDK was successfully installed in image, " +
+            ColourConsole.WriteErrorLine("Could not determine that dotnet SDK was successfully installed in image, " +
                 $"output: {result.FullOutput}");
             return false;
         }

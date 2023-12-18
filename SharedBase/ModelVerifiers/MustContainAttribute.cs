@@ -22,8 +22,7 @@ public class MustContainAttribute : RequiredAttribute
     {
         if (ReferenceEquals(value, null))
         {
-            return new ValidationResult(
-                ErrorMessage ??
+            return new ValidationResult(ErrorMessage ??
                 $"The {validationContext.DisplayName} field should not be null.",
                 new[] { validationContext.MemberName! });
         }
@@ -40,8 +39,7 @@ public class MustContainAttribute : RequiredAttribute
             {
                 if (!valueString.Contains(valueToCheck))
                 {
-                    return new ValidationResult(
-                        ErrorMessage ??
+                    return new ValidationResult(ErrorMessage ??
                         $"The {validationContext.DisplayName} field must contain {valueToCheck}.",
                         new[] { validationContext.MemberName! });
                 }
@@ -74,16 +72,14 @@ public class MustContainAttribute : RequiredAttribute
 
                 if (!found)
                 {
-                    return new ValidationResult(
-                        ErrorMessage ??
+                    return new ValidationResult(ErrorMessage ??
                         $"The {validationContext.DisplayName} field must contain {valueToCheck}.",
                         new[] { validationContext.MemberName! });
                 }
             }
             else
             {
-                return new ValidationResult(
-                    ErrorMessage ??
+                return new ValidationResult(ErrorMessage ??
                     $"The {validationContext.DisplayName} field is of unknown type to check that it contains " +
                     "a required value.", new[] { validationContext.MemberName! });
             }

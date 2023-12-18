@@ -21,7 +21,9 @@ public class CfgCheck : LineByLineFileChecker
         seenVersionNumber = false;
 
         await foreach (var result in base.Handle(path))
+        {
             yield return result;
+        }
 
         if (!seenVersionNumber)
             yield return "No line specifying version numbers was found";

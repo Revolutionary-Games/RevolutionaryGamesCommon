@@ -15,8 +15,7 @@ public class Program
 
         // TestOptions mostly exists here to make the verb based command parsing work in the first place
         var result = CommandLineHelpers.CreateParser().ParseArguments<CheckOptions, TestOptions>(args)
-            .MapResult(
-                (CheckOptions options) => RunChecks(options),
+            .MapResult((CheckOptions options) => RunChecks(options),
                 (TestOptions options) => RunTests(options),
                 CommandLineHelpers.PrintCommandLineErrors);
 

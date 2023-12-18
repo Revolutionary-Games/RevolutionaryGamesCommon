@@ -34,8 +34,7 @@ public class NoTrailingOrPrecedingSpaceAttribute : RequiredAttribute
 
         if (!trimmed.Equals(value))
         {
-            return new ValidationResult(
-                ErrorMessage ??
+            return new ValidationResult(ErrorMessage ??
                 $"The {validationContext.DisplayName} field must contain trailing or preceding whitespace.",
                 new[] { validationContext.MemberName! });
         }

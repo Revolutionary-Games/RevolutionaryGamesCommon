@@ -84,9 +84,8 @@ public static class Compression
     {
         if (compressionType == CompressionType.Zip)
         {
-            return Task.Run(
-                () => RunZipCreation(archiveFile, baseFolder, toCompress, ignorePatterns, measureTime,
-                    cancellationToken), cancellationToken);
+            return Task.Run(() => RunZipCreation(archiveFile, baseFolder, toCompress, ignorePatterns, measureTime,
+                cancellationToken), cancellationToken);
         }
 
         if (compressionType != CompressionType.P7Zip)

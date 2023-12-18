@@ -22,8 +22,7 @@ public class IsRegexAttribute : RequiredAttribute
 
         if (asString == null)
         {
-            throw new InvalidOperationException(
-                $"Can't apply {nameof(IsRegexAttribute)} to a non-string type");
+            throw new InvalidOperationException($"Can't apply {nameof(IsRegexAttribute)} to a non-string type");
         }
 
         if (asString.Length < 1)
@@ -31,8 +30,7 @@ public class IsRegexAttribute : RequiredAttribute
             if (AllowBlank)
                 return ValidationResult.Success;
 
-            return new ValidationResult(
-                ErrorMessage ??
+            return new ValidationResult(ErrorMessage ??
                 $"The {validationContext.DisplayName} field is blank (and not null) and as regex would match anything.",
                 new[] { validationContext.MemberName! });
         }
@@ -43,8 +41,7 @@ public class IsRegexAttribute : RequiredAttribute
         }
         catch (Exception)
         {
-            return new ValidationResult(
-                ErrorMessage ??
+            return new ValidationResult(ErrorMessage ??
                 $"The {validationContext.DisplayName} field must be a valid regex pattern.",
                 new[] { validationContext.MemberName! });
         }

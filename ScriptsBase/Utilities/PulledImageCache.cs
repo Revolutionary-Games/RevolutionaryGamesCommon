@@ -81,8 +81,7 @@ public class PulledImageCache
             {
                 if (DateTime.UtcNow - pulledAt < rePullOlderThan)
                 {
-                    ColourConsole.WriteInfoLine(
-                        $"{image} has been pulled in the past {rePullOlderThan}");
+                    ColourConsole.WriteInfoLine($"{image} has been pulled in the past {rePullOlderThan}");
                     continue;
                 }
 

@@ -103,7 +103,9 @@ public class CSharpCheck : FileCheck
                 if (xmlCommentParser.ProcessLine(lineNumber, line))
                 {
                     foreach (var error in xmlCommentParser.GetErrors())
+                    {
                         yield return error;
+                    }
                 }
             }
             else if (insideXmlComment)
@@ -114,7 +116,9 @@ public class CSharpCheck : FileCheck
                 if (xmlCommentParser.OnEnded())
                 {
                     foreach (var error in xmlCommentParser.GetErrors())
+                    {
                         yield return error;
+                    }
                 }
             }
         }
@@ -173,7 +177,7 @@ public class CSharpCheck : FileCheck
                     "understand the XML in this comment correctly!");
             }
 
-            int expectedIndentation = XML_BASE_INDENTATION + (xmlNestingLevel * XML_INDENTATION);
+            int expectedIndentation = XML_BASE_INDENTATION + xmlNestingLevel * XML_INDENTATION;
 
             // Inside code blocks extra indentation needs to be allowed
             if (indentation != expectedIndentation && (!insideCodeBlock || indentation < expectedIndentation))

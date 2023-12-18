@@ -45,8 +45,7 @@ public static class GitRunHelpers
         var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken);
         if (result.ExitCode != 0)
         {
-            throw new Exception(
-                $"Failed to make sure repo is cloned, process exited with error: {result.FullOutput}");
+            throw new Exception($"Failed to make sure repo is cloned, process exited with error: {result.FullOutput}");
         }
     }
 
@@ -64,8 +63,7 @@ public static class GitRunHelpers
         var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken);
         if (result.ExitCode != 0)
         {
-            throw new Exception(
-                $"Failed to checkout in repo, process exited with error: {result.FullOutput}");
+            throw new Exception($"Failed to checkout in repo, process exited with error: {result.FullOutput}");
         }
     }
 
@@ -86,8 +84,7 @@ public static class GitRunHelpers
         var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken);
         if (result.ExitCode != 0)
         {
-            throw new Exception(
-                $"Failed to update submodules in repo, process exited with error: {result.FullOutput}");
+            throw new Exception($"Failed to update submodules in repo, process exited with error: {result.FullOutput}");
         }
     }
 
@@ -104,8 +101,7 @@ public static class GitRunHelpers
         var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken);
         if (result.ExitCode != 0)
         {
-            throw new Exception(
-                $"Failed to pull in repo, process exited with error: {result.FullOutput}");
+            throw new Exception($"Failed to pull in repo, process exited with error: {result.FullOutput}");
         }
     }
 
@@ -121,8 +117,7 @@ public static class GitRunHelpers
         var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken);
         if (result.ExitCode != 0)
         {
-            throw new Exception(
-                $"Failed to fetch in repo, process exited with error: {result.FullOutput}");
+            throw new Exception($"Failed to fetch in repo, process exited with error: {result.FullOutput}");
         }
     }
 
@@ -141,8 +136,7 @@ public static class GitRunHelpers
         var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken);
         if (result.ExitCode != 0)
         {
-            throw new Exception(
-                $"Failed to fetch (thing) in repo, process exited with error: {result.FullOutput}");
+            throw new Exception($"Failed to fetch (thing) in repo, process exited with error: {result.FullOutput}");
         }
     }
 
@@ -166,16 +160,14 @@ public static class GitRunHelpers
         var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken);
         if (result.ExitCode != 0)
         {
-            throw new Exception(
-                $"Failed to run rev-parse in repo, process exited with error: {result.FullOutput}");
+            throw new Exception($"Failed to run rev-parse in repo, process exited with error: {result.FullOutput}");
         }
 
         var resultText = result.Output.Trim();
 
         if (string.IsNullOrEmpty(resultText))
         {
-            throw new Exception(
-                $"Failed to run rev-parse in repo, empty output (code: {result.ExitCode}). " +
+            throw new Exception($"Failed to run rev-parse in repo, empty output (code: {result.ExitCode}). " +
                 $"Error output (if any): {result.ErrorOut}, normal output: {result.Output}");
         }
 
@@ -204,8 +196,7 @@ public static class GitRunHelpers
         var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken);
         if (result.ExitCode != 0)
         {
-            throw new Exception(
-                $"Failed to run rev-parse in repo, process exited with error: {result.FullOutput}");
+            throw new Exception($"Failed to run rev-parse in repo, process exited with error: {result.FullOutput}");
         }
 
         var resultText = result.Output.Trim();
@@ -297,8 +288,7 @@ public static class GitRunHelpers
         var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken);
         if (result.ExitCode != 0)
         {
-            throw new Exception(
-                $"Failed to get git diff, process exited with error: {result.FullOutput}");
+            throw new Exception($"Failed to get git diff, process exited with error: {result.FullOutput}");
         }
 
         return result.Output.Trim();
@@ -315,8 +305,7 @@ public static class GitRunHelpers
         var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken);
         if (result.ExitCode != 0)
         {
-            throw new Exception(
-                $"Failed to run log in repo, process exited with error: {result.FullOutput}");
+            throw new Exception($"Failed to run log in repo, process exited with error: {result.FullOutput}");
         }
 
         return result.Output.Trim();
@@ -360,8 +349,7 @@ public static class GitRunHelpers
         var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken);
         if (result.ExitCode != 0)
         {
-            throw new Exception(
-                $"Failed to get git diff, process exited with error: {result.FullOutput}");
+            throw new Exception($"Failed to get git diff, process exited with error: {result.FullOutput}");
         }
 
         return result.Output.Trim();
@@ -385,8 +373,7 @@ public static class GitRunHelpers
         var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken);
         if (result.ExitCode != 0)
         {
-            throw new Exception(
-                $"Failed to clean repo, process exited with error: {result.FullOutput}");
+            throw new Exception($"Failed to clean repo, process exited with error: {result.FullOutput}");
         }
 
         return result.Output;
@@ -407,8 +394,7 @@ public static class GitRunHelpers
         var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken);
         if (result.ExitCode != 0)
         {
-            throw new Exception(
-                $"Failed to reset in repo, process exited with error: {result.FullOutput}");
+            throw new Exception($"Failed to reset in repo, process exited with error: {result.FullOutput}");
         }
     }
 

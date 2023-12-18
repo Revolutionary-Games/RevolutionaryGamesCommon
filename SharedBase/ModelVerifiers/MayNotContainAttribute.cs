@@ -35,8 +35,7 @@ public class MayNotContainAttribute : RequiredAttribute
             {
                 if (valueString.Contains(valueToCheck))
                 {
-                    return new ValidationResult(
-                        ErrorMessage ??
+                    return new ValidationResult(ErrorMessage ??
                         $"The {validationContext.DisplayName} field may not contain '{valueToCheck}'.",
                         new[] { validationContext.MemberName! });
                 }
@@ -69,16 +68,14 @@ public class MayNotContainAttribute : RequiredAttribute
 
                 if (found)
                 {
-                    return new ValidationResult(
-                        ErrorMessage ??
+                    return new ValidationResult(ErrorMessage ??
                         $"The {validationContext.DisplayName} field may not contain '{valueToCheck}'.",
                         new[] { validationContext.MemberName! });
                 }
             }
             else
             {
-                return new ValidationResult(
-                    ErrorMessage ??
+                return new ValidationResult(ErrorMessage ??
                     $"The {validationContext.DisplayName} field is of unknown type to check that it does not " +
                     "contain a disallowed value.", new[] { validationContext.MemberName! });
             }

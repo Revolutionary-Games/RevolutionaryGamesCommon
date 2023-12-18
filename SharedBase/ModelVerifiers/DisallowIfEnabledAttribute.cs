@@ -69,15 +69,13 @@ public class DisallowIfEnabledAttribute : RequiredAttribute
             else if (propertyValue != null && configuration.IfOtherMatchesValue != null)
             {
                 var converter = TypeDescriptor.GetConverter(property.PropertyType);
-                fail = propertyValue.Equals(
-                    converter.ConvertFromInvariantString(configuration.IfOtherMatchesValue));
+                fail = propertyValue.Equals(converter.ConvertFromInvariantString(configuration.IfOtherMatchesValue));
             }
 
             if (fail)
             {
                 // We can't return multiple error messages so for now just return the first
-                return new ValidationResult(
-                    configuration.ErrorMessage ?? ErrorMessage ??
+                return new ValidationResult(configuration.ErrorMessage ?? ErrorMessage ??
                     $"The {validationContext.DisplayName} field should not equal {value} " +
                     $"when {configuration.OtherProperty} equals {configuration.IfOtherMatchesValue}.",
                     new[] { validationContext.MemberName });
