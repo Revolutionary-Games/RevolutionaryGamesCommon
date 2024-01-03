@@ -2,9 +2,7 @@
 
 using System;
 
-public interface ITimestampedModel : IIdentifiable, ITimestamped
-{
-}
+public interface ITimestampedModel : IIdentifiable, ITimestamped;
 
 public interface ITimestamped
 {

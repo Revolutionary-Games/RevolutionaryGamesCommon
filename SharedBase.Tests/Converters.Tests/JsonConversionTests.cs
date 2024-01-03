@@ -88,8 +88,6 @@ public class JsonConversionTests
         public SubObject Data { get; set; }
 #pragma warning restore CS8618
 
-        public class SubObject
-        {
-        }
+        public class SubObject;
     }
 }

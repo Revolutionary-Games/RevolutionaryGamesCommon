@@ -2,13 +2,13 @@ version: 1
 
 jobs:
   test:
-    image: thrive/launcher:v4
+    image: thrive/launcher:v5
     cache:
       loadFrom:
-        - v2-{Branch}-build
-      writeTo: v2-{Branch}-build
+        - v3-{Branch}-build
+      writeTo: v3-{Branch}-build
       system:
-        /root/.nuget: v2-nuget
+        /root/.nuget: v3-nuget
     steps:
       - run:
            command: dotnet restore
@@ -19,13 +19,13 @@ jobs:
           name: Test
           command: dotnet test
   lint:
-    image: thrive/launcher:v4
+    image: thrive/launcher:v5
     cache:
       loadFrom:
-        - v2-{Branch}-build
-      writeTo: v2-{Branch}-build
+        - v3-{Branch}-build
+      writeTo: v3-{Branch}-build
       system:
-        /root/.nuget: v2-nuget
+        /root/.nuget: v3-nuget
     steps:
       - run:
           name: Build list of changed files

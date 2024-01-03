@@ -48,12 +48,8 @@ public class Program
             .Result.ExitCode;
     }
 
-    public class CheckOptions : CheckOptionsBase
-    {
-    }
+    public class CheckOptions : CheckOptionsBase;
 
     [Verb("test", HelpText = "Run tests using 'dotnet' command")]
-    public class TestOptions : ScriptOptionsBase
-    {
-    }
+    public class TestOptions : ScriptOptionsBase;
 }
