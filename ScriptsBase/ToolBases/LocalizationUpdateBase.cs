@@ -79,6 +79,8 @@ public abstract class LocalizationUpdateBase<T>
     protected abstract string ProjectOrganization { get; }
     protected virtual string GeneratedBy => "Thrive.Scripts";
 
+    protected abstract bool OmitReferenceLinesFromLocales { get; }
+
     protected virtual string GeneratedByVersion =>
         Assembly.GetEntryAssembly()?.GetName().Version?.ToString() ?? "unknown version";
 
@@ -124,7 +126,7 @@ public abstract class LocalizationUpdateBase<T>
         return $"{locale}{PoSuffix}";
     }
 
-    protected virtual Task<bool> UpdateLocale(string locale, CancellationToken cancellationToken)
+    protected virtual async Task<bool> UpdateLocale(string locale, CancellationToken cancellationToken)
     {
         var target = Path.Join(LocaleFolder, GetTranslationFileNameForLocale(locale));
 
@@ -133,13 +135,21 @@ public abstract class LocalizationUpdateBase<T>
             if (!options.Quiet)
                 ColourConsole.WriteNormalLine($"Updating locale {locale}");
 
-            return RunTranslationUpdate(locale, target, cancellationToken);
+            return await RunTranslationUpdate(locale, target, cancellationToken);
         }
 
-        // TODO: this is untested
         if (!options.Quiet)
             ColourConsole.WriteNormalLine($"Creating locale {locale}");
-        return RunTranslationCreate(locale, target, cancellationToken);
+
+        if (!await RunTranslationCreate(locale, target, cancellationToken))
+        {
+            ColourConsole.WriteErrorLine("Failed to run translation file create");
+            return false;
+        }
+
+        // Need to also run translation update as the creation tool cannot take the skip reference lines parameter
+        ColourConsole.WriteDebugLine("Running update for freshly created translation file");
+        return await RunTranslationUpdate(locale, target, cancellationToken);
     }
 
     protected abstract Task<bool> RunTranslationCreate(string locale, string targetFile,
