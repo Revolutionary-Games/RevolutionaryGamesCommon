@@ -156,6 +156,22 @@ public class LocalizationCheckBase : CodeCheck
                         }
                         else
                         {
+                            var originalReferenceLines =
+                                CountReferenceLocationComments(originalEnumerator.Current!.Comments);
+                            var updatedReferenceLines =
+                                CountReferenceLocationComments(updatedEnumerator.Current.Comments);
+
+                            // Disallow reference lines if the updated file is not using them
+                            if (originalReferenceLines != updatedReferenceLines)
+                            {
+                                runData.ReportError("Original (committed) file has different number of reference " +
+                                    $"comments for msgid: {originalEnumerator.Current.Key.Id} than it should have " +
+                                    $"(which is: {updatedReferenceLines}) please make sure no tool " +
+                                    "is accidentally configured to add/remove reference comment lines");
+                                issuesFound = true;
+                                break;
+                            }
+
                             // Everything is fine
                             continue;
                         }
@@ -185,6 +201,19 @@ public class LocalizationCheckBase : CodeCheck
             DeleteDuplicatesOfFiles(poFiles);
             DeletePotDuplicates();
         }
+    }
+
+    private static int CountReferenceLocationComments(IEnumerable<POComment> comments)
+    {
+        int count = 0;
+
+        foreach (var comment in comments)
+        {
+            if ((comment.Kind & POCommentKind.Reference) != 0)
+                ++count;
+        }
+
+        return count;
     }
 
     private static IEnumerable<string> EnumerateAllPoFiles(string start)
