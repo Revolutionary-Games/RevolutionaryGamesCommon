@@ -39,6 +39,46 @@ public static class Compression
         return result;
     }
 
+    public static string GetXz(bool log = true)
+    {
+        string lookFor = "xz";
+
+        var result = ExecutableFinder.Which(lookFor);
+
+        if (result == null)
+        {
+            if (log)
+            {
+                ColourConsole.WriteErrorLine("xz compression tool is required, but it was not found in PATH. " +
+                    "Please install the xz package.");
+            }
+
+            throw new Exception("xz not found");
+        }
+
+        return result;
+    }
+
+    public static string GetTar(bool log = true)
+    {
+        string lookFor = "tar";
+
+        var result = ExecutableFinder.Which(lookFor);
+
+        if (result == null)
+        {
+            if (log)
+            {
+                ColourConsole.WriteErrorLine("tar is a needed tool, but it was not found in PATH. " +
+                    "Please install the tar package.");
+            }
+
+            throw new Exception("tar not found");
+        }
+
+        return result;
+    }
+
     public static async Task GzipToTarget(string sourceFile, string targetFile, CancellationToken cancellationToken)
     {
         if (!targetFile.EndsWith(".gz"))
@@ -115,6 +155,54 @@ public static class Compression
         return RunCompressionTool(startInfo, measureTime, cancellationToken);
     }
 
+    public static Task XzCompressFile(string fileToCompress, CancellationToken cancellationToken,
+        int compressionLevel = 6, bool keepOriginalFile = false, bool useAllThreads = true)
+    {
+        if (!File.Exists(fileToCompress))
+            throw new IOException("File to compress doesn't exist");
+
+        var startInfo = new ProcessStartInfo(GetXz())
+        {
+            CreateNoWindow = true,
+        };
+
+        startInfo.ArgumentList.Add($"-{compressionLevel}");
+
+        if (keepOriginalFile)
+            startInfo.ArgumentList.Add("--keep");
+
+        startInfo.ArgumentList.Add("--compress");
+
+        startInfo.ArgumentList.Add("-f");
+
+        if (useAllThreads)
+            startInfo.ArgumentList.Add("--threads=0");
+
+        startInfo.ArgumentList.Add(fileToCompress);
+
+        return RunCompressionTool(startInfo, false, cancellationToken);
+    }
+
+    public static async Task CombineTar(string archiveName, string archiveToAppend, CancellationToken cancellationToken,
+        bool deleteAppendedArchive = true)
+    {
+        var startInfo = new ProcessStartInfo(GetTar())
+        {
+            CreateNoWindow = true,
+        };
+
+        startInfo.ArgumentList.Add("--concatenate");
+
+        startInfo.ArgumentList.Add($"--file={archiveName}");
+
+        startInfo.ArgumentList.Add(archiveToAppend);
+
+        await RunCompressionTool(startInfo, false, cancellationToken);
+
+        if (deleteAppendedArchive)
+            File.Delete(archiveToAppend);
+    }
+
     private static async Task RunCompressionTool(ProcessStartInfo startInfo, bool measure,
         CancellationToken cancellationToken)
     {
@@ -124,7 +212,7 @@ public static class Compression
 
         if (result.ExitCode != 0)
         {
-            throw new Exception($"Running 7-zip failed (exit: {result.ExitCode}): {result.FullOutput}");
+            throw new Exception($"Running compression tool failed (exit: {result.ExitCode}): {result.FullOutput}");
         }
 
         if (measure)

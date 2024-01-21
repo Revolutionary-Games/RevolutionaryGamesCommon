@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
@@ -312,10 +313,16 @@ public static class GitRunHelpers
     }
 
     [UnsupportedOSPlatform("browser")]
-    public static async Task<string> SubmoduleInfo(string folder, CancellationToken cancellationToken)
+    public static async Task<IEnumerable<string>> SubmoduleStatusInfo(string folder,
+        CancellationToken cancellationToken, bool recursive = true)
     {
         var startInfo = PrepareToRunGit(folder, true);
         startInfo.ArgumentList.Add("submodule");
+
+        startInfo.ArgumentList.Add("status");
+
+        if (recursive)
+            startInfo.ArgumentList.Add("--recursive");
 
         var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken);
         if (result.ExitCode != 0)
@@ -324,7 +331,19 @@ public static class GitRunHelpers
                 $"Failed to run submodule list in repo, process exited with error: {result.FullOutput}");
         }
 
-        return result.Output.Trim();
+        return result.Output.Split(new[] { '\r', '\n' },
+            StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
+    }
+
+    [UnsupportedOSPlatform("browser")]
+    public static async Task<IEnumerable<string>> SubmodulePaths(string folder, CancellationToken cancellationToken,
+        bool recursive = true)
+    {
+        var info = await SubmoduleStatusInfo(folder, cancellationToken, recursive);
+
+        // The format is "hash name (tags)" so parse just the names
+        return info.Select(l =>
+            l.Split(' ', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)[1]);
     }
 
     [UnsupportedOSPlatform("browser")]
@@ -395,6 +414,41 @@ public static class GitRunHelpers
         if (result.ExitCode != 0)
         {
             throw new Exception($"Failed to reset in repo, process exited with error: {result.FullOutput}");
+        }
+    }
+
+    [UnsupportedOSPlatform("browser")]
+    public static async Task Archive(string folder, string commitOrBranch, string targetArchiveName,
+        string? archiveContentPrefix, CancellationToken cancellationToken)
+    {
+        var startInfo = PrepareToRunGit(folder, false);
+        startInfo.ArgumentList.Add("archive");
+
+        var format = Path.GetExtension(targetArchiveName);
+
+        if (format.Length > 1)
+        {
+            if (format.StartsWith("."))
+            {
+                startInfo.ArgumentList.Add($"--format={format[1..]}");
+            }
+            else
+            {
+                startInfo.ArgumentList.Add($"--format={format}");
+            }
+        }
+
+        startInfo.ArgumentList.Add($"--output={Path.GetFullPath(targetArchiveName)}");
+
+        if (archiveContentPrefix != null)
+            startInfo.ArgumentList.Add($"--prefix={archiveContentPrefix}");
+
+        startInfo.ArgumentList.Add(commitOrBranch);
+
+        var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken);
+        if (result.ExitCode != 0)
+        {
+            throw new Exception($"Failed to run git archive command, process exited with error: {result.FullOutput}");
         }
     }
 
