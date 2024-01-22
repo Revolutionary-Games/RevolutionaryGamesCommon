@@ -203,6 +203,40 @@ public static class Compression
             File.Delete(archiveToAppend);
     }
 
+    public static async Task AddFilesToTar(string archive, string baseFolder, IEnumerable<string> filesToAdd,
+        CancellationToken cancellationToken)
+    {
+        var startInfo = new ProcessStartInfo(GetTar())
+        {
+            CreateNoWindow = true,
+            WorkingDirectory = baseFolder,
+        };
+
+        startInfo.ArgumentList.Add("--append");
+
+        startInfo.ArgumentList.Add($"--file={Path.GetFullPath(archive)}");
+
+        foreach (var file in filesToAdd)
+        {
+            if (file.StartsWith(baseFolder))
+            {
+                // Not the most efficient, but this is just here to guard against someone misusing this method
+                var realTarget = file.Substring(baseFolder.Length);
+
+                if (realTarget.StartsWith("/"))
+                    realTarget = realTarget.Substring(1);
+
+                startInfo.ArgumentList.Add(realTarget);
+            }
+            else
+            {
+                startInfo.ArgumentList.Add(file);
+            }
+        }
+
+        await RunCompressionTool(startInfo, false, cancellationToken);
+    }
+
     private static async Task RunCompressionTool(ProcessStartInfo startInfo, bool measure,
         CancellationToken cancellationToken)
     {

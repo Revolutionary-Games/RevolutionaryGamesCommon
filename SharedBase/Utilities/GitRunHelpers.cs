@@ -1,4 +1,4 @@
-namespace SharedBase.Utilities;
+﻿namespace SharedBase.Utilities;
 
 using System;
 using System.Collections.Generic;
@@ -528,6 +528,35 @@ public static class GitRunHelpers
         }
 
         return result;
+    }
+
+    [UnsupportedOSPlatform("browser")]
+    public static async Task CloneLocalRepo(string repo, string newFolder, CancellationToken cancellationToken,
+        int depth = 100)
+    {
+        var startInfo = PrepareToRunGit(repo, true);
+
+        startInfo.ArgumentList.Add("-c");
+        startInfo.ArgumentList.Add("protocol.file.allow=always");
+
+        startInfo.ArgumentList.Add("clone");
+
+        startInfo.ArgumentList.Add("file://" + Path.GetFullPath(repo));
+
+        if (depth != 0)
+            startInfo.ArgumentList.Add($"--depth={depth}");
+
+        startInfo.ArgumentList.Add(newFolder);
+
+        var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken);
+        if (result.ExitCode != 0)
+        {
+            throw new Exception(
+                $"Failed to run git clone with local file, process exited with error: {result.FullOutput}");
+        }
+
+        if (!Directory.Exists(newFolder))
+            throw new Exception("Target folder to clone to didn't get created");
     }
 
     [UnsupportedOSPlatform("browser")]
