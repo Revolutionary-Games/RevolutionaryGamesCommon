@@ -29,6 +29,7 @@ public static class Compression
         {
             if (log)
             {
+                ExecutableFinder.PrintPathInfo(Console.Out);
                 ColourConsole.WriteErrorLine("7-zip is a needed tool, but it was not found in PATH. " +
                     "Please install p7zip package, or 7-zip (on Windows)");
             }
@@ -49,6 +50,7 @@ public static class Compression
         {
             if (log)
             {
+                ExecutableFinder.PrintPathInfo(Console.Out);
                 ColourConsole.WriteErrorLine("xz compression tool is required, but it was not found in PATH. " +
                     "Please install the xz package.");
             }
@@ -69,6 +71,7 @@ public static class Compression
         {
             if (log)
             {
+                ExecutableFinder.PrintPathInfo(Console.Out);
                 ColourConsole.WriteErrorLine("tar is a needed tool, but it was not found in PATH. " +
                     "Please install the tar package.");
             }

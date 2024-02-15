@@ -174,6 +174,8 @@ public abstract class LocalizationUpdateBase<T>
 
         if (path == null)
         {
+            ExecutableFinder.PrintPathInfo(Console.Out);
+
             ColourConsole.WriteErrorLine(
                 $"Failed to find translation tool '{name}'. Please install it and make sure it is in PATH.");
         }

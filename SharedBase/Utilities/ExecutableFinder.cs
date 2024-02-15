@@ -48,6 +48,22 @@ public static class ExecutableFinder
         return null;
     }
 
+    public static void PrintPathInfo(TextWriter writer)
+    {
+        writer.WriteLine("Tool / executable was searched for in PATH folders, but was not found. " +
+            "Note that changes to PATH may only be picked up after terminal restart.");
+
+        writer.WriteLine("Currently active PATH:");
+
+        foreach (var path in SystemPath())
+        {
+            writer.Write(" ");
+            writer.WriteLine(path);
+        }
+
+        writer.WriteLine("End of PATH folder list");
+    }
+
     public static string[] SystemPath()
     {
         return Environment.GetEnvironmentVariable("PATH")?.Split(Path.PathSeparator) ??

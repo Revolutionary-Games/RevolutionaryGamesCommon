@@ -585,7 +585,7 @@ public static class GitRunHelpers
         var git = ExecutableFinder.Which("git");
 
         if (git == null)
-            throw new Exception("Git executable not found, please install it");
+            throw new Exception("Git executable not found, please install it (and make sure it is in PATH)");
 
         return git;
     }
