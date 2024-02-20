@@ -151,6 +151,7 @@
     <Rule Id="SA1612" Action="Warning" /> <!-- ElementParameterDocumentationMustMatchElementParameters -->
     <Rule Id="SA1613" Action="Warning" /> <!-- ElementParameterDocumentationMustDeclareParameterName -->
     <Rule Id="SA1614" Action="Warning" /> <!-- ElementParameterDocumentationMustHaveText -->
+    <Rule Id="SA1615" Action="Info" /> <!-- ElementReturnValueMustBeDocumented -->
     <Rule Id="SA1617" Action="Warning" /> <!-- VoidReturnValueMustNotBeDocumented -->
     <Rule Id="SA1622" Action="Warning" /> <!-- GenericTypeParameterDocumentationMustHaveText -->
     <Rule Id="SA1623" Action="None" /> <!-- Property summary documentation should match accessors, checked by JetBrains instead -->
