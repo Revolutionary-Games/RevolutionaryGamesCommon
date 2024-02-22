@@ -1,7 +1,6 @@
 namespace DevCenterCommunication.Models;
 
 using System.ComponentModel.DataAnnotations;
-using DevCenterCommunication;
 
 public class TokenForm
 {
