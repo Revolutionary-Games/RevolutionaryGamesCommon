@@ -1,4 +1,4 @@
-namespace ThriveDevCenter.Shared.Forms;
+namespace DevCenterCommunication.Models;
 
 using System.ComponentModel.DataAnnotations;
 using DevCenterCommunication;
