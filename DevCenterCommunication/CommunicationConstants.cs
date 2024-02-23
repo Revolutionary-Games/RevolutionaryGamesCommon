@@ -27,4 +27,6 @@ public class CommunicationConstants
     public const int MAX_DEBUG_SYMBOL_OFFER_BATCH = 50;
 
     public const long MAX_DEBUG_SYMBOL_SIZE = GlobalConstants.MEBIBYTE * 500;
+
+    public const int MAX_USERNAME_LENGTH = 50;
 }
