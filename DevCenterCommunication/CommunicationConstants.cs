@@ -7,6 +7,9 @@ using SharedBase.Utilities;
 /// </summary>
 public class CommunicationConstants
 {
+    public const int MIN_USERNAME_LENGTH = 3;
+    public const int MAX_USERNAME_LENGTH = 50;
+
     public const int MAX_DEHYDRATED_OBJECTS_PER_OFFER = 100;
     public const int MAX_DEHYDRATED_OBJECTS_IN_DEV_BUILD = 5000;
     public const int MAX_PAGE_SIZE_FOR_BUILD_SEARCH = 100;
@@ -27,6 +30,4 @@ public class CommunicationConstants
     public const int MAX_DEBUG_SYMBOL_OFFER_BATCH = 50;
 
     public const long MAX_DEBUG_SYMBOL_SIZE = GlobalConstants.MEBIBYTE * 500;
-
-    public const int MAX_USERNAME_LENGTH = 50;
 }

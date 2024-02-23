@@ -51,6 +51,11 @@ public static class Normalization
         if (addDash)
             builder.Append('-');
 
+        while (builder.Length < CommunicationConstants.MIN_USERNAME_LENGTH)
+        {
+            builder.Append(builder[^1]);
+        }
+
         return builder.ToString(0, Math.Min(builder.Length, CommunicationConstants.MAX_USERNAME_LENGTH));
     }
 

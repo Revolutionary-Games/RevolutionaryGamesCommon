@@ -16,6 +16,9 @@ public class NormalizationTests
     [InlineData("allowed_-.1AZz", "allowed_-.1AZz")]
     [InlineData("no/slash", "no-slash")]
     [InlineData("Mr. Patron", "Mr._Patron")]
+    [InlineData("hi", "hii")]
+    [InlineData("a_username_that_is_way_too_long_to_be_acceptable_in_any_reasonable_system_whatsoever",
+        "a_username_that_is_way_too_long_to_be_acceptable_i")]
     public void Normalization_UserNameNormalizationWorks(string raw, string expected)
     {
         Assert.Equal(expected, Normalization.NormalizeUserName(raw));
