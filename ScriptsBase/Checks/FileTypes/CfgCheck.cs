@@ -1,6 +1,7 @@
 ﻿namespace ScriptsBase.Checks.FileTypes;
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 public class CfgCheck : LineByLineFileChecker
@@ -18,6 +19,15 @@ public class CfgCheck : LineByLineFileChecker
 
     public override async IAsyncEnumerable<string> Handle(string path)
     {
+        if (requiredVersion.Count(c => c == '.') != 3)
+        {
+            yield return $"Game version number should always specify all 4 parts of the version (version is " +
+                $"instead: {requiredVersion})";
+
+            // No point in checking against bad data
+            yield break;
+        }
+
         seenVersionNumber = false;
 
         await foreach (var result in base.Handle(path))
