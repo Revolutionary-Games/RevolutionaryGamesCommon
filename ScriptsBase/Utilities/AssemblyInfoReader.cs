@@ -47,7 +47,7 @@ public static class AssemblyInfoReader
         if (version == null)
             throw new Exception("Could not find AssemblyVersion");
 
-        // Ensure that what we read conforms to teh C# assembly version requirements
+        // Ensure that what we read conforms to the C# assembly version requirements
         if (!Version.TryParse(version, out _))
         {
             throw new Exception($"Invalid version format for string: {version}");
