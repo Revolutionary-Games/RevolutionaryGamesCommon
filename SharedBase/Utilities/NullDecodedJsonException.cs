@@ -2,4 +2,6 @@ namespace SharedBase.Utilities;
 
 using System.Text.Json;
 
-public class NullDecodedJsonException : JsonException;
+public class NullDecodedJsonException : JsonException
+{
+}
