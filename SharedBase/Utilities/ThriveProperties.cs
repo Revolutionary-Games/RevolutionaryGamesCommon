@@ -164,6 +164,6 @@ public static class ThriveProperties
             throw new NotImplementedException("Currently only implemented for Linux");
 
         return Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-            $".local/share/godot/templates/{godotVersionFull}");
+            $".local/share/godot/export_templates/{godotVersionFull}");
     }
 }
