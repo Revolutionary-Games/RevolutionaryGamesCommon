@@ -158,6 +158,26 @@ public static class ThriveProperties
         }
     }
 
+    public static string GetDataFolderName(PackagePlatform platform)
+    {
+        // ReSharper disable StringLiteralTypo
+        switch (platform)
+        {
+            case PackagePlatform.Linux:
+                return "data_Thrive_linuxbsd_x86_64";
+            case PackagePlatform.Windows:
+                return "data_Thrive_windows_x86_64";
+            case PackagePlatform.Windows32:
+            case PackagePlatform.Mac:
+            case PackagePlatform.Web:
+                throw new NotImplementedException("Unknown data folder name for platform: " + platform);
+            default:
+                throw new ArgumentOutOfRangeException(nameof(platform), platform, null);
+        }
+
+        // ReSharper restore StringLiteralTypo
+    }
+
     public static string GetGodotTemplateInstallPath(string godotVersionFull)
     {
         if (!OperatingSystem.IsLinux())
