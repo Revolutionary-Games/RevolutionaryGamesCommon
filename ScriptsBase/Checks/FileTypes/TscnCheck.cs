@@ -18,14 +18,28 @@ public class TscnCheck : LineByLineFileChecker
     private const int NODE_NAME_UPPERCASE_REQUIRED_LENGTH = 25;
     private const int NODE_NAME_UPPERCASE_ACRONYM_ALLOWED_LENGTH = 4;
 
+    private const string AssetsFolder = "assets/";
+
+    private static readonly Regex NameWithUnderScoreSuffixNumber = new(@"_\d+$", RegexOptions.Compiled);
+
     private static readonly Regex EmbeddedFontSignature =
         new(@"sub_resource type=""DynamicFont""", RegexOptions.Compiled);
 
     private static readonly Regex Whitespace = new(@"\s", RegexOptions.Compiled);
     private static readonly Regex StartsWithUppercaseLetter = new("^[A-Z]", RegexOptions.Compiled);
 
-    public TscnCheck() : base(".tscn")
+    private readonly bool allowUnderlineNumberSuffixInAssets;
+
+    /// <summary>
+    ///   Create new .tscn file check
+    /// </summary>
+    /// <param name="allowUnderlineNumberSuffixInAssets">
+    ///   When true assets are allowed to contain node names like "Armature_001", this is to help with imported scenes
+    ///   conforming to the requirements.
+    /// </param>
+    public TscnCheck(bool allowUnderlineNumberSuffixInAssets = true) : base(".tscn")
     {
+        this.allowUnderlineNumberSuffixInAssets = allowUnderlineNumberSuffixInAssets;
     }
 
     protected override IEnumerable<string> CheckLine(string line, int lineNumber)
@@ -39,7 +53,8 @@ public class TscnCheck : LineByLineFileChecker
         if (EmbeddedFontSignature.IsMatch(line))
         {
             yield return FormatErrorLineHelper(lineNumber, "contains an embedded font. " +
-                "Don't embed fonts in scenes, instead place font resources in a separate .tres");
+                "Don't embed fonts in scenes, instead place font resources in a separate .ttf file and create a " +
+                "label settings resource");
         }
 
         var match = GodotNodeRegex.Match(line);
@@ -66,7 +81,12 @@ public class TscnCheck : LineByLineFileChecker
 
             if (name.Contains('_'))
             {
-                yield return FormatErrorLineHelper(lineNumber, $"contains a name ({name}) that has an underscore.");
+                if (!NameWithUnderScoreSuffixNumber.IsMatch(name) || !allowUnderlineNumberSuffixInAssets ||
+                    !currentFile.StartsWith(AssetsFolder))
+                {
+                    yield return FormatErrorLineHelper(lineNumber,
+                        $"contains a name ({name}) that has an underscore.");
+                }
             }
 
             // Single word names can be without upper case letters so we use a length heuristic here

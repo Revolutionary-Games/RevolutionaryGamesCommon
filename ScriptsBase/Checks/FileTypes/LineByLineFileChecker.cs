@@ -8,6 +8,11 @@ using System.IO;
 /// </summary>
 public abstract class LineByLineFileChecker : FileCheck
 {
+    /// <summary>
+    ///   Allows access for child classes to have species behaviour depending on the type of / name of the file
+    /// </summary>
+    protected string currentFile = "unknown file";
+
     public LineByLineFileChecker(string firstHandledFileEnding, params string[] extraHandledFileEndings) :
         base(firstHandledFileEnding, extraHandledFileEndings)
     {
@@ -16,6 +21,8 @@ public abstract class LineByLineFileChecker : FileCheck
     public override async IAsyncEnumerable<string> Handle(string path)
     {
         using var reader = File.OpenText(path);
+
+        currentFile = path;
 
         int lineNumber = 0;
 
