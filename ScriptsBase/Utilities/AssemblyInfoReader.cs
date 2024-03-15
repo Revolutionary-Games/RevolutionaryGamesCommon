@@ -1,80 +1,49 @@
 ﻿namespace ScriptsBase.Utilities;
 
 using System;
-using System.IO;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using System.Xml.XPath;
 
 public static class AssemblyInfoReader
 {
-    private static readonly Regex AssemblyVersionRegex = new(@"AssemblyVersion\(""([\d.]+)""\)");
-    private static readonly Regex AssemblyExtraVersionRegex = new(@"AssemblyInformationalVersion\(""([^""]*)""\)");
+    private const string AssemblyVersionName = "PropertyGroup//Version";
+    private const string AssemblyVersionExtraName = "PropertyGroup//InformationalVersion";
 
-    public static string ReadVersionFromAssemblyInfo(bool includeInformationalVersion = false,
-        string file = "Properties/AssemblyInfo.cs")
+    public static string ReadVersionFromCsproj(string csprojFile, bool includeInformationalVersion = false)
     {
-        string? version = null;
+        var csproj = XElement.Load(csprojFile);
+
+        var version = csproj.XPathSelectElement(AssemblyVersionName);
+
+        if (version == null)
+            throw new ArgumentException("Could not find version in the file");
+
         string additionalVersion = string.Empty;
 
-        foreach (var line in File.ReadLines(file, Encoding.UTF8))
+        if (includeInformationalVersion)
         {
-            var match = AssemblyVersionRegex.Match(line);
+            var additionalVersionElement = csproj.XPathSelectElement(AssemblyVersionExtraName);
 
-            if (match.Success)
+            if (additionalVersionElement != null)
+                additionalVersion = additionalVersionElement.Value;
+
+            if (additionalVersion.Length > 0 && !additionalVersion.StartsWith('-'))
             {
-                version = match.Groups[1].Value;
-                continue;
-            }
-
-            match = AssemblyExtraVersionRegex.Match(line);
-
-            if (match.Success)
-            {
-                if (match.Groups[1].Length > 0)
-                {
-                    additionalVersion = match.Groups[1].Value;
-
-                    // TODO: not the cleanest to combine this syntax check here, but this is how it was in the ruby
-                    // version
-                    if (!additionalVersion.StartsWith('-'))
-                        throw new Exception("AssemblyInformationalVersion must start with a dash (or be empty)");
-                }
+                throw new AggregateException("Additional version in file should start with a dash");
             }
         }
 
-        if (version == null)
-            throw new Exception("Could not find AssemblyVersion");
+        var versionString = version.Value;
 
         // Ensure that what we read conforms to the C# assembly version requirements
-        if (!Version.TryParse(version, out _))
+        if (!Version.TryParse(versionString, out _))
         {
             throw new Exception($"Invalid version format for string: {version}");
         }
 
         if (includeInformationalVersion)
         {
-            return $"{version}{additionalVersion}";
-        }
-
-        return version;
-    }
-
-    public static string ReadVersionFromCsproj(string csprojFile)
-    {
-        var csproj = XElement.Load(csprojFile);
-
-        var version = csproj.XPathSelectElement("PropertyGroup//Version");
-
-        if (version == null)
-            throw new ArgumentException("Could not find version in the file");
-
-        var versionString = version.Value;
-
-        if (!Version.TryParse(versionString, out _))
-        {
-            throw new Exception($"Invalid version format for string: {version}");
+            return $"{versionString}{additionalVersion}";
         }
 
         return versionString;
