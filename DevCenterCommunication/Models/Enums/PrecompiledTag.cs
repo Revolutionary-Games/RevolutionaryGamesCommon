@@ -7,4 +7,5 @@ public enum PrecompiledTag
 {
     None = 0,
     Debug = 1,
+    WithoutAvx = 2,
 }
