@@ -73,7 +73,13 @@ public class DehydrateCache
 
     public Task WriteTo(string folder, CancellationToken cancellationToken)
     {
-        var serialized = JsonSerializer.Serialize(this);
+        var options = new JsonSerializerOptions(JsonSerializerDefaults.General)
+        {
+            // Skip writing a bunch of nulls into the data to save on space a bit
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        };
+
+        var serialized = JsonSerializer.Serialize(this, options);
 
         return File.WriteAllTextAsync(Path.Join(folder, CacheFileName), serialized, cancellationToken);
     }
@@ -98,7 +104,7 @@ public class DehydrateCache
 
         public ItemData(DehydrateCache subStructure)
         {
-            Type = "pck";
+            SpecialType = "pck";
             Data = subStructure;
         }
 
@@ -110,8 +116,8 @@ public class DehydrateCache
         [JsonPropertyName("sha3")]
         public string? Sha3 { get; set; }
 
-        [JsonPropertyName("type")]
-        public string Type { get; set; } = "file";
+        [JsonPropertyName("special")]
+        public string? SpecialType { get; set; }
 
         /// <summary>
         ///   .pck files are recursive dehydrated items
