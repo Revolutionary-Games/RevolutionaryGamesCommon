@@ -17,17 +17,20 @@ public interface IDehydrateCache
 {
     public const string CacheFileName = "dehydrated.json";
 
+    [JsonIgnore]
     public IEnumerable<KeyValuePair<string, IDehydrateCacheItem>> FileItems { get; }
 }
 
 public interface IDehydrateCacheItem
 {
     public string? Sha3 { get; }
+
     public string? SpecialType { get; }
 
     /// <summary>
     ///   .pck files are recursive dehydrated items and will have this
     /// </summary>
+    [JsonIgnore]
     public IDehydrateCache? DataGeneric { get; }
 }
 
@@ -58,17 +61,13 @@ public static class DehydrateCacheExtensions
         return result;
     }
 
-    public static Task WriteTo(this IDehydrateCache cache, string folder, CancellationToken cancellationToken)
+    public static JsonSerializerOptions GetSerializeOptions()
     {
-        var options = new JsonSerializerOptions(JsonSerializerDefaults.General)
+        return new JsonSerializerOptions(JsonSerializerDefaults.General)
         {
             // Skip writing a bunch of nulls into the data to save on space a bit
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         };
-
-        var serialized = JsonSerializer.Serialize(cache, options);
-
-        return File.WriteAllTextAsync(Path.Join(folder, IDehydrateCache.CacheFileName), serialized, cancellationToken);
     }
 
     public static DehydratedObjectIdentification GetDehydratedObjectIdentifier(this IDehydrateCacheItem item)
@@ -129,6 +128,13 @@ public class DehydrateCacheV2 : IDehydrateCache
         {
             callback(entry.Key, entry.Value);
         }
+    }
+
+    public Task WriteTo(string folder, CancellationToken cancellationToken)
+    {
+        var serialized = JsonSerializer.Serialize(this, DehydrateCacheExtensions.GetSerializeOptions());
+
+        return File.WriteAllTextAsync(Path.Join(folder, IDehydrateCache.CacheFileName), serialized, cancellationToken);
     }
 
     private string ProcessPath(string path)
