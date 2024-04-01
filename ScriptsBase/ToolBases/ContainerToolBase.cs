@@ -25,7 +25,8 @@ public abstract class ContainerToolBase<T>
     private readonly Regex builtImageId =
         new(@"COMMIT.*\n.*-->\s+[a-f0-9]+\s*\n([a-f0-9]+)\s+$", RegexOptions.IgnoreCase);
 
-    private readonly Regex dotnetSdkInstalledVersion = new(@"([\d\.]+)\s\[(\/usr\/(lib(64)?|share)|\/root)\/\.?dotnet\/sdk\]");
+    private readonly Regex dotnetSdkInstalledVersion =
+        new(@"([\d\.]+)\s\[(\/usr\/(lib(64)?|share)|\/root)\/\.?dotnet\/sdk\]");
 
     protected ContainerToolBase(T options)
     {
