@@ -1,5 +1,6 @@
 namespace ScriptsBase.Checks;
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -167,11 +168,19 @@ public class InspectCode : JetBrainsCheck
 
             runData.OutputTextWithMutex(rule.FullDescription.Text);
 
-            if (rule.HelpUri != null)
+            try
             {
-                runData.OutputTextWithMutex(rule.HelpUri.ToString());
+                if (rule.HelpUri != null)
+                {
+                    runData.OutputTextWithMutex(rule.HelpUri.ToString());
+                }
             }
-            else if (rule.Help != null)
+            catch (Exception e)
+            {
+                runData.OutputWarningWithMutex("Trying to read help URI resulted in an exception: " + e);
+            }
+
+            if (rule.Help != null)
             {
                 runData.OutputTextWithMutex(rule.Help.Text);
             }
