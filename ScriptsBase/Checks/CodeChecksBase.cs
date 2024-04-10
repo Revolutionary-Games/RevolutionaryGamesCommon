@@ -157,6 +157,14 @@ public abstract class CodeChecksBase<T>
         return 0;
     }
 
+    public bool IsRunningInCI()
+    {
+        if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CI_COMMIT_HASH")))
+            return true;
+
+        return false;
+    }
+
     private async Task RunActualChecks(List<CodeCheck> selectedChecks, CancellationTokenSource tokenSource)
     {
         var cancellationToken = tokenSource.Token;

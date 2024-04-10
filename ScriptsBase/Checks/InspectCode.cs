@@ -10,14 +10,17 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
+using Microsoft.CodeAnalysis.Sarif;
 using SharedBase.Utilities;
 
 public class InspectCode : JetBrainsCheck
 {
-    private const string InspectResultFile = "inspect_results.xml";
+    private const string InspectResultFile = "inspect_results.json";
 
     private string? lastLoadedFileForReporting;
     private string lastLoadedFileReportingData = string.Empty;
+
+    private bool showFullFilePathsForErrors = true;
 
     /// <summary>
     ///   Regex version of <see cref="InspectCodeIgnoredFilesWildcards"/> these must be kept up to date
@@ -37,6 +40,11 @@ public class InspectCode : JetBrainsCheck
         new("*.dll"),
     };
 
+    public void DisableFullPathPrinting()
+    {
+        showFullFilePathsForErrors = false;
+    }
+
     protected override async Task RunJetBrainsTool(CodeCheckRun runData, CancellationToken cancellationToken)
     {
         var startInfo = new ProcessStartInfo("dotnet");
@@ -45,6 +53,7 @@ public class InspectCode : JetBrainsCheck
         startInfo.ArgumentList.Add("jb");
         startInfo.ArgumentList.Add("inspectcode");
         startInfo.ArgumentList.Add(runData.SolutionFile!);
+        startInfo.ArgumentList.Add("-f=sarif");
         startInfo.ArgumentList.Add($"-o={InspectResultFile}");
         startInfo.ArgumentList.Add("--build");
         startInfo.ArgumentList.Add($"--caches-home={JET_BRAINS_CACHE}");
@@ -72,66 +81,101 @@ public class InspectCode : JetBrainsCheck
 
         bool issuesFound = false;
 
-        var doc = new XmlDocument();
-        doc.Load(InspectResultFile);
-        var issueTypeSeverities = new Dictionary<string, string>();
+        var log = SarifLog.Load(InspectResultFile);
 
-        foreach (XmlNode node in doc.SelectNodes("//IssueType") ?? throw new Exception("Issue types not found"))
+        foreach (var sarifResult in log.Results())
         {
-            issueTypeSeverities.Add(node.Attributes?["Id"]?.Value ?? throw new Exception("Issue type has no id"),
-                node.Attributes?["Severity"]?.Value ?? throw new Exception("Issue type has no severity"));
-        }
-
-        foreach (XmlNode node in doc.SelectNodes("//Issue") ?? throw new Exception("Issues not found"))
-        {
-            var type = node.Attributes?["TypeId"]?.Value ?? throw new Exception("Issue node has no type id");
-            var severity = issueTypeSeverities[type];
-
-            if (severity == "SUGGESTION")
+            if (sarifResult.Level < FailureLevel.Warning)
                 continue;
 
-            if (runData.ForceIgnoredJetbrainsInspections.Contains(type))
+            var rule = sarifResult.GetRule();
+            var text = sarifResult.GetMessageText(rule);
+
+            if (IsAlwaysIgnoredJetBrainsIssue(sarifResult.RuleId, text))
                 continue;
 
-            var file = node.Attributes?["File"]?.Value ?? throw new Exception("Issue node has no file");
-            var line = node.Attributes?["Line"]?.Value ?? "UNKNOWN LINE";
-            var message = node.Attributes?["Message"]?.Value ?? throw new Exception("Issue node has no message");
-            var offset = node.Attributes?["Offset"]?.Value;
+            bool locationFound = false;
 
-            if (IsAlwaysIgnoredJetBrainsIssue(type, message))
-                continue;
-
-            if (!issuesFound)
+            foreach (var location in sarifResult.Locations)
             {
-                runData.ReportError("Code inspection detected issues:");
-                issuesFound = true;
-            }
+                if (location.PhysicalLocation == null)
+                    continue;
 
-            runData.OutputErrorWithMutex($"{file}:{line} {message} type: {type}");
+                if (!issuesFound)
+                {
+                    runData.ReportError("Code inspection detected issues:");
+                    issuesFound = true;
+                    locationFound = true;
+                }
 
-            if (offset != null)
-            {
-                var values = offset.Split('-').Select(int.Parse).ToList();
-                var start = values[0];
-                var end = values[1];
-
-                // TODO: determine if the offset counts "\r\n" as one or two characters
-
-                PrepareFileForReporting(file.Replace('\\', '/'));
-
-                if (lastLoadedFileReportingData.Length <= end)
+                if (!location.PhysicalLocation.ArtifactLocation.TryReconstructAbsoluteUri(
+                        sarifResult.Run.OriginalUriBaseIds, out var resolvedUri))
                 {
                     runData.OutputWarningWithMutex(
-                        $"Offset ({offset}) specified in previous error could not be read in the file");
+                        $"Failed to resolve error absolute URI: {location.PhysicalLocation.ArtifactLocation.Uri}");
+                    resolvedUri = location.PhysicalLocation.ArtifactLocation.Uri;
+                }
+
+                var file = resolvedUri.ToString();
+                file = RemovePotentialFilePrefix(file);
+
+                string reportFile;
+
+                if (showFullFilePathsForErrors)
+                {
+                    reportFile = file;
+                }
+                else
+                {
+                    reportFile = RemovePotentialFilePrefix(location.PhysicalLocation.ArtifactLocation.Uri.ToString());
+                }
+
+                runData.OutputErrorWithMutex(
+                    $"{reportFile}:{location.PhysicalLocation.Region.StartLine} {text} type: {sarifResult.RuleId}");
+
+                // TODO: determine if the offset counts "\r\n" as one or two characters
+                var offsetStart = location.PhysicalLocation.Region.CharOffset;
+                var length = location.PhysicalLocation.Region.CharLength;
+
+                PrepareFileForReporting(file);
+
+                if (length < 1 || offsetStart < 0 || lastLoadedFileReportingData.Length <= offsetStart + length)
+                {
+                    runData.OutputWarningWithMutex(
+                        $"Offset ({offsetStart}) specified in previous error could not be read in the file");
                 }
                 else
                 {
                     // TODO: could probably display the entire line with a second line underline highlighting the error
                     //  to make the context clearer
-                    var code = lastLoadedFileReportingData.Substring(start, end - start);
+                    var code = lastLoadedFileReportingData.Substring(offsetStart, length);
 
-                    runData.OutputTextWithMutex($"Offending code (offset {offset}) for previous message: '{code}'");
+                    runData.OutputTextWithMutex(
+                        $"Offending code (offset {offsetStart}) for previous message: '{code}'");
                 }
+            }
+
+            if (!locationFound)
+            {
+                if (!issuesFound)
+                {
+                    runData.ReportError("Code inspection detected issues:");
+                    issuesFound = true;
+                }
+
+                runData.OutputErrorWithMutex($"Problem with no physical location detected: {text}");
+                runData.OutputTextWithMutex(sarifResult.ToString() ?? "SARIF to string failed");
+            }
+
+            runData.OutputTextWithMutex(rule.FullDescription.Text);
+
+            if (rule.HelpUri != null)
+            {
+                runData.OutputTextWithMutex(rule.HelpUri.ToString());
+            }
+            else if (rule.Help != null)
+            {
+                runData.OutputTextWithMutex(rule.Help.Text);
             }
         }
 
@@ -147,19 +191,25 @@ public class InspectCode : JetBrainsCheck
         ClearFileLoadedForReporting();
     }
 
+    private static string RemovePotentialFilePrefix(string file)
+    {
+        if (file.StartsWith("file://"))
+            return file.Substring("file://".Length);
+
+        return file;
+    }
+
     /// <summary>
     ///   Returns true for known problematic checks that JetBrains reports that cannot be fixed
     /// </summary>
-    /// <param name="type">The type of problem to check</param>
+    /// <param name="ruleId">The type of problem to check</param>
     /// <param name="message">The message of the problem</param>
     /// <returns>True if the error should be always ignored</returns>
-    private bool IsAlwaysIgnoredJetBrainsIssue(string type, string message)
+    private bool IsAlwaysIgnoredJetBrainsIssue(string ruleId, string message)
     {
-        // Workaround for https://youtrack.jetbrains.com/issue/RSRP-490368
-        if (type == "UnknownProperty" && message.Contains("MSBuildThisFileDirectory"))
-        {
-            return true;
-        }
+        // TODO: are new ignores needed?
+        _ = ruleId;
+        _ = message;
 
         return false;
     }
