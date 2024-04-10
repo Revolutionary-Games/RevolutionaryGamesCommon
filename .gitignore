@@ -2,4 +2,4 @@ bin
 obj
 *.DotSettings.user
 /.jetbrains-cache
-/inspect_results.xml
+/inspect_results.json
