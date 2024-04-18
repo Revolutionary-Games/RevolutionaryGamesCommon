@@ -1,7 +1,8 @@
-﻿namespace ScriptsBase.Utilities;
+namespace SharedBase.Utilities;
 
 using System;
 using System.IO;
+using System.Runtime.Versioning;
 
 public static class CopyHelpers
 {
@@ -12,6 +13,7 @@ public static class CopyHelpers
     /// <param name="file">The file to copy</param>
     /// <param name="folder">Where to copy the file</param>
     /// <param name="overwrite">If true will overwrite already existing files</param>
+    [UnsupportedOSPlatform("browser")]
     public static void CopyToFolder(string file, string folder, bool overwrite = true)
     {
         File.Copy(file, Path.Join(folder, Path.GetFileName(file)), overwrite);
@@ -23,6 +25,7 @@ public static class CopyHelpers
     /// <param name="fromFolder">Where to copy from</param>
     /// <param name="targetFolder">Target folder to copy to</param>
     /// <param name="overwrite">If true overwriting files happens silently</param>
+    [UnsupportedOSPlatform("browser")]
     public static void CopyFoldersRecursivelyWithSymlinks(string fromFolder, string targetFolder,
         bool overwrite = false)
     {
@@ -54,6 +57,7 @@ public static class CopyHelpers
         }
     }
 
+    [UnsupportedOSPlatform("browser")]
     public static void MoveToFolder(string file, string folder, bool overwrite = true)
     {
         File.Move(file, Path.Join(folder, Path.GetFileName(file)), overwrite);
@@ -65,6 +69,7 @@ public static class CopyHelpers
     /// <param name="fromFolder">The folder to move everything from</param>
     /// <param name="targetFolder">Target folder to put the moved files and folders in</param>
     /// <param name="overwrite">If true overwriting files happens silently</param>
+    [UnsupportedOSPlatform("browser")]
     public static void MoveFolderContents(string fromFolder, string targetFolder, bool overwrite = false)
     {
         foreach (var fileSystemEntry in Directory.EnumerateFileSystemEntries(fromFolder))
