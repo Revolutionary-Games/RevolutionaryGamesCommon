@@ -18,5 +18,6 @@ public static class ThriveLauncherSharedConstants
     public const string USER_REQUESTED_QUIT = "User requested program exit, Thrive will close shortly";
     public const string REQUEST_LAUNCHER_OPEN = "------------ SHOWING LAUNCHER REQUESTED ------------";
 
+    public const string LOGS_FOLDER_NAME = "logs";
     public const string LATEST_START_INFO_FILE_NAME = "latest_start.json";
 }
