@@ -89,6 +89,7 @@ public abstract class CodeChecksBase<T>
         new("/?symbols/", RegexOptions.IgnoreCase),
         new(LocalizationCheckBase.LOCALE_TEMP_SUFFIX + "$"),
         new(JetBrainsCheck.JET_BRAINS_CACHE + "/"),
+        new(InspectCode.InspectResultFile),
     }.Concat(InspectCode.InspectCodeIgnoredFiles).ToList();
 
     /// <summary>

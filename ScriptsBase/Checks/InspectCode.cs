@@ -14,7 +14,7 @@ using SharedBase.Utilities;
 
 public class InspectCode : JetBrainsCheck
 {
-    private const string InspectResultFile = "inspect_results.json";
+    public const string InspectResultFile = "inspect_results.json";
 
     private string? lastLoadedFileForReporting;
     private string lastLoadedFileReportingData = string.Empty;
