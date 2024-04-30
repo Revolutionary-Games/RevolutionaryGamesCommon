@@ -110,20 +110,20 @@ public class FileChecks : CodeCheck
     {
         foreach (var file in Directory.EnumerateFiles(start))
         {
+            // Hopefully this isn't too bad performance for Windows people
             string handledFile;
-            if (file.StartsWith(StartFileEnumerateFolder))
+            if (NeedsToReplacePaths)
             {
-                handledFile = file.Substring(StartFileEnumerateFolder.Length);
+                handledFile = file.Replace(Path.DirectorySeparatorChar, '/');
             }
             else
             {
                 handledFile = file;
             }
 
-            // Hopefully this isn't too bad performance for Windows people
-            if (NeedsToReplacePaths)
+            if (handledFile.StartsWith(StartFileEnumerateFolder))
             {
-                handledFile = file.Replace(Path.DirectorySeparatorChar, '/');
+                handledFile = handledFile.Substring(StartFileEnumerateFolder.Length);
             }
 
             if (runData.ProcessFile(handledFile))
