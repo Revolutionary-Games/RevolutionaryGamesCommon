@@ -166,7 +166,14 @@ public class InspectCode : JetBrainsCheck
                 runData.OutputTextWithMutex(sarifResult.ToString() ?? "SARIF to string failed");
             }
 
-            runData.OutputTextWithMutex(rule.FullDescription.Text);
+            try
+            {
+                runData.OutputTextWithMutex(rule.FullDescription.Text);
+            }
+            catch (Exception)
+            {
+                runData.OutputTextWithMutex("Rule has no full description");
+            }
 
             try
             {
