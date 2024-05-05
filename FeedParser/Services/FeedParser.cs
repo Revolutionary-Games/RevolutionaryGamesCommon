@@ -30,7 +30,7 @@ public static class FeedParser
 
         var preprocessingActions = feed.PreprocessingActions;
 
-        // Github style feed
+        // GitHub style feed
         LookForFeedItemsInXMLTree(feed, modifiedDocument.Descendants().Where(e => e.Name.LocalName == "entry"),
             feedItems, preprocessingActions);
 
