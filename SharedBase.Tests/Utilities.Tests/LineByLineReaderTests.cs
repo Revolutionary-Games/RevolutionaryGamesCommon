@@ -140,8 +140,12 @@ public class LineByLineReaderTests
 
         Assert.Equal(Fragment1, reader.ReadCurrentLineToStart());
         Assert.Equal(Fragment1, cloned.ReadCurrentLineToStart());
+        Assert.True(reader.CompareCurrentLineWith(cloned));
+        var cloned2 = reader.Clone();
+        Assert.True(cloned.CompareCurrentLineWith(cloned2));
         reader.MoveToNextLine();
         cloned.MoveToNextLine();
+        Assert.False(cloned.CompareCurrentLineWith(cloned2));
         Assert.False(reader.AtLineEnd);
         Assert.False(cloned.AtLineEnd);
 

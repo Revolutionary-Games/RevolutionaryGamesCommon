@@ -82,7 +82,7 @@ public struct LineByLineReader
 
         for (; index < text.Length; ++index)
         {
-            if (text[index] == '\r' || text[index] == '\n')
+            if (IsLineEnding(text[index]))
             {
                 // ++lineNumber;
                 AtLineEnd = true;
@@ -94,6 +94,40 @@ public struct LineByLineReader
         // is ready to go to the end condition on next search
         index = text.Length + 1;
 
+        return false;
+    }
+
+    /// <summary>
+    ///   Scan backwards until a line ending (moves to the first character of multiline line ends) and stops there.
+    ///   Reverse variant of <see cref="LookForLineEnd"/>.
+    /// </summary>
+    /// <returns>True when found</returns>
+    public bool LookBackwardsForLineEnd()
+    {
+        if (Ended)
+        {
+            // Become non-ended
+            Ended = false;
+            index = text.Length - 1;
+        }
+
+        for (; index >= 0; --index)
+        {
+            if (IsLineEnding(text[index]))
+            {
+                // --lineNumber;
+
+                // Handle multi character line endings
+                if (text[index] == '\n' && index > 0 && text[index - 1] == '\r')
+                    --index;
+
+                AtLineEnd = true;
+                return true;
+            }
+        }
+
+        // Found start of text without finding a new line
+        index = 0;
         return false;
     }
 
@@ -115,6 +149,23 @@ public struct LineByLineReader
         {
             ++index;
         }
+
+        AtLineEnd = false;
+    }
+
+    /// <summary>
+    ///   When at a new line moves to the previous line
+    /// </summary>
+    /// <exception cref="InvalidOperationException">When not at a line end <see cref="AtLineEnd"/></exception>
+    public void MoveToPreviousLine()
+    {
+        if (!AtLineEnd)
+            throw new InvalidOperationException("Not at a line end");
+
+        --index;
+
+        if (index < 0)
+            index = 0;
 
         AtLineEnd = false;
     }
@@ -156,6 +207,44 @@ public struct LineByLineReader
         }
 
         return text.Substring(startIndex, endIndex - startIndex + 1);
+    }
+
+    /// <summary>
+    ///   Efficiently compares the current line of this reader with another reader
+    /// </summary>
+    /// <param name="otherReader">Other reader to compare with</param>
+    /// <returns>True when the lines match</returns>
+    /// <exception cref="InvalidOperationException">
+    ///   If this reader has ended, if other reader has ended this is assumed to not match
+    /// </exception>
+    public bool CompareCurrentLineWith(LineByLineReader otherReader)
+    {
+        ThrowIfEnded();
+
+        if (otherReader.Ended)
+            return false;
+
+        throw new NotImplementedException();
+    }
+
+    /// <summary>
+    ///   Checks if this reader is behind the other reader on the string they are reading
+    /// </summary>
+    /// <param name="otherReader">Other reader to compare</param>
+    /// <returns>True if behind</returns>
+    /// <exception cref="ArgumentException">If called with an unrelated reader (different string)</exception>
+    public bool IsBehind(LineByLineReader otherReader)
+    {
+        if (Ended)
+            return false;
+
+        if (otherReader.Ended)
+            return true;
+
+        if (text != otherReader.text)
+            throw new ArgumentException("Should only compare reader that is on the same string");
+
+        return index < otherReader.index;
     }
 
     /// <summary>
