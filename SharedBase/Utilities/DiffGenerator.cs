@@ -35,22 +35,16 @@ public class DiffGenerator
         bool openBlock = false;
         DiffData.Block blockData = default(DiffData.Block);
 
-        bool convergencePossible = true;
-
         // Compare the strings line by line
-        while (!reader1.Ended && !reader2.Ended)
+        while (true)
         {
             // See if we can process a full line
             bool ended1 = reader1.LookForLineEnd();
             bool ended2 = reader2.LookForLineEnd();
 
-            /*if (!convergencePossible)
-            {
-                // Record differences until the end
-                if (!openBlock)
-                    throw new Exception("Block should be open");
-            }
-            else*/
+            if (reader1.Ended || reader2.Ended)
+                break;
+
             if (reader1.CompareCurrentLineWith(reader2))
             {
                 // Lines match
@@ -127,13 +121,13 @@ public class DiffGenerator
                     resultBlocks.Add(blockData);
                     openBlock = false;
                 }
-
-                if (ended1)
-                    reader1.MoveToNextLine();
-
-                if (ended2)
-                    reader2.MoveToNextLine();
             }
+
+            if (ended1)
+                reader1.MoveToNextLine();
+
+            if (ended2)
+                reader2.MoveToNextLine();
         }
 
         // More old lines than new
