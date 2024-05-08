@@ -178,9 +178,23 @@ public struct LineByLineReader
     /// <exception cref="InvalidOperationException">If this is already ended</exception>
     public string ReadCurrentLineToStart()
     {
+        FindCurrentLineRange(out var startIndex, out var endIndex);
+
+        return text.Substring(startIndex, endIndex - startIndex + 1);
+    }
+
+    /// <summary>
+    ///   Similar to <see cref="ReadCurrentLineToStart"/> but only finds the character range that is the current line
+    /// </summary>
+    /// <param name="startIndex">Start of current line</param>
+    /// <param name="endIndex">
+    ///   End of current line (this character is included so if calculating length +1 needs to be added)
+    /// </param>
+    public void FindCurrentLineRange(out int startIndex, out int endIndex)
+    {
         ThrowIfEnded();
 
-        var endIndex = index;
+        endIndex = index;
 
         // Adjust to end before the line ending
         if (AtLineEnd)
@@ -193,7 +207,7 @@ public struct LineByLineReader
             endIndex = text.Length - 1;
         }
 
-        int startIndex = endIndex;
+        startIndex = endIndex;
 
         // Scan backwards to find the previous line (or start of the string)
         for (; startIndex > 0; --startIndex)
@@ -205,8 +219,6 @@ public struct LineByLineReader
                 break;
             }
         }
-
-        return text.Substring(startIndex, endIndex - startIndex + 1);
     }
 
     /// <summary>
@@ -224,7 +236,24 @@ public struct LineByLineReader
         if (otherReader.Ended)
             return false;
 
-        throw new NotImplementedException();
+        FindCurrentLineRange(out var ourStart, out var ourEnd);
+        otherReader.FindCurrentLineRange(out var otherStart, out var otherEnd);
+
+        var otherText = otherReader.text;
+
+        // Different length lines cannot be equal
+        int length = ourEnd - ourStart + 1;
+        if (length != otherEnd - otherStart + 1)
+            return false;
+
+        // After calculating the ranges just compare character by character
+        for (int i = 0; i < length; ++i)
+        {
+            if (text[ourStart + i] != otherText[otherStart + i])
+                return false;
+        }
+
+        return true;
     }
 
     /// <summary>
