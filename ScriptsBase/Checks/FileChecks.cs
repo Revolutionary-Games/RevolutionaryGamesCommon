@@ -221,7 +221,7 @@ public class FileChecks : CodeCheck
         bool success = true;
 
         // We don't load the file contents here as the OS should cache the file read really well without us potentially
-        // loading a really large file all into memory at once. Also some checks need to work on more than just the
+        // loading a really large file all into memory at once. Also, some checks need to work on more than just the
 
         foreach (var check in enabledChecks)
         {
