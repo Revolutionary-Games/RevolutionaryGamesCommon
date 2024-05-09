@@ -38,8 +38,15 @@ public class DiffData
         /// <summary>
         ///   Offset expected after the previous block where this block is found. This is not exact to allow multiple
         ///   diffs generated from the same original version to be applied in sequence as long as they modify different
-        ///   parts.
+        ///   parts. This is in units of lines after the start of the previous block.
         /// </summary>
+        /// <remarks>
+        ///   <para>
+        ///     So a block at the start of the text will have offset 0. And if there's a one line block, one matching
+        ///     line, and then another block this will be 2. 0 is not a valid value as two blocks shouldn't be able to
+        ///     start on the same line (as they should be combined).
+        ///   </para>
+        /// </remarks>
         [JsonInclude]
         [JsonPropertyName("offset")]
         public readonly int ExpectedOffset;

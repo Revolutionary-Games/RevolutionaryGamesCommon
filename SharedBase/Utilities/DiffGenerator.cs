@@ -33,14 +33,14 @@ public class DiffGenerator
         var resultBlocks = new List<DiffData.Block>();
 
         bool openBlock = false;
-        DiffData.Block blockData = default(DiffData.Block);
+        var blockData = default(DiffData.Block);
 
         // Compare the strings line by line
         while (true)
         {
             // See if we can process a full line
-            bool ended1 = reader1.LookForLineEnd();
-            bool ended2 = reader2.LookForLineEnd();
+            bool lineEnded1 = reader1.LookForLineEnd();
+            bool lineEnded2 = reader2.LookForLineEnd();
 
             if (reader1.Ended || reader2.Ended)
                 break;
@@ -57,6 +57,9 @@ public class DiffGenerator
                 // differences until the end
 
                 var readerSearch2 = reader2.Clone();
+
+                if (lineEnded2)
+                    readerSearch2.MoveToNextLine();
 
                 bool foundReConvergence = false;
 
@@ -86,7 +89,7 @@ public class DiffGenerator
 
                     if (!openBlock)
                     {
-                        OnLineDifference(ref reader1, ref reader2, ref blockData, resultBlocks);
+                        OnLineDifference(ref reader1, ref reader2, out blockData, resultBlocks);
                         openBlock = true;
                     }
 
@@ -102,7 +105,7 @@ public class DiffGenerator
                     // Record changes from reader 2 until it finds the search point for re-convergence
                     if (!openBlock)
                     {
-                        OnLineDifference(ref reader1, ref reader2, ref blockData, resultBlocks);
+                        OnLineDifference(ref reader1, ref reader2, out blockData, resultBlocks);
                     }
 
                     blockData.AddedLines ??= [];
@@ -114,7 +117,7 @@ public class DiffGenerator
                         if (reader2.AtLineEnd)
                             reader2.MoveToNextLine();
 
-                        ended2 = reader2.LookForLineEnd();
+                        lineEnded2 = reader2.LookForLineEnd();
                     }
 
                     // No longer diverging
@@ -123,36 +126,52 @@ public class DiffGenerator
                 }
             }
 
-            if (ended1)
+            if (lineEnded1)
                 reader1.MoveToNextLine();
 
-            if (ended2)
+            if (lineEnded2)
                 reader2.MoveToNextLine();
         }
 
         // More old lines than new
         while (!reader1.Ended)
         {
-            bool ended = reader1.LookForLineEnd();
+            if (!openBlock)
+            {
+                OnLineDifference(ref reader1, ref reader2, out blockData, resultBlocks);
+                openBlock = true;
+            }
 
-            var line = reader1.ReadCurrentLineToStart();
+            blockData.DeletedLines ??= [];
+            blockData.DeletedLines.Add(reader1.ReadCurrentLineToStart());
 
-            throw new NotImplementedException();
+            bool lineEnded = reader1.LookForLineEnd();
 
-            if (ended)
+            if (reader1.Ended)
+                break;
+
+            if (lineEnded)
                 reader1.MoveToNextLine();
         }
 
         // More new lines than old
         while (!reader2.Ended)
         {
-            bool ended = reader2.LookForLineEnd();
+            if (!openBlock)
+            {
+                OnLineDifference(ref reader1, ref reader2, out blockData, resultBlocks);
+                openBlock = true;
+            }
 
-            var line = reader2.ReadCurrentLineToStart();
+            blockData.AddedLines ??= [];
+            blockData.AddedLines.Add(reader2.ReadCurrentLineToStart());
 
-            throw new NotImplementedException();
+            bool lineEnded = reader2.LookForLineEnd();
 
-            if (ended)
+            if (reader2.Ended)
+                break;
+
+            if (lineEnded)
                 reader2.MoveToNextLine();
         }
 
@@ -205,40 +224,104 @@ public class DiffGenerator
     ///   Starts a new block when line differences are found
     /// </summary>
     private static void OnLineDifference(ref LineByLineReader oldReader, ref LineByLineReader newReader,
-        ref DiffData.Block block, List<DiffData.Block> previousBlocks)
+        out DiffData.Block block, List<DiffData.Block> previousBlocks)
     {
-        // TODO: scan backwards for reference lines
-        // throw new NotImplementedException();
+        bool hasReferenceBlock = false;
+        int absoluteOffsetOfPrevious = 0;
 
-        // StartLineReference
-
-        // TODO: detect how many instances of text to skip
-
-        // TODO: calculate the approximate distance to previous block
-        // block.ExpectedOffset
-
-        block.DeletedLines?.Clear();
-        block.AddedLines?.Clear();
-
-        /*// Old text is removed and new line is added at the block
-        // Skip if already past the end to handle cases where other text has ended and the other wants to add more text
-        if (endIndex2 >= text2.Length)
+        if (previousBlocks.Count > 0)
         {
-            block.AddedLines?.Clear();
+            hasReferenceBlock = true;
+            absoluteOffsetOfPrevious = previousBlocks.Sum(b => b.ExpectedOffset);
+        }
+
+        var referenceLineScanner = oldReader.Clone();
+
+        // If the reader is already at the end, then need to consider even the last line for reference purposes
+        if (!referenceLineScanner.Ended)
+        {
+            // Move into the current line properly to be able to find a valid previous line
+            if (referenceLineScanner.AtLineEnd)
+                referenceLineScanner.MoveToPreviousLine();
+
+            if (!referenceLineScanner.LookBackwardsForLineEnd())
+            {
+                // At the start of the text
+                block = new DiffData.Block(0, 0, StartLineReference, StartLineReference, null, null);
+                return;
+            }
+
+            referenceLineScanner.MoveToPreviousLine();
         }
         else
         {
-            block.AddedLines = [ReadCurrentLineToStart(endIndex2, text2)];
+            referenceLineScanner.MoveBackwardsFromEnd();
         }
 
-        if (endIndex1 >= text1.Length)
+        // This variable calculates approximate distance to the previous block
+        int linesFromPreviousBlock = 1;
+
+        // Look for reference lines to use to mark the start of this block
+        string? reference1 = null;
+        string? reference2 = null;
+
+        // If the reference line exists in the source between the previous block and start of this one, those
+        // need to be ignored to not place new content at incorrect places
+        int skipReferenceLines = 0;
+
+        while (true)
         {
-            block.DeletedLines?.Clear();
+            var line = referenceLineScanner.ReadCurrentLineToStart();
+
+            // If the line happens to equal the start line reference, escape it
+            if (line == StartLineReference)
+                line = "\\" + StartLineReference;
+
+            // Assign the line references as we read back in the right order
+            if (reference2 == null)
+            {
+                reference2 = line;
+            }
+            else if (reference1 == null)
+            {
+                reference1 = line;
+            }
+            else
+            {
+                if (reference1 == line)
+                {
+                    ++skipReferenceLines;
+                }
+            }
+
+            // Detect if we have found the tail of the previous block
+            if (hasReferenceBlock && referenceLineScanner.LineIndex == absoluteOffsetOfPrevious)
+            {
+                break;
+            }
+
+            if (referenceLineScanner.LookBackwardsForLineEnd())
+            {
+                // Still more lines exist
+                referenceLineScanner.MoveToPreviousLine();
+                ++linesFromPreviousBlock;
+            }
+            else
+            {
+                // Reached start of the text
+
+                // Set references that are unset to match the start
+                reference1 ??= StartLineReference;
+                reference2 ??= StartLineReference;
+
+                break;
+            }
         }
-        else
-        {
-            block.DeletedLines = [ReadCurrentLineToStart(endIndex1, text1)];
-        }*/
+
+        if (reference1 == null || reference2 == null)
+            throw new Exception("Diff logic fail, couldn't find both reference lines");
+
+        block = new DiffData.Block(linesFromPreviousBlock, skipReferenceLines, reference1, reference2, null, null);
     }
 
     private static DiffData? HandleSpecialCases(string oldText, string newText)
