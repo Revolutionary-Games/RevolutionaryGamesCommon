@@ -16,6 +16,8 @@ public struct LineByLineReader
     /// </summary>
     private int index;
 
+    private int lineIndex;
+
     public LineByLineReader(string text)
     {
         this.text = text;
@@ -30,6 +32,16 @@ public struct LineByLineReader
     ///   True when this is currently at a line end
     /// </summary>
     public bool AtLineEnd { get; private set; }
+
+    /// <summary>
+    ///   Zero-based index of the current line number
+    /// </summary>
+    public int LineIndex => lineIndex;
+
+    /// <summary>
+    ///   A normal line number of the current line (line numbers begin at 1)
+    /// </summary>
+    public int LineNumber => lineIndex + 1;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsLineEnding(char character)
@@ -84,7 +96,6 @@ public struct LineByLineReader
         {
             if (IsLineEnding(text[index]))
             {
-                // ++lineNumber;
                 AtLineEnd = true;
                 return true;
             }
@@ -104,10 +115,21 @@ public struct LineByLineReader
     /// <returns>True when found</returns>
     public bool LookBackwardsForLineEnd()
     {
+        if (AtLineEnd)
+        {
+            throw new InvalidOperationException(
+                "Currently at a line end, should be moved to next / previous line first");
+        }
+
         if (Ended)
         {
             // Become non-ended
             Ended = false;
+            index = text.Length - 1;
+        }
+        else if (index >= text.Length)
+        {
+            // Allow scanning backwards when exactly at the end
             index = text.Length - 1;
         }
 
@@ -150,6 +172,7 @@ public struct LineByLineReader
             ++index;
         }
 
+        ++lineIndex;
         AtLineEnd = false;
     }
 
@@ -167,7 +190,21 @@ public struct LineByLineReader
         if (index < 0)
             index = 0;
 
+        --lineIndex;
         AtLineEnd = false;
+    }
+
+    /// <summary>
+    ///   Only valid when this is ended. When called this rewinds this to just before the end status.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">If not at the end</exception>
+    public void MoveBackwardsFromEnd()
+    {
+        if (!Ended)
+            throw new InvalidOperationException("Must be currently ended");
+
+        index = text.Length;
+        Ended = false;
     }
 
     /// <summary>
@@ -285,6 +322,7 @@ public struct LineByLineReader
         return new LineByLineReader(text)
         {
             index = index,
+            lineIndex = lineIndex,
             Ended = Ended,
             AtLineEnd = AtLineEnd,
         };

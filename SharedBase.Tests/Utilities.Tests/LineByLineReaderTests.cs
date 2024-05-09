@@ -26,13 +26,18 @@ public class LineByLineReaderTests
         Assert.True(reader.LookForLineEnd());
         Assert.True(reader.AtLineEnd);
         Assert.Equal(Fragment1, reader.ReadCurrentLineToStart());
+        Assert.Equal(0, reader.LineIndex);
+        Assert.Equal(1, reader.LineNumber);
         reader.MoveToNextLine();
+        Assert.Equal(1, reader.LineIndex);
         Assert.False(reader.AtLineEnd);
 
         Assert.True(reader.LookForLineEnd());
+        Assert.Equal(1, reader.LineIndex);
         Assert.True(reader.AtLineEnd);
         Assert.Equal(Fragment2, reader.ReadCurrentLineToStart());
         reader.MoveToNextLine();
+        Assert.Equal(2, reader.LineIndex);
 
         Assert.False(reader.LookForLineEnd());
         Assert.False(reader.AtLineEnd);
@@ -40,6 +45,7 @@ public class LineByLineReaderTests
         Assert.Equal(Fragment3, reader.ReadCurrentLineToStart());
         Assert.False(reader.AtLineEnd);
         Assert.False(reader.Ended);
+        Assert.Equal(2, reader.LineIndex);
 
         Assert.False(reader.LookForLineEnd());
         Assert.True(reader.Ended);
@@ -70,6 +76,7 @@ public class LineByLineReaderTests
 
         Assert.False(reader.LookForLineEnd());
         Assert.True(reader.Ended);
+        Assert.Equal(3, reader.LineIndex);
     }
 
     [Fact]
@@ -167,5 +174,32 @@ public class LineByLineReaderTests
         Assert.False(cloned.Ended);
         Assert.False(cloned.LookForLineEnd());
         Assert.True(cloned.Ended);
+    }
+
+    [Fact]
+    public void LineReader_GoingBackLineWorks()
+    {
+        var reader = new LineByLineReader(Text1);
+
+        reader.LookForLineEnd();
+        reader.MoveToNextLine();
+        reader.LookForLineEnd();
+        reader.MoveToNextLine();
+
+        var line = reader.ReadCurrentLineToStart();
+
+        Assert.Equal(2, reader.LineIndex);
+
+        Assert.True(reader.LookBackwardsForLineEnd());
+        reader.MoveToPreviousLine();
+        Assert.Equal(1, reader.LineIndex);
+        Assert.NotEqual(line, reader.ReadCurrentLineToStart());
+
+        Assert.True(reader.LookBackwardsForLineEnd());
+        reader.MoveToPreviousLine();
+        Assert.Equal(0, reader.LineIndex);
+        Assert.NotEqual(line, reader.ReadCurrentLineToStart());
+
+        Assert.False(reader.LookBackwardsForLineEnd());
     }
 }
