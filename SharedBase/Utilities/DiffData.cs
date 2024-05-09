@@ -1,6 +1,8 @@
 namespace SharedBase.Utilities;
 
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json.Serialization;
 
 /// <summary>
@@ -19,6 +21,7 @@ public class DiffData
     {
     }
 
+    [JsonConstructor]
     public DiffData(List<Block>? blocks)
     {
         if (blocks is { Count: > 0 })
@@ -28,6 +31,7 @@ public class DiffData
     /// <summary>
     ///   True when the diffed data is the same, i.e. there are no differences
     /// </summary>
+    [JsonIgnore]
     public bool Empty => Blocks == null || Blocks.Count < 1;
 
     /// <summary>
@@ -79,18 +83,63 @@ public class DiffData
         public List<string>? AddedLines;
 
         [JsonConstructor]
-        public Block(int offset, int refSkip, string ref1, string ref2, List<string>? delete, List<string>? add)
+        public Block(int expectedOffset, int ignoreReferenceCount, string reference1, string reference2,
+            List<string>? deletedLines, List<string>? addedLines)
         {
-            ExpectedOffset = offset;
-            IgnoreReferenceCount = refSkip;
-            Reference1 = ref1;
-            Reference2 = ref2;
+            ExpectedOffset = expectedOffset;
+            IgnoreReferenceCount = ignoreReferenceCount;
+            Reference1 = reference1;
+            Reference2 = reference2;
 
-            if (delete is { Count: > 0 })
-                DeletedLines = delete;
+            if (deletedLines is { Count: > 0 })
+                DeletedLines = deletedLines;
 
-            if (add is { Count: > 0 })
-                AddedLines = add;
+            if (addedLines is { Count: > 0 })
+                AddedLines = addedLines;
+        }
+
+        public static bool operator ==(Block left, Block right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(Block left, Block right)
+        {
+            return !left.Equals(right);
+        }
+
+        public bool Equals(Block other)
+        {
+            if (ReferenceEquals(DeletedLines, null) && !ReferenceEquals(other.DeletedLines, null))
+                return false;
+            if (ReferenceEquals(AddedLines, null) && !ReferenceEquals(other.AddedLines, null))
+                return false;
+
+            if (DeletedLines != null)
+            {
+                if (other.DeletedLines == null || !DeletedLines.SequenceEqual(other.DeletedLines))
+                    return false;
+            }
+
+            if (AddedLines != null)
+            {
+                if (other.AddedLines == null || !AddedLines.SequenceEqual(other.AddedLines))
+                    return false;
+            }
+
+            return ExpectedOffset == other.ExpectedOffset && IgnoreReferenceCount == other.IgnoreReferenceCount &&
+                Reference1 == other.Reference1 && Reference2 == other.Reference2;
+        }
+
+        public override bool Equals(object? obj)
+        {
+            return obj is Block other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(ExpectedOffset, IgnoreReferenceCount, Reference1, Reference2, DeletedLines,
+                AddedLines);
         }
     }
 }

@@ -161,4 +161,68 @@ public class DiffGeneratorTests
 
         Assert.Equal(old, result.ToString());
     }
+
+    [Fact]
+    public void Diff_ReferenceSkippingWorks()
+    {
+        var diff = DiffGenerator.Default.Generate(Text8, Text9);
+
+        Assert.NotNull(diff.Blocks);
+        Assert.Single(diff.Blocks);
+
+        var block = diff.Blocks.First();
+
+        Assert.NotNull(block.DeletedLines);
+        Assert.Single(block.DeletedLines);
+        Assert.Equal("but only after a changed line", block.DeletedLines[0]);
+        Assert.NotNull(block.AddedLines);
+        Assert.Single(block.AddedLines);
+        Assert.Equal("that might be tricky to match", block.AddedLines[0]);
+
+        Assert.Equal("and there ends up being a difference", block.Reference1);
+        Assert.Equal("that is after a reference match", block.Reference2);
+
+        Assert.Equal(7, block.ExpectedOffset);
+        Assert.Equal(1, block.IgnoreReferenceCount);
+
+        var result = DiffGenerator.Default.ApplyDiff(Text8, diff);
+
+        Assert.Equal(Text9, result.ToString());
+    }
+
+    [Theory]
+    [InlineData(Text1, Text2)]
+    [InlineData(Text1, "")]
+    [InlineData("", Text1)]
+    public void Diff_RoundTripThroughJsonWorks(string old, string updated)
+    {
+        var diff = DiffGenerator.Default.Generate(old, updated);
+        Assert.NotNull(diff.Blocks);
+
+        var encoded = JsonSerializer.Serialize(diff);
+
+        var restored = JsonSerializer.Deserialize<DiffData>(encoded);
+
+        Assert.NotNull(restored);
+
+        Assert.NotNull(restored.Blocks);
+        Assert.Equal(diff.Blocks.Count, restored.Blocks.Count);
+
+        for (int i = 0; i < diff.Blocks.Count; ++i)
+        {
+            Assert.Equal(diff.Blocks[i], restored.Blocks[i]);
+        }
+
+        var result = DiffGenerator.Default.ApplyDiff(old, restored);
+
+        Assert.Equal(updated, result.ToString());
+    }
+
+    [Fact]
+    public void Diff_BlankDiffCanBeLoaded()
+    {
+        var restored = JsonSerializer.Deserialize<DiffData>("{}");
+        Assert.NotNull(restored);
+        Assert.True(restored.Empty);
+    }
 }
