@@ -328,6 +328,15 @@ public struct LineByLineReader
         };
     }
 
+    public override string ToString()
+    {
+        if (Ended)
+            return $"Ended reader at index {index}";
+
+        return $"Reader {(AtLineEnd ? "(EOL) " : string.Empty)}at line {LineNumber} (index: {index}):" +
+            $" {ReadCurrentLineToStart()}";
+    }
+
     /// <summary>
     ///   Mark this reader as having ended if currently at length + 1 or greater amount out of bounds. This is done
     ///   like this to allow reading code to detect being at the last bit of the string and then only after handling
