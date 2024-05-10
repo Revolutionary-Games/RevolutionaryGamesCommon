@@ -48,6 +48,12 @@ public class DiffGenerator
             if (reader1.CompareCurrentLineWith(reader2))
             {
                 // Lines match
+                if (openBlock)
+                {
+                    // Difference block ended due to matching lines
+                    resultBlocks.Add(blockData);
+                    openBlock = false;
+                }
             }
             else
             {
@@ -70,7 +76,8 @@ public class DiffGenerator
                     {
                         bool foundMore = readerSearch2.LookForLineEnd();
 
-                        if (!foundMore && readerSearch2.Ended)
+                        // TODO: should this allow comparing even incomplete lines here?
+                        if (!foundMore || readerSearch2.Ended)
                             break;
 
                         if (reader1.CompareCurrentLineWith(readerSearch2))

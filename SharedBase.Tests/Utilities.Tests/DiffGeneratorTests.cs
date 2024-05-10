@@ -252,34 +252,34 @@ public class DiffGeneratorTests
         Assert.NotNull(diff.Blocks);
         Assert.Equal(2, diff.Blocks.Count);
 
-        var block1 = diff.Blocks.First();
+        var block1 = diff.Blocks[0];
 
         Assert.NotNull(block1.DeletedLines);
         Assert.Single(block1.DeletedLines);
-        Assert.Equal("This is just some text", block1.DeletedLines[0]);
+        Assert.Equal("with a few lines in it", block1.DeletedLines[0]);
         Assert.NotNull(block1.AddedLines);
         Assert.Single(block1.AddedLines);
-        Assert.Equal("First line difference in text", block1.AddedLines[0]);
+        Assert.Equal("with a few changed lines in it", block1.AddedLines[0]);
 
         Assert.Equal(DiffGenerator.StartLineReference, block1.Reference1);
-        Assert.Equal(DiffGenerator.StartLineReference, block1.Reference2);
+        Assert.Equal("This is just some text", block1.Reference2);
 
-        Assert.Equal(0, block1.ExpectedOffset);
+        Assert.Equal(1, block1.ExpectedOffset);
         Assert.Equal(0, block1.IgnoreReferenceCount);
 
-        var block2 = diff.Blocks.First();
+        var block2 = diff.Blocks[1];
 
         Assert.NotNull(block2.DeletedLines);
         Assert.Single(block2.DeletedLines);
-        Assert.Equal("This is just some text", block2.DeletedLines[0]);
+        Assert.Equal("and there ends up being a difference", block2.DeletedLines[0]);
         Assert.NotNull(block2.AddedLines);
         Assert.Single(block2.AddedLines);
-        Assert.Equal("First line difference in text", block2.AddedLines[0]);
+        Assert.Equal("and there ends up being a difference in multiple places", block2.AddedLines[0]);
 
-        Assert.Equal(DiffGenerator.StartLineReference, block2.Reference1);
-        Assert.Equal(DiffGenerator.StartLineReference, block2.Reference2);
+        Assert.Equal("that just says basically nothing at all", block2.Reference1);
+        Assert.Equal("but maybe just has a bit of a new thing", block2.Reference2);
 
-        Assert.Equal(0, block2.ExpectedOffset);
+        Assert.Equal(3, block2.ExpectedOffset);
         Assert.Equal(0, block2.IgnoreReferenceCount);
     }
 
