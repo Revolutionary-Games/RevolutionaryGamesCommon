@@ -55,74 +55,110 @@ public class DiffGenerator
 
                 // Try to find where the lines would converge if possible, if not possible then this just records
                 // differences until the end
-
                 var readerSearch2 = reader2.Clone();
 
-                if (lineEnded2)
-                    readerSearch2.MoveToNextLine();
-
                 bool foundReConvergence = false;
+                bool skip = false;
 
-                while (!readerSearch2.Ended)
+                // Only allow normal re-convergence after the first difference line is processed
+                if (openBlock)
                 {
-                    bool foundMore = readerSearch2.LookForLineEnd();
-
-                    if (!foundMore && readerSearch2.Ended)
-                        break;
-
-                    if (reader1.CompareCurrentLineWith(readerSearch2))
-                    {
-                        foundReConvergence = true;
-
-                        if (readerSearch2.LookBackwardsForLineEnd())
-                            readerSearch2.MoveToPreviousLine();
-                        break;
-                    }
-
-                    if (foundMore)
+                    if (lineEnded2)
                         readerSearch2.MoveToNextLine();
+
+                    while (!readerSearch2.Ended)
+                    {
+                        bool foundMore = readerSearch2.LookForLineEnd();
+
+                        if (!foundMore && readerSearch2.Ended)
+                            break;
+
+                        if (reader1.CompareCurrentLineWith(readerSearch2))
+                        {
+                            foundReConvergence = true;
+
+                            if (readerSearch2.LookBackwardsForLineEnd())
+                                readerSearch2.MoveToPreviousLine();
+                            break;
+                        }
+
+                        if (foundMore)
+                            readerSearch2.MoveToNextLine();
+                    }
+                }
+                else
+                {
+                    // Except in the case that the next line matches the one in new text, this signals a single line
+                    // removed in the old text
+                    var readerSearch1 = reader1.Clone();
+
+                    // TODO: should this move to next be removed and then instead just always skip if there isn't a
+                    // next line?
+                    if (lineEnded1)
+                        readerSearch1.MoveToNextLine();
+
+                    readerSearch1.LookForLineEnd();
+
+                    if (!readerSearch1.Ended && readerSearch1.CompareCurrentLineWith(reader2))
+                    {
+                        if (openBlock)
+                            throw new Exception("A block shouldn't be open here");
+
+                        // Just a single deleted line
+                        OnLineDifference(ref reader1, ref reader2, out blockData, resultBlocks);
+
+                        blockData.DeletedLines = [reader1.ReadCurrentLineToStart()];
+                        resultBlocks.Add(blockData);
+                        openBlock = false;
+
+                        // Move reader2 back one line so that the lines match up on the next iteration
+                        if (lineEnded2)
+                            reader2.MoveToPreviousLine();
+
+                        lineEnded2 = reader2.LookBackwardsForLineEnd();
+
+                        skip = true;
+                    }
                 }
 
-                if (!foundReConvergence)
+                if (!skip)
                 {
-                    // Cannot re-converge, add the divergence
-
                     if (!openBlock)
                     {
                         OnLineDifference(ref reader1, ref reader2, out blockData, resultBlocks);
                         openBlock = true;
                     }
 
-                    // Add divergence
-                    blockData.AddedLines ??= [];
-                    blockData.AddedLines.Add(reader2.ReadCurrentLineToStart());
-
-                    blockData.DeletedLines ??= [];
-                    blockData.DeletedLines.Add(reader1.ReadCurrentLineToStart());
-                }
-                else
-                {
-                    // Record changes from reader 2 until it finds the search point for re-convergence
-                    if (!openBlock)
+                    if (!foundReConvergence)
                     {
-                        OnLineDifference(ref reader1, ref reader2, out blockData, resultBlocks);
-                    }
+                        // Cannot re-converge, add the divergence
 
-                    blockData.AddedLines ??= [];
-
-                    while (reader2.IsBehind(readerSearch2))
-                    {
+                        // Add divergence
+                        blockData.AddedLines ??= [];
                         blockData.AddedLines.Add(reader2.ReadCurrentLineToStart());
 
-                        if (reader2.AtLineEnd)
-                            reader2.MoveToNextLine();
-
-                        lineEnded2 = reader2.LookForLineEnd();
+                        blockData.DeletedLines ??= [];
+                        blockData.DeletedLines.Add(reader1.ReadCurrentLineToStart());
                     }
+                    else
+                    {
+                        // Record changes from reader 2 until it finds the search point for re-convergence
+                        blockData.AddedLines ??= [];
 
-                    // No longer diverging
-                    resultBlocks.Add(blockData);
-                    openBlock = false;
+                        while (reader2.IsBehind(readerSearch2))
+                        {
+                            blockData.AddedLines.Add(reader2.ReadCurrentLineToStart());
+
+                            if (reader2.AtLineEnd)
+                                reader2.MoveToNextLine();
+
+                            lineEnded2 = reader2.LookForLineEnd();
+                        }
+
+                        // No longer diverging
+                        resultBlocks.Add(blockData);
+                        openBlock = false;
+                    }
                 }
             }
 

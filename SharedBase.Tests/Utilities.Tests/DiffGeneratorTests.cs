@@ -2,6 +2,7 @@ namespace SharedBase.Tests.Utilities.Tests;
 
 using System;
 using System.Linq;
+using System.Text.Json;
 using SharedBase.Utilities;
 using Xunit;
 
@@ -28,16 +29,55 @@ public class DiffGeneratorTests
                                  But what if
                                  """;
 
-    // TODO: test that differs by trailing newline
     private const string Text5 = "Just some text";
     private const string Text6 = Text5 + "\n";
 
-    // TODO: test that has changes at the start
     private const string Text7 = """
                                  First line difference in text
                                  with a few lines in it
                                  that just says basically nothing at all
                                  """;
+
+    private const string Text8 = """
+                                 This is just some text
+                                 with a few lines in it
+                                 and there ends up being a difference
+                                 that just says basically nothing at all
+                                 but maybe just has a bit of a new thing
+                                 and there ends up being a difference
+                                 that is after a reference match
+                                 but only after a changed line
+                                 and ends with a match
+                                 """;
+
+    private const string Text9 = """
+                                 This is just some text
+                                 with a few lines in it
+                                 and there ends up being a difference
+                                 that just says basically nothing at all
+                                 but maybe just has a bit of a new thing
+                                 and there ends up being a difference
+                                 that is after a reference match
+                                 that might be tricky to match
+                                 and ends with a match
+                                 """;
+
+    private const string Text10 = """
+                                  This is just some text
+                                  with a few changed lines in it
+                                  and there ends up being a difference
+                                  that just says basically nothing at all
+                                  but maybe just has a bit of a new thing
+                                  and there ends up being a difference in multiple places
+                                  that is after a reference match
+                                  that might be tricky to match
+                                  and ends with a match
+                                  """;
+
+    private const string Text11 = """
+                                  This is just some text
+                                  that just says basically nothing at all
+                                  """;
 
     [Fact]
     public void Diff_EmptyIsEmpty()
@@ -108,7 +148,7 @@ public class DiffGeneratorTests
         Assert.Single(block.DeletedLines);
         Assert.Equal(Text3, block.DeletedLines[0]);
         Assert.Equal(Text4, block.AddedLines[0]);
-        Assert.InRange(block.ExpectedOffset, 0, 2);
+        Assert.Equal(0, block.ExpectedOffset);
         Assert.Equal(0, block.IgnoreReferenceCount);
         Assert.NotEqual(Text3, block.Reference1);
         Assert.NotEqual(Text3, block.Reference2);
@@ -132,14 +172,125 @@ public class DiffGeneratorTests
         Assert.NotNull(block.AddedLines);
         Assert.Single(block.AddedLines);
         Assert.Equal("but maybe just has a bit of a new thing", block.AddedLines[0]);
-        Assert.InRange(block.ExpectedOffset, 2, 4);
+        Assert.Equal(3, block.ExpectedOffset);
         Assert.Equal(0, block.IgnoreReferenceCount);
+    }
+
+    [Fact]
+    public void Diff_WithJustNewLineDifference()
+    {
+        var diff = DiffGenerator.Default.Generate(Text5, Text6);
+
+        Assert.NotNull(diff.Blocks);
+        Assert.Single(diff.Blocks);
+
+        var block = diff.Blocks.First();
+
+        Assert.Null(block.DeletedLines);
+        Assert.NotNull(block.AddedLines);
+        Assert.Single(block.AddedLines);
+        Assert.Equal(string.Empty, block.AddedLines[0]);
+
+        Assert.Equal(DiffGenerator.StartLineReference, block.Reference1);
+        Assert.Equal("Just some text", block.Reference2);
+
+        Assert.Equal(1, block.ExpectedOffset);
+        Assert.Equal(0, block.IgnoreReferenceCount);
+    }
+
+    [Fact]
+    public void Diff_FirstLineDifference()
+    {
+        var diff = DiffGenerator.Default.Generate(Text1, Text7);
+
+        Assert.NotNull(diff.Blocks);
+        Assert.Single(diff.Blocks);
+
+        var block = diff.Blocks.First();
+
+        Assert.NotNull(block.DeletedLines);
+        Assert.Single(block.DeletedLines);
+        Assert.Equal("This is just some text", block.DeletedLines[0]);
+        Assert.NotNull(block.AddedLines);
+        Assert.Single(block.AddedLines);
+        Assert.Equal("First line difference in text", block.AddedLines[0]);
+
+        Assert.Equal(DiffGenerator.StartLineReference, block.Reference1);
+        Assert.Equal(DiffGenerator.StartLineReference, block.Reference2);
+
+        Assert.Equal(0, block.ExpectedOffset);
+        Assert.Equal(0, block.IgnoreReferenceCount);
+    }
+
+    [Fact]
+    public void Diff_OneDeletedLine()
+    {
+        var diff = DiffGenerator.Default.Generate(Text1, Text11);
+
+        Assert.NotNull(diff.Blocks);
+        Assert.Single(diff.Blocks);
+
+        var block = diff.Blocks.First();
+
+        Assert.NotNull(block.DeletedLines);
+        Assert.Single(block.DeletedLines);
+        Assert.Equal("with a few lines in it", block.DeletedLines[0]);
+        Assert.Null(block.AddedLines);
+
+        Assert.Equal(DiffGenerator.StartLineReference, block.Reference1);
+        Assert.Equal("This is just some text", block.Reference2);
+
+        Assert.Equal(1, block.ExpectedOffset);
+        Assert.Equal(0, block.IgnoreReferenceCount);
+    }
+
+    [Fact]
+    public void Diff_MultipleBlocks()
+    {
+        var diff = DiffGenerator.Default.Generate(Text9, Text10);
+
+        Assert.NotNull(diff.Blocks);
+        Assert.Equal(2, diff.Blocks.Count);
+
+        var block1 = diff.Blocks.First();
+
+        Assert.NotNull(block1.DeletedLines);
+        Assert.Single(block1.DeletedLines);
+        Assert.Equal("This is just some text", block1.DeletedLines[0]);
+        Assert.NotNull(block1.AddedLines);
+        Assert.Single(block1.AddedLines);
+        Assert.Equal("First line difference in text", block1.AddedLines[0]);
+
+        Assert.Equal(DiffGenerator.StartLineReference, block1.Reference1);
+        Assert.Equal(DiffGenerator.StartLineReference, block1.Reference2);
+
+        Assert.Equal(0, block1.ExpectedOffset);
+        Assert.Equal(0, block1.IgnoreReferenceCount);
+
+        var block2 = diff.Blocks.First();
+
+        Assert.NotNull(block2.DeletedLines);
+        Assert.Single(block2.DeletedLines);
+        Assert.Equal("This is just some text", block2.DeletedLines[0]);
+        Assert.NotNull(block2.AddedLines);
+        Assert.Single(block2.AddedLines);
+        Assert.Equal("First line difference in text", block2.AddedLines[0]);
+
+        Assert.Equal(DiffGenerator.StartLineReference, block2.Reference1);
+        Assert.Equal(DiffGenerator.StartLineReference, block2.Reference2);
+
+        Assert.Equal(0, block2.ExpectedOffset);
+        Assert.Equal(0, block2.IgnoreReferenceCount);
     }
 
     [Theory]
     [InlineData(Text1, Text2)]
     [InlineData(Text1, "")]
     [InlineData("", Text1)]
+    [InlineData(Text5, Text6)]
+    [InlineData(Text1, Text7)]
+    [InlineData(Text9, Text10)]
+    [InlineData(Text1, Text11)]
     public void Diff_GeneratedDiffWhenAppliedGivesNewText(string old, string updated)
     {
         var diff = DiffGenerator.Default.Generate(old, updated);
@@ -153,6 +304,7 @@ public class DiffGeneratorTests
     [InlineData(Text1, Text2)]
     [InlineData(Text1, "")]
     [InlineData("", Text1)]
+    [InlineData(Text9, Text10)]
     public void Diff_ReverseDiffApplyWorks(string old, string updated)
     {
         var diff = DiffGenerator.Default.Generate(updated, old);
