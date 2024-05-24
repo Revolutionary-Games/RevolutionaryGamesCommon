@@ -299,7 +299,7 @@ public class DiffGenerator
         }
 
         // Just return original if nothing in diff
-        if (diff.Blocks is not { Count: 0 })
+        if (diff.Blocks == null || diff.Blocks.Count < 1)
         {
             return reuseBuilder.Append(original);
         }
