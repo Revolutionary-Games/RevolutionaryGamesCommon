@@ -12,6 +12,31 @@ public class DiffGenerator
     /// </summary>
     public const string StartLineReference = "(start)";
 
+    /// <summary>
+    ///   How many lines slight deviance mode looks at from the start of the text when resolving a block that targets
+    ///   the beginning of the text.
+    /// </summary>
+    private const int SlightDevianceBeginningAllowedLines = 10;
+
+    /// <summary>
+    ///   How closely diff blocks must match their reference lines to be able to apply
+    /// </summary>
+    public enum DiffMatchMode
+    {
+        /// <summary>
+        ///   Reference lines must be exactly where expected, otherwise diff applying fails.
+        ///   WARNING: not tested very well (especially reference line counting might not be exact causing unnecessary
+        ///   failures)
+        /// </summary>
+        Strict,
+
+        /// <summary>
+        ///   Allows slight deviance in reference lines where the read position is adjusted on the fly a bit to look
+        ///   for matching lines that aren't exactly at the right location
+        /// </summary>
+        NormalSlightDeviance,
+    }
+
     public static DiffGenerator Default { get; } = new();
 
     /// <summary>
@@ -249,18 +274,248 @@ public class DiffGenerator
         return new DiffData(resultBlocks);
     }
 
-    public StringBuilder ApplyDiff(string original, DiffData diff, StringBuilder? reuseBuilder = null)
+    /// <summary>
+    ///   Applies a diff to a piece of text
+    /// </summary>
+    /// <param name="original">Text to apply the diff to</param>
+    /// <param name="diff">Diff data to apply, if empty won't do anything to the text</param>
+    /// <param name="matchMode">How closely the diff must match the text to allow it to apply</param>
+    /// <param name="reuseBuilder">If provided this string builder is used for the text</param>
+    /// <returns>A string builder containing the result</returns>
+    /// <exception cref="ArgumentException">If the diff data is malformed</exception>
+    /// <exception cref="NonMatchingDiffException">
+    ///   Thrown when the diff cannot be applied as the <see cref="original"/> text is too different
+    /// </exception>
+    public StringBuilder ApplyDiff(string original, DiffData diff,
+        DiffMatchMode matchMode = DiffMatchMode.NormalSlightDeviance, StringBuilder? reuseBuilder = null)
     {
-        string lineEndings = "\n";
+        if (reuseBuilder == null)
+        {
+            reuseBuilder = new StringBuilder(original.Length);
+        }
+        else
+        {
+            reuseBuilder.Clear();
+        }
 
+        // Just return original if nothing in diff
+        if (diff.Blocks is not { Count: 0 })
+        {
+            return reuseBuilder.Append(original);
+        }
+
+        // Detect line ending type to use
+        var lineEndings = "\n";
+
+        // Probably good enough heuristic to switch to Windows style if there is at least one such line ending
         if (original.Contains("\r\n"))
             lineEndings = "\r\n";
 
-        reuseBuilder ??= new StringBuilder(original.Length);
+        bool seenBeginningBlock = false;
 
-        throw new NotImplementedException();
+        // Blocks count their estimated positions from the start of the previous block, not its end so this is used
+        // to adjust things to match up
+        // TODO: add a proper test for strict mode diff
+        int blockLineAdjustment = 0;
+
+        var originalReader = new LineByLineReader(original);
+
+        foreach (var block in diff.Blocks)
+        {
+            int referenceIgnores = block.IgnoreReferenceCount;
+
+            // Block goes to the start of the text
+            if (block.Reference1 == StartLineReference || block.Reference2 == StartLineReference)
+            {
+                if (block.Reference1 != StartLineReference)
+                {
+                    throw new ArgumentException(
+                        "Diff block earlier reference should refer to the text beginning for a " +
+                        "block that is at the start");
+                }
+
+                if (referenceIgnores > 0)
+                    throw new ArgumentException("In a beginning diff block reference ignores should be 0");
+
+                // TODO: should multiple blocks targeting the beginning be allowed?
+                // This would be pretty difficult in needing to modify lines already processed to the string builder
+                if (seenBeginningBlock)
+                {
+                    throw new ArgumentException(
+                        "There cannot be multiple diff blocks for the beginning (or beginning blocks " +
+                        "after other blocks)");
+                }
+
+                // Re-initialize the reader to go back to the start
+                originalReader = new LineByLineReader(original);
+                seenBeginningBlock = true;
+
+                if (block.Reference2 != StartLineReference)
+                {
+                    // Reference line must match for the block to match
+
+                    int linesLeft = SlightDevianceBeginningAllowedLines;
+
+                    while (true)
+                    {
+                        bool lineEnd = originalReader.LookForLineEnd();
+
+                        if (originalReader.Ended)
+                            throw new NonMatchingDiffException(block);
+
+                        var line = originalReader.ReadCurrentLineToStart();
+
+                        if (lineEnd)
+                            originalReader.MoveToNextLine();
+
+                        // Copy viewed reference lines to output
+                        CopyLineToOutput(reuseBuilder, line, lineEnd, lineEndings);
+
+                        --linesLeft;
+
+                        if (line == block.Reference2)
+                        {
+                            // Found correct position
+                            break;
+                        }
+
+                        if (matchMode == DiffMatchMode.Strict || linesLeft <= 0)
+                        {
+                            throw new NonMatchingDiffException(block);
+                        }
+                    }
+                }
+
+                blockLineAdjustment = ApplyBlock(reuseBuilder, ref originalReader, block);
+                continue;
+            }
+
+            // Normal block (not at start)
+            // Disallow beginning blocks to come later
+            seenBeginningBlock = true;
+
+            // Look for the reference lines
+            int lineEstimate = block.ExpectedOffset - blockLineAdjustment;
+
+            // Use a separate scanning reader to be able to do fuzzy matching if exact fails
+            // TODO: implement fuzzy matching modes (first should be whitespace ignoring mode)
+            var scanReader = originalReader.Clone();
+
+            bool reference1Matched = false;
+
+            while (true)
+            {
+                bool lineEnd = scanReader.LookForLineEnd();
+
+                if (scanReader.Ended)
+                    throw new NonMatchingDiffException(block);
+
+                var line = scanReader.ReadCurrentLineToStart();
+
+                if (lineEnd)
+                    scanReader.MoveToNextLine();
+
+                --lineEstimate;
+
+                if (reference1Matched)
+                {
+                    if (line == block.Reference2)
+                    {
+                        // Found correct position
+
+                        // -1 is checked here as reference1 is where the lines point to so if both 1 and 2 references
+                        // match we are already one line past where we wanted to be
+                        if (matchMode == DiffMatchMode.Strict && lineEstimate != 0 && lineEstimate != -1)
+                        {
+                            // Fail in strict mode if line wasn't exactly where we expected (too soon)
+                            throw new NonMatchingDiffException(block);
+                        }
+
+                        break;
+                    }
+
+                    // Not a match as second line didn't match
+                    reference1Matched = false;
+                }
+                else
+                {
+                    if (line == block.Reference1)
+                    {
+                        // Potential place where the references point to
+                        reference1Matched = true;
+                        continue;
+                    }
+                }
+
+                if (matchMode == DiffMatchMode.Strict && lineEstimate < 0)
+                {
+                    throw new NonMatchingDiffException(block);
+                }
+            }
+
+            // Copy viewed reference lines to output
+            while (originalReader.IsBehind(scanReader))
+            {
+                bool lineEnd = originalReader.LookForLineEnd();
+
+                if (originalReader.Ended)
+                    throw new NonMatchingDiffException(block);
+
+                var line = originalReader.ReadCurrentLineToStart();
+
+                if (lineEnd)
+                    originalReader.MoveToNextLine();
+
+                CopyLineToOutput(reuseBuilder, line, lineEnd, lineEndings);
+            }
+
+            blockLineAdjustment = ApplyBlock(reuseBuilder, ref originalReader, block);
+        }
+
+        // After blocks have ended copy all leftover lines
+        CopyRemainingTextToOutput(reuseBuilder, originalReader, lineEndings);
 
         return reuseBuilder;
+    }
+
+    /// <summary>
+    ///   Applies a single block in a diff (the <see cref="originalReader"/> must be at the line after the position
+    ///   the block reference mandates)
+    /// </summary>
+    /// <returns>The number of lines processed from <see cref="originalReader"/> to handle the block</returns>
+    private static int ApplyBlock(StringBuilder reuseBuilder, ref LineByLineReader originalReader,
+        DiffData.Block block)
+    {
+        throw new NotImplementedException();
+    }
+
+    private static void CopyLineToOutput(StringBuilder reuseBuilder, string line, bool lineEnd,
+        string lineEndings)
+    {
+        reuseBuilder.Append(line);
+
+        if (lineEnd)
+            reuseBuilder.Append(lineEndings);
+    }
+
+    private static void CopyRemainingTextToOutput(StringBuilder reuseBuilder, LineByLineReader originalReader,
+        string lineEndings)
+    {
+        while (!originalReader.Ended)
+        {
+            if (originalReader.AtLineEnd)
+                originalReader.MoveToNextLine();
+
+            bool lineEnd = originalReader.LookForLineEnd();
+
+            if (originalReader.Ended)
+                break;
+
+            reuseBuilder.Append(originalReader.ReadCurrentLineToStart());
+
+            if (lineEnd)
+                reuseBuilder.Append(lineEndings);
+        }
     }
 
     /// <summary>
@@ -269,6 +524,9 @@ public class DiffGenerator
     private static void OnLineDifference(ref LineByLineReader oldReader, ref LineByLineReader newReader,
         out DiffData.Block block, List<DiffData.Block> previousBlocks)
     {
+        // TODO: double check that this parameter wasn't meant to be used
+        _ = newReader;
+
         bool hasReferenceBlock = false;
         int absoluteOffsetOfPrevious = 0;
 
@@ -355,7 +613,9 @@ public class DiffGenerator
 
                 // Set references that are unset to match the start
                 reference1 ??= StartLineReference;
-                reference2 ??= StartLineReference;
+
+                // According to the compiler this can never be null here
+                // reference2 ??= StartLineReference;
 
                 break;
             }

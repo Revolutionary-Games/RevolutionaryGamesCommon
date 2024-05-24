@@ -1,6 +1,7 @@
 namespace SharedBase.Tests.Utilities.Tests;
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using SharedBase.Utilities;
@@ -281,6 +282,29 @@ public class DiffGeneratorTests
 
         Assert.Equal(3, block2.ExpectedOffset);
         Assert.Equal(0, block2.IgnoreReferenceCount);
+    }
+
+    [Theory]
+    [InlineData(Text1)]
+    [InlineData(Text2)]
+    [InlineData(Text9)]
+    [InlineData(Text10)]
+    [InlineData("some text")]
+    [InlineData("some text\nother stuff")]
+    [InlineData("some text\r\nother stuff")]
+    [InlineData("some text\n\nother stuff\n")]
+    public void Diff_EmptyDiffAppliesCorrectly(string text)
+    {
+        Assert.Equal(text, DiffGenerator.Default.ApplyDiff(text, new DiffData()).ToString());
+        Assert.Equal(text, DiffGenerator.Default.ApplyDiff(text, new DiffData(new List<DiffData.Block>())).ToString());
+
+        // Test also with a single pretty malformed block that doesn't have any operations
+        Assert.Equal(text,
+            DiffGenerator.Default.ApplyDiff(text,
+                new DiffData([
+                    new DiffData.Block(0, 0, DiffGenerator.StartLineReference, DiffGenerator.StartLineReference, null,
+                        null),
+                ])).ToString());
     }
 
     [Theory]
