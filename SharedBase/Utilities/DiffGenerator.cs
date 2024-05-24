@@ -322,6 +322,9 @@ public class DiffGenerator
 
         foreach (var block in diff.Blocks)
         {
+            if (block.Reference1 == null! || block.Reference2 == null!)
+                throw new ArgumentException("Diff block has either reference 1 or 2 set as null, this is never valid");
+
             int referenceIgnores = block.IgnoreReferenceCount;
 
             // Block goes to the start of the text
@@ -386,7 +389,7 @@ public class DiffGenerator
                     }
                 }
 
-                blockLineAdjustment = ApplyBlock(reuseBuilder, ref originalReader, block);
+                blockLineAdjustment = ApplyBlock(reuseBuilder, ref originalReader, block, matchMode, lineEndings);
                 continue;
             }
 
@@ -439,7 +442,7 @@ public class DiffGenerator
                 }
                 else
                 {
-                    if (line == block.Reference1)
+                    if (line == block.Reference1 && --referenceIgnores < 0)
                     {
                         // Potential place where the references point to
                         reference1Matched = true;
@@ -469,7 +472,8 @@ public class DiffGenerator
                 CopyLineToOutput(reuseBuilder, line, lineEnd, lineEndings);
             }
 
-            blockLineAdjustment = ApplyBlock(reuseBuilder, ref originalReader, block);
+            // Then apply the block as the reader should be at the start of the first line of the block
+            blockLineAdjustment = ApplyBlock(reuseBuilder, ref originalReader, block, matchMode, lineEndings);
         }
 
         // After blocks have ended copy all leftover lines
@@ -484,9 +488,51 @@ public class DiffGenerator
     /// </summary>
     /// <returns>The number of lines processed from <see cref="originalReader"/> to handle the block</returns>
     private static int ApplyBlock(StringBuilder reuseBuilder, ref LineByLineReader originalReader,
-        DiffData.Block block)
+        in DiffData.Block block, DiffMatchMode matchMode, string lineEndings)
     {
-        throw new NotImplementedException();
+        int readLines = 0;
+
+        // Handle deleted lines
+        if (block.DeletedLines is { Count: > 0 })
+        {
+            foreach (var deletedLine in block.DeletedLines)
+            {
+                bool lineEnd = originalReader.LookForLineEnd();
+                ++readLines;
+
+                var line = originalReader.ReadCurrentLineToStart();
+
+                if (lineEnd)
+                    originalReader.MoveToNextLine();
+
+                if (line != deletedLine)
+                {
+                    if (matchMode != DiffMatchMode.Strict)
+                    {
+                        // Allow differing by whitespace (and case)
+                    }
+
+                    // TODO: maybe allow skipping applying and skipping forward looking for the reference lines again
+                    // if the lines to delete cannot be found at this location (when not in strict mode)
+                    throw new NonMatchingDiffException(block);
+                }
+
+                // Removed line, don't write to output, and then it is just now handled by doing nothing
+            }
+        }
+
+        if (block.AddedLines is { Count: > 0 })
+        {
+            foreach (var addedLine in block.AddedLines)
+            {
+                reuseBuilder.Append(addedLine);
+                reuseBuilder.Append(lineEndings);
+            }
+        }
+
+        // Empty blocks shouldn't be dangerous so this doesn't check if this did anything or not
+
+        return readLines;
     }
 
     private static void CopyLineToOutput(StringBuilder reuseBuilder, string line, bool lineEnd,
