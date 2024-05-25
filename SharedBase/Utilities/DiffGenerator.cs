@@ -19,6 +19,11 @@ public class DiffGenerator
     private const int SlightDevianceBeginningAllowedLines = 10;
 
     /// <summary>
+    ///   How many deleted lines empty source text is allowed to have before added lines are not allowed to be added
+    /// </summary>
+    private const int SlightDevianceEmptyDeletedLines = 5;
+
+    /// <summary>
     ///   How closely diff blocks must match their reference lines to be able to apply
     /// </summary>
     public enum DiffMatchMode
@@ -304,6 +309,13 @@ public class DiffGenerator
             return reuseBuilder.Append(original);
         }
 
+        // Special case where original is empty, just apply line adds
+        if (string.IsNullOrEmpty(original))
+        {
+            HandleBlocksToEmptySourceWrite(reuseBuilder, diff, matchMode);
+            return reuseBuilder;
+        }
+
         // Detect line ending type to use
         var lineEndings = "\n";
 
@@ -533,6 +545,44 @@ public class DiffGenerator
         // Empty blocks shouldn't be dangerous so this doesn't check if this did anything or not
 
         return readLines;
+    }
+
+    private static void HandleBlocksToEmptySourceWrite(StringBuilder reuseBuilder, DiffData data,
+        DiffMatchMode matchMode)
+    {
+        if (data.Blocks == null)
+            return;
+
+        // TODO: should this use different line endings in some mode?
+        string lineEndings = "\n";
+        bool first = true;
+
+        int deletedLinesLeft = SlightDevianceEmptyDeletedLines;
+
+        foreach (var block in data.Blocks)
+        {
+            if (block.AddedLines != null)
+            {
+                foreach (var line in block.AddedLines)
+                {
+                    if (!first)
+                        reuseBuilder.Append(lineEndings);
+
+                    reuseBuilder.Append(line);
+                    first = false;
+                }
+            }
+
+            if (block.DeletedLines is { Count: > 0 })
+            {
+                deletedLinesLeft -= block.DeletedLines.Count;
+
+                if (matchMode == DiffMatchMode.Strict || deletedLinesLeft < 0)
+                {
+                    throw new NonMatchingDiffException(block);
+                }
+            }
+        }
     }
 
     private static void CopyLineToOutput(StringBuilder reuseBuilder, string line, bool lineEnd,
