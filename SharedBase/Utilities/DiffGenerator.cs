@@ -484,6 +484,10 @@ public class DiffGenerator
                 CopyLineToOutput(reuseBuilder, line, lineEnd, lineEndings);
             }
 
+            // Need to make sure there's a newline before applying the block data
+            if (reuseBuilder.Length > 0 && reuseBuilder[^1] != '\n')
+                reuseBuilder.Append(lineEndings);
+
             // Then apply the block as the reader should be at the start of the first line of the block
             blockLineAdjustment = ApplyBlock(reuseBuilder, ref originalReader, block, matchMode, lineEndings);
         }
