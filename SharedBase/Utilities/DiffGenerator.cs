@@ -481,12 +481,9 @@ public class DiffGenerator
                 if (lineEnd)
                     originalReader.MoveToNextLine();
 
+                MakeSureResultHasEndingNewLine(reuseBuilder, lineEndings);
                 CopyLineToOutput(reuseBuilder, line, lineEnd, lineEndings);
             }
-
-            // Need to make sure there's a newline before applying the block data
-            if (reuseBuilder.Length > 0 && reuseBuilder[^1] != '\n')
-                reuseBuilder.Append(lineEndings);
 
             // Then apply the block as the reader should be at the start of the first line of the block
             blockLineAdjustment = ApplyBlock(reuseBuilder, ref originalReader, block, matchMode, lineEndings);
@@ -498,6 +495,12 @@ public class DiffGenerator
         return reuseBuilder;
     }
 
+    private static void MakeSureResultHasEndingNewLine(StringBuilder reuseBuilder, string lineEndings)
+    {
+        if (reuseBuilder.Length > 0 && reuseBuilder[^1] != '\n')
+            reuseBuilder.Append(lineEndings);
+    }
+
     /// <summary>
     ///   Applies a single block in a diff (the <see cref="originalReader"/> must be at the line after the position
     ///   the block reference mandates)
@@ -506,6 +509,9 @@ public class DiffGenerator
     private static int ApplyBlock(StringBuilder reuseBuilder, ref LineByLineReader originalReader,
         in DiffData.Block block, DiffMatchMode matchMode, string lineEndings)
     {
+        // Need to make sure there's a newline before applying the block data
+        MakeSureResultHasEndingNewLine(reuseBuilder, lineEndings);
+
         int readLines = 0;
 
         // Handle deleted lines
@@ -539,10 +545,18 @@ public class DiffGenerator
 
         if (block.AddedLines is { Count: > 0 })
         {
+            // Only apply newlines between added lines as an added line may not necessarily end with a newline (for
+            // example at the end of a file)
+            bool first = true;
+
             foreach (var addedLine in block.AddedLines)
             {
+                if (!first)
+                    reuseBuilder.Append(lineEndings);
+
                 reuseBuilder.Append(addedLine);
-                reuseBuilder.Append(lineEndings);
+
+                first = false;
             }
         }
 
@@ -601,6 +615,8 @@ public class DiffGenerator
     private static void CopyRemainingTextToOutput(StringBuilder reuseBuilder, LineByLineReader originalReader,
         string lineEndings)
     {
+        bool first = true;
+
         while (!originalReader.Ended)
         {
             if (originalReader.AtLineEnd)
@@ -611,10 +627,16 @@ public class DiffGenerator
             if (originalReader.Ended)
                 break;
 
+            // If this was previously processing data that didn't end up with a newline should put one here
+            if (first)
+                MakeSureResultHasEndingNewLine(reuseBuilder, lineEndings);
+
             reuseBuilder.Append(originalReader.ReadCurrentLineToStart());
 
             if (lineEnd)
                 reuseBuilder.Append(lineEndings);
+
+            first = false;
         }
     }
 
