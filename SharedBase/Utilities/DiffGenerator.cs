@@ -65,15 +65,33 @@ public class DiffGenerator
         bool openBlock = false;
         var blockData = default(DiffData.Block);
 
+        bool lineEnded1 = false;
+        bool lineEnded2 = false;
+
         // Compare the strings line by line
         while (true)
         {
             // See if we can process a full line
-            bool lineEnded1 = reader1.LookForLineEnd();
-            bool lineEnded2 = reader2.LookForLineEnd();
+            bool newEnd1 = reader1.LookForLineEnd();
+            bool newEnd2 = reader2.LookForLineEnd();
 
-            if (reader1.Ended || reader2.Ended)
+            if (!reader1.Ended && !reader2.Ended)
+            {
+                lineEnded1 = newEnd1;
+                lineEnded2 = newEnd2;
+            }
+            else
+            {
+                // Something ended, can no longer process lines in sequence
+
+                if (!reader1.Ended)
+                    lineEnded1 = newEnd1;
+
+                if (!reader2.Ended)
+                    lineEnded2 = newEnd2;
+
                 break;
+            }
 
             if (reader1.CompareCurrentLineWith(reader2))
             {
@@ -189,7 +207,10 @@ public class DiffGenerator
                             if (reader2.AtLineEnd)
                                 reader2.MoveToNextLine();
 
-                            lineEnded2 = reader2.LookForLineEnd();
+                            bool ended = reader2.LookForLineEnd();
+
+                            if (!reader2.Ended)
+                                lineEnded2 = ended;
                         }
 
                         // No longer diverging
@@ -218,10 +239,22 @@ public class DiffGenerator
             blockData.DeletedLines ??= [];
             blockData.DeletedLines.Add(reader1.ReadCurrentLineToStart());
 
+            if (lineEnded1)
+                reader1.MoveToNextLine();
+
             bool lineEnded = reader1.LookForLineEnd();
 
             if (reader1.Ended)
+            {
+                // If the new text did not end with a newline, add a blank deleted line to make applying set the
+                // correct trailing newline
+                if (!lineEnded2)
+                    blockData.DeletedLines.Add(string.Empty);
+
                 break;
+            }
+
+            lineEnded1 = lineEnded;
 
             if (lineEnded)
                 reader1.MoveToNextLine();
@@ -239,10 +272,18 @@ public class DiffGenerator
             blockData.AddedLines ??= [];
             blockData.AddedLines.Add(reader2.ReadCurrentLineToStart());
 
+            if (lineEnded2)
+                reader2.MoveToNextLine();
+
             bool lineEnded = reader2.LookForLineEnd();
 
             if (reader2.Ended)
+            {
+                // TODO: does this need similar handling as the case above that adds removal of trailing newline?
                 break;
+            }
+
+            lineEnded2 = lineEnded;
 
             if (lineEnded)
                 reader2.MoveToNextLine();
@@ -517,9 +558,30 @@ public class DiffGenerator
         // Handle deleted lines
         if (block.DeletedLines is { Count: > 0 })
         {
+            bool lastLineProcessed = false;
+
             foreach (var deletedLine in block.DeletedLines)
             {
                 bool lineEnd = originalReader.LookForLineEnd();
+
+                if (originalReader.Ended)
+                {
+                    // Deleting trailing newline potentially, or mismatching data
+                    if (deletedLine == string.Empty && !lastLineProcessed)
+                    {
+                        lastLineProcessed = true;
+
+                        if (reuseBuilder.Length > 0 && reuseBuilder[^1] == '\n')
+                        {
+                            reuseBuilder.Remove(reuseBuilder.Length - 1, 1);
+                        }
+
+                        continue;
+                    }
+
+                    throw new NonMatchingDiffException(block);
+                }
+
                 ++readLines;
 
                 var line = originalReader.ReadCurrentLineToStart();

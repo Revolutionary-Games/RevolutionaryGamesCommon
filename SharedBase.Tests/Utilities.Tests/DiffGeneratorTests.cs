@@ -307,6 +307,34 @@ public class DiffGeneratorTests
                 ])).ToString());
     }
 
+    [Fact]
+    public void Diff_TrailingNewLineIsAppliedCorrectly()
+    {
+        var old = Text2;
+        var updated = Text1;
+
+        var diff = DiffGenerator.Default.Generate(old, updated);
+
+        Assert.NotNull(diff.Blocks);
+        Assert.Single(diff.Blocks);
+
+        var block1 = diff.Blocks[0];
+
+        Assert.Null(block1.AddedLines);
+        Assert.NotNull(block1.DeletedLines);
+
+        Assert.Equal(2, block1.DeletedLines.Count);
+        Assert.Equal("but maybe just has a bit of a new thing", block1.DeletedLines[0]);
+        Assert.Empty(block1.DeletedLines[1]);
+
+        Assert.Equal(updated, DiffGenerator.Default.ApplyDiff(old, diff).ToString());
+
+        old = Text2 + "\n";
+        diff = DiffGenerator.Default.Generate(old, updated);
+
+        Assert.Equal(updated, DiffGenerator.Default.ApplyDiff(old, diff).ToString());
+    }
+
     [Theory]
     [InlineData(Text1, Text2)]
     [InlineData(Text1, "")]
