@@ -317,7 +317,10 @@ public class DiffGenerator
             }
         }*/
 
-        return new DiffData(resultBlocks);
+        return new DiffData(resultBlocks)
+        {
+            PreferWindowsLineEndings = ResultShouldUseWindowsLineEndings(oldText, newText),
+        };
     }
 
     /// <summary>
@@ -361,8 +364,13 @@ public class DiffGenerator
         var lineEndings = "\n";
 
         // Probably good enough heuristic to switch to Windows style if there is at least one such line ending
-        if (original.Contains("\r\n"))
+        // TODO: how should the situation be handled where windows style line endings want to be completely removed?
+        // Switch on the line endings mode from the diff data if during generation it was determined that windows style
+        // line endings should be used
+        if (original.Contains("\r\n") || diff.PreferWindowsLineEndings)
+        {
             lineEndings = "\r\n";
+        }
 
         bool seenBeginningBlock = false;
 
@@ -826,7 +834,10 @@ public class DiffGenerator
                     new(0, 0, StartLineReference, StartLineReference,
                         LineByLineReader.SplitToLines(oldText).ToList(),
                         null),
-                });
+                })
+                {
+                    PreferWindowsLineEndings = ResultShouldUseWindowsLineEndings(oldText, newText),
+                };
             }
 
             if (newText.Length > 0)
@@ -835,7 +846,10 @@ public class DiffGenerator
                 {
                     new(0, 0, StartLineReference, StartLineReference, null,
                         LineByLineReader.SplitToLines(newText).ToList()),
-                });
+                })
+                {
+                    PreferWindowsLineEndings = ResultShouldUseWindowsLineEndings(oldText, newText),
+                };
             }
 
             // Both are empty
@@ -843,5 +857,10 @@ public class DiffGenerator
         }
 
         return null;
+    }
+
+    private static bool ResultShouldUseWindowsLineEndings(string oldText, string newText)
+    {
+        return oldText.Contains("\r\n") || newText.Contains("\r\n");
     }
 }

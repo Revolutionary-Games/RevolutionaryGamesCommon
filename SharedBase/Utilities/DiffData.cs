@@ -12,7 +12,12 @@ using System.Text.Json.Serialization;
 public class DiffData
 {
     [JsonInclude]
+    [JsonPropertyName("blocks")]
     public readonly List<Block>? Blocks;
+
+    [JsonInclude]
+    [JsonPropertyName("winStyle")]
+    public bool PreferWindowsLineEndings;
 
     /// <summary>
     ///   Blank diff with no changes
