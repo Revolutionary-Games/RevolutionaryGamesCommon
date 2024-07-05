@@ -1,5 +1,6 @@
 namespace SharedBase.Tests.Utilities.Tests;
 
+using System.Linq;
 using SharedBase.Utilities;
 using Xunit;
 
@@ -201,5 +202,37 @@ public class LineByLineReaderTests
         Assert.NotEqual(line, reader.ReadCurrentLineToStart());
 
         Assert.False(reader.LookBackwardsForLineEnd());
+    }
+
+    [Fact]
+    public void LineReader_LineSplitWorksOnWindows()
+    {
+        var split = LineByLineReader.SplitToLines("This is just some text\r\n" +
+            "with a few lines in it\r\n" +
+            "that just says basically nothing at all\r\n").ToArray();
+
+        Assert.Equal(4, split.Length);
+        Assert.Equal("This is just some text", split[0]);
+        Assert.Equal("with a few lines in it", split[1]);
+        Assert.Equal("that just says basically nothing at all", split[2]);
+        Assert.Equal(string.Empty, split[3]);
+
+        split = LineByLineReader.SplitToLines("This is just some text\r\n" +
+            "with a few lines in it\r\n" +
+            "that just says basically nothing at all").ToArray();
+
+        Assert.Equal(3, split.Length);
+        Assert.Equal("This is just some text", split[0]);
+        Assert.Equal("with a few lines in it", split[1]);
+        Assert.Equal("that just says basically nothing at all", split[2]);
+
+        split = LineByLineReader.SplitToLines("This is just some text").ToArray();
+        Assert.Single(split);
+        Assert.Equal("This is just some text", split[0]);
+
+        split = LineByLineReader.SplitToLines("This is just some text\n").ToArray();
+        Assert.Equal(2, split.Length);
+        Assert.Equal("This is just some text", split[0]);
+        Assert.Equal(string.Empty, split[1]);
     }
 }

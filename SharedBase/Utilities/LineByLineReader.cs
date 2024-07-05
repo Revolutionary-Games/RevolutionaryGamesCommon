@@ -54,7 +54,9 @@ public struct LineByLineReader
     ///   separately this is the right method to use.
     /// </summary>
     /// <param name="text">Text to split along with UNIX or Windows style line endings</param>
-    /// <returns>Split strings as an enumerable range</returns>
+    /// <returns>
+    ///   Split strings as an enumerable range, if ends with a newline includes an empty string at the end
+    /// </returns>
     public static IEnumerable<string> SplitToLines(string text)
     {
         int start = 0;
@@ -67,7 +69,7 @@ public struct LineByLineReader
                 yield return text.Substring(start, i - start);
 
                 // Skip multi character line end
-                if (text[i] == '\r' && i + 1 > text.Length && text[i + 1] == '\n')
+                if (text[i] == '\r' && i + 1 < text.Length && text[i + 1] == '\n')
                 {
                     ++i;
                 }
@@ -77,7 +79,13 @@ public struct LineByLineReader
         }
 
         if (start < i)
+        {
             yield return text.Substring(start, i - start);
+        }
+        else
+        {
+            yield return string.Empty;
+        }
     }
 
     /// <summary>

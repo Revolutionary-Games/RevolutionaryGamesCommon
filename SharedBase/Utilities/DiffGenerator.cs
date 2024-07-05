@@ -353,15 +353,19 @@ public class DiffGenerator
             return reuseBuilder.Append(original);
         }
 
+        // Detect line ending type to use
+        var lineEndings = "\n";
+
         // Special case where original is empty, just apply line adds
         if (string.IsNullOrEmpty(original))
         {
-            HandleBlocksToEmptySourceWrite(reuseBuilder, diff, matchMode);
+            // Can only use info from the diff object here as the original is empty
+            if (diff.PreferWindowsLineEndings)
+                lineEndings = "\r\n";
+
+            HandleBlocksToEmptySourceWrite(reuseBuilder, diff, matchMode, lineEndings);
             return reuseBuilder;
         }
-
-        // Detect line ending type to use
-        var lineEndings = "\n";
 
         // Probably good enough heuristic to switch to Windows style if there is at least one such line ending
         // TODO: how should the situation be handled where windows style line endings want to be completely removed?
@@ -636,13 +640,11 @@ public class DiffGenerator
     }
 
     private static void HandleBlocksToEmptySourceWrite(StringBuilder reuseBuilder, DiffData data,
-        DiffMatchMode matchMode)
+        DiffMatchMode matchMode, string lineEndings)
     {
         if (data.Blocks == null)
             return;
 
-        // TODO: should this use different line endings in some mode?
-        string lineEndings = "\n";
         bool first = true;
 
         int deletedLinesLeft = SlightDevianceEmptyDeletedLines;

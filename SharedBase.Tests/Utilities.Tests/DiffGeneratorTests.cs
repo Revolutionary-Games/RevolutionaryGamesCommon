@@ -302,7 +302,11 @@ public class DiffGeneratorTests
         Assert.Equal(text,
             DiffGenerator.Default.ApplyDiff(text,
                 new DiffData([
-                    new DiffData.Block(0, 0, DiffGenerator.StartLineReference, DiffGenerator.StartLineReference, null,
+                    new DiffData.Block(0,
+                        0,
+                        DiffGenerator.StartLineReference,
+                        DiffGenerator.StartLineReference,
+                        null,
                         null),
                 ])).ToString());
     }
@@ -339,6 +343,7 @@ public class DiffGeneratorTests
     [InlineData(Text1, Text2)]
     [InlineData(Text1, "")]
     [InlineData("", Text1)]
+    [InlineData("", Text1 + "\n")]
     [InlineData(Text5, Text6)]
     [InlineData(Text1, Text7)]
     [InlineData(Text9, Text10)]
