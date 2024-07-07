@@ -806,6 +806,8 @@ public class DiffGenerator
         // need to be ignored to not place new content at incorrect places
         int skipReferenceLines = 0;
 
+        bool reachedPreviousBlock = false;
+
         while (true)
         {
             var line = referenceLineScanner.ReadCurrentLineToStart();
@@ -834,14 +836,21 @@ public class DiffGenerator
             // Detect if we have found the tail of the previous block
             if (hasReferenceBlock && referenceLineScanner.LineIndex == absoluteOffsetOfPrevious)
             {
-                break;
+                reachedPreviousBlock = true;
             }
+
+            // When not both references have been set, this still needs to scan backwards even after reaching the
+            // previous block
+            if (reachedPreviousBlock && reference1 != null)
+                break;
 
             if (referenceLineScanner.LookBackwardsForLineEnd())
             {
                 // Still more lines exist
                 referenceLineScanner.MoveToPreviousLine();
-                ++linesFromPreviousBlock;
+
+                if (!reachedPreviousBlock)
+                    ++linesFromPreviousBlock;
             }
             else
             {
