@@ -80,6 +80,33 @@ public class DiffGeneratorTests
                                   that just says basically nothing at all
                                   """;
 
+    private const string Text12 = """
+                                  This is just some text
+                                  with a few lines in it
+                                  and there ends up being a difference
+                                  but only after a changed line
+                                  and ends with a match
+                                  """;
+
+    private const string Text13 = """
+                                  This is just some text
+                                  with a few lines in it
+                                  and there ends up being a difference
+                                  that just says basically nothing at all
+                                  but maybe just has a bit of a new thing
+                                  and there ends up being a difference
+                                  """;
+
+    private const string Text14 = """
+                                  and there ends up being a difference
+                                  that just says basically nothing at all
+                                  but maybe just has a bit of a new thing
+                                  and there ends up being a difference
+                                  that is after a reference match
+                                  but only after a changed line
+                                  and ends with a match
+                                  """;
+
     private const string SpecificText1Old = """
                                             This is just some text
                                             with multiple lines
@@ -354,6 +381,25 @@ public class DiffGeneratorTests
         Assert.Equal(updated, DiffGenerator.Default.ApplyDiff(old, diff).ToString());
     }
 
+    [Fact]
+    public void Diff_WithJustMultipleDeletedLinesInARow()
+    {
+        var old = Text8;
+        var updated = Text14;
+
+        var diff = DiffGenerator.Default.Generate(old, updated);
+
+        Assert.NotNull(diff.Blocks);
+        Assert.Single(diff.Blocks);
+        Assert.Null(diff.Blocks[0].AddedLines);
+        Assert.NotNull(diff.Blocks[0].DeletedLines);
+        Assert.Equal(2, diff.Blocks[0].DeletedLines!.Count);
+
+        var result = DiffGenerator.Default.ApplyDiff(old, diff);
+
+        Assert.Equal(updated, result.ToString());
+    }
+
     [Theory]
     [InlineData(Text1, Text2)]
     [InlineData(Text1, "")]
@@ -363,6 +409,9 @@ public class DiffGeneratorTests
     [InlineData(Text1, Text7)]
     [InlineData(Text9, Text10)]
     [InlineData(Text1, Text11)]
+    [InlineData(Text8, Text12)]
+    [InlineData(Text8, Text13)]
+    [InlineData(Text8, Text14)]
     public void Diff_GeneratedDiffWhenAppliedGivesNewText(string old, string updated)
     {
         var diff = DiffGenerator.Default.Generate(old, updated);
@@ -377,6 +426,7 @@ public class DiffGeneratorTests
     [InlineData(Text1, "")]
     [InlineData("", Text1)]
     [InlineData(Text9, Text10)]
+    [InlineData(Text8, Text12)]
     public void Diff_ReverseDiffApplyWorks(string old, string updated)
     {
         var diff = DiffGenerator.Default.Generate(updated, old);

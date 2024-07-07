@@ -155,7 +155,9 @@ public class DiffGenerator
                     if (lineEnded1)
                         readerSearch1.MoveToNextLine();
 
-                    readerSearch1.LookForLineEnd();
+                    bool searchHasLineEnd = readerSearch1.LookForLineEnd();
+
+                    bool foundReConvergenceWithDeletions = false;
 
                     if (!readerSearch1.Ended && readerSearch1.CompareCurrentLineWith(reader2))
                     {
@@ -166,6 +168,63 @@ public class DiffGenerator
                         OnLineDifference(ref reader1, ref reader2, out blockData, resultBlocks);
 
                         blockData.DeletedLines = [reader1.ReadCurrentLineToStart()];
+
+                        foundReConvergenceWithDeletions = true;
+                    }
+                    else
+                    {
+                        // Check for multiple deleted lines in a row
+                        while (!readerSearch1.Ended)
+                        {
+                            if (searchHasLineEnd)
+                                readerSearch1.MoveToNextLine();
+
+                            searchHasLineEnd = readerSearch1.LookForLineEnd();
+
+                            if (readerSearch1.Ended)
+                                break;
+
+                            if (readerSearch1.CompareCurrentLineWith(reader2))
+                            {
+                                // Can re-converge by deleting multiple lines
+
+                                if (openBlock)
+                                    throw new Exception("A block shouldn't be open here");
+
+                                OnLineDifference(ref reader1, ref reader2, out blockData, resultBlocks);
+
+                                blockData.DeletedLines ??= [];
+
+                                while (reader1.IsBehind(readerSearch1))
+                                {
+                                    blockData.DeletedLines.Add(reader1.ReadCurrentLineToStart());
+
+                                    if (reader1.AtLineEnd)
+                                        reader1.MoveToNextLine();
+
+                                    bool ended = reader1.LookForLineEnd();
+
+                                    if (!reader1.Ended)
+                                        lineEnded1 = ended;
+                                }
+
+                                // Adjust reader1 to be able to continue next iteration on the same line as reader2
+                                if (lineEnded1)
+                                    reader1.MoveToPreviousLine();
+
+                                if (reader1.LookBackwardsForLineEnd())
+                                    reader1.MoveToNextLine();
+
+                                lineEnded1 = false;
+
+                                foundReConvergenceWithDeletions = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (foundReConvergenceWithDeletions)
+                    {
                         resultBlocks.Add(blockData);
                         openBlock = false;
 
@@ -242,14 +301,10 @@ public class DiffGenerator
             blockData.DeletedLines ??= [];
             blockData.DeletedLines.Add(reader1.ReadCurrentLineToStart());
 
-            // If the previous loops above ended at a line end, move past that
             if (lineEnded1)
-            {
                 reader1.MoveToNextLine();
-                lineEnded1 = false;
-            }
 
-            bool lineEnded = reader1.LookForLineEnd();
+            lineEnded1 = reader1.LookForLineEnd();
 
             if (reader1.Ended)
             {
@@ -260,9 +315,6 @@ public class DiffGenerator
 
                 break;
             }
-
-            if (lineEnded)
-                reader1.MoveToNextLine();
         }
 
         // More new lines than old
@@ -278,21 +330,15 @@ public class DiffGenerator
             blockData.AddedLines.Add(reader2.ReadCurrentLineToStart());
 
             if (lineEnded2)
-            {
                 reader2.MoveToNextLine();
-                lineEnded2 = false;
-            }
 
-            bool lineEnded = reader2.LookForLineEnd();
+            lineEnded2 = reader2.LookForLineEnd();
 
             if (reader2.Ended)
             {
                 // TODO: does this need similar handling as the case above that adds removal of trailing newline?
                 break;
             }
-
-            if (lineEnded)
-                reader2.MoveToNextLine();
         }
 
         // End the final block
