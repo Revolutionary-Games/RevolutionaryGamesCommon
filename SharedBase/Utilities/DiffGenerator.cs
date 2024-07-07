@@ -132,6 +132,9 @@ public class DiffGenerator
                         {
                             foundReConvergence = true;
 
+                            // This is always at line end here (otherwise the break above would have hit)
+                            readerSearch2.MoveToPreviousLine();
+
                             if (readerSearch2.LookBackwardsForLineEnd())
                                 readerSearch2.MoveToPreviousLine();
                             break;
@@ -239,8 +242,12 @@ public class DiffGenerator
             blockData.DeletedLines ??= [];
             blockData.DeletedLines.Add(reader1.ReadCurrentLineToStart());
 
+            // If the previous loops above ended at a line end, move past that
             if (lineEnded1)
+            {
                 reader1.MoveToNextLine();
+                lineEnded1 = false;
+            }
 
             bool lineEnded = reader1.LookForLineEnd();
 
@@ -253,8 +260,6 @@ public class DiffGenerator
 
                 break;
             }
-
-            lineEnded1 = lineEnded;
 
             if (lineEnded)
                 reader1.MoveToNextLine();
@@ -273,7 +278,10 @@ public class DiffGenerator
             blockData.AddedLines.Add(reader2.ReadCurrentLineToStart());
 
             if (lineEnded2)
+            {
                 reader2.MoveToNextLine();
+                lineEnded2 = false;
+            }
 
             bool lineEnded = reader2.LookForLineEnd();
 
@@ -282,8 +290,6 @@ public class DiffGenerator
                 // TODO: does this need similar handling as the case above that adds removal of trailing newline?
                 break;
             }
-
-            lineEnded2 = lineEnded;
 
             if (lineEnded)
                 reader2.MoveToNextLine();
