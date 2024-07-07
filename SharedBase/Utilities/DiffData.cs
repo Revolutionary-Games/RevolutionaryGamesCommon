@@ -39,6 +39,16 @@ public class DiffData
     [JsonIgnore]
     public bool Empty => Blocks == null || Blocks.Count < 1;
 
+    public override string ToString()
+    {
+        var text = $"Diff with {Blocks?.Count.ToString() ?? "NULL"} blocks";
+
+        if (PreferWindowsLineEndings)
+            text += " (windows line endings)";
+
+        return text;
+    }
+
     /// <summary>
     ///   A part of the diff, a single block of lines where there are changes
     /// </summary>
@@ -75,6 +85,11 @@ public class DiffData
         [JsonPropertyName("ref1")]
         public readonly string Reference1;
 
+        /// <summary>
+        ///   The second reference line after the first one. Two reference lines are used to allow more certainty in
+        ///   matching where this block should apply if for example the source text has been slightly modified (or
+        ///   another diff has been applied to it already).
+        /// </summary>
         [JsonInclude]
         [JsonPropertyName("ref2")]
         public readonly string Reference2;
@@ -145,6 +160,13 @@ public class DiffData
         {
             return HashCode.Combine(ExpectedOffset, IgnoreReferenceCount, Reference1, Reference2, DeletedLines,
                 AddedLines);
+        }
+
+        public override string ToString()
+        {
+            return
+                $"Block at {ExpectedOffset} expected offset with {DeletedLines?.Count ?? 0} deleted lines and " +
+                $"{AddedLines?.Count ?? 0} added, ref line: {Reference2}";
         }
     }
 }
