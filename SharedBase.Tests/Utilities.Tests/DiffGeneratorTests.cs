@@ -80,6 +80,21 @@ public class DiffGeneratorTests
                                   that just says basically nothing at all
                                   """;
 
+    private const string SpecificText1Old = """
+                                            This is just some text
+                                            with multiple lines
+                                            that may be changed in the future
+                                            to be something else
+                                            """;
+
+    private const string SpecificText1New = """
+                                            This is just some text
+                                            with multitude of lines
+                                            that may be changed in the future
+                                            and lines inserted
+                                            as well as deleted
+                                            """;
+
     [Fact]
     public void Diff_EmptyIsEmpty()
     {
@@ -433,5 +448,51 @@ public class DiffGeneratorTests
         var restored = JsonSerializer.Deserialize<DiffData>("{}");
         Assert.NotNull(restored);
         Assert.True(restored.Empty);
+    }
+
+    [Theory]
+    [InlineData(Text1, Text2)]
+    [InlineData(Text1, "")]
+    [InlineData("", Text1)]
+    [InlineData(Text5, Text6)]
+    [InlineData(Text1, Text7)]
+    [InlineData(Text9, Text10)]
+    [InlineData(Text1, Text11)]
+    public void Diff_WindowsStyleLineEndings(string old, string updated)
+    {
+        if (!old.Contains("\n") && !updated.Contains("\n"))
+        {
+            throw new ArgumentException("Text to test with should have newlines");
+        }
+
+        old = old.Replace("\n", "\r\n");
+        updated = updated.Replace("\n", "\r\n");
+
+        var diff = DiffGenerator.Default.Generate(old, updated);
+        Assert.NotNull(diff.Blocks);
+
+        var encoded = JsonSerializer.Serialize(diff);
+
+        var restored = JsonSerializer.Deserialize<DiffData>(encoded);
+
+        Assert.NotNull(restored);
+
+        Assert.NotNull(restored.Blocks);
+        Assert.Equal(diff.PreferWindowsLineEndings, restored.PreferWindowsLineEndings);
+
+        var result = DiffGenerator.Default.ApplyDiff(old, restored);
+
+        Assert.Equal(updated, result.ToString());
+    }
+
+    [Theory]
+    [InlineData(SpecificText1Old, SpecificText1New)]
+    public void Diff_SpecificProblematicTextsWork(string old, string updated)
+    {
+        var diff = DiffGenerator.Default.Generate(old, updated);
+
+        var result = DiffGenerator.Default.ApplyDiff(old, diff);
+
+        Assert.Equal(updated, result.ToString());
     }
 }

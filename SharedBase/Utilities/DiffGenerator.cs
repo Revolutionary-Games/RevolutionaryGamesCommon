@@ -383,6 +383,10 @@ public class DiffGenerator
         // TODO: add a proper test for strict mode diff
         int blockLineAdjustment = 0;
 
+        // Multiple blocks can partially share their reference lines, hence why the last read original line is kept
+        // to detect a situation like that
+        string? lastReadSourceLine = null;
+
         var originalReader = new LineByLineReader(original);
 
         foreach (var block in diff.Blocks)
@@ -432,6 +436,7 @@ public class DiffGenerator
                             throw new NonMatchingDiffException(block);
 
                         var line = originalReader.ReadCurrentLineToStart();
+                        lastReadSourceLine = line;
 
                         if (lineEnd)
                             originalReader.MoveToNextLine();
@@ -454,7 +459,8 @@ public class DiffGenerator
                     }
                 }
 
-                blockLineAdjustment = ApplyBlock(reuseBuilder, ref originalReader, block, matchMode, lineEndings);
+                blockLineAdjustment = ApplyBlock(reuseBuilder, ref originalReader, ref lastReadSourceLine, block,
+                    matchMode, lineEndings);
                 continue;
             }
 
@@ -465,11 +471,13 @@ public class DiffGenerator
             // Look for the reference lines
             int lineEstimate = block.ExpectedOffset - blockLineAdjustment;
 
+            // Close by blocks can have already one reference line be read
+            // So this can be set to true in that case to correctly then match the second reference
+            bool reference1Matched = block.Reference1 == lastReadSourceLine;
+
             // Use a separate scanning reader to be able to do fuzzy matching if exact fails
             // TODO: implement fuzzy matching modes (first should be whitespace ignoring mode)
             var scanReader = originalReader.Clone();
-
-            bool reference1Matched = false;
 
             while (true)
             {
@@ -530,6 +538,7 @@ public class DiffGenerator
                     throw new NonMatchingDiffException(block);
 
                 var line = originalReader.ReadCurrentLineToStart();
+                lastReadSourceLine = line;
 
                 if (lineEnd)
                     originalReader.MoveToNextLine();
@@ -539,11 +548,15 @@ public class DiffGenerator
             }
 
             // Then apply the block as the reader should be at the start of the first line of the block
-            blockLineAdjustment = ApplyBlock(reuseBuilder, ref originalReader, block, matchMode, lineEndings);
+            blockLineAdjustment = ApplyBlock(reuseBuilder, ref originalReader, ref lastReadSourceLine, block, matchMode,
+                lineEndings);
         }
 
         // After blocks have ended copy all leftover lines
         CopyRemainingTextToOutput(reuseBuilder, originalReader, lineEndings);
+
+        // This variable no longer here matches what was read
+        // lastReadSourceLine = null;
 
         return reuseBuilder;
     }
@@ -560,7 +573,7 @@ public class DiffGenerator
     /// </summary>
     /// <returns>The number of lines processed from <see cref="originalReader"/> to handle the block</returns>
     private static int ApplyBlock(StringBuilder reuseBuilder, ref LineByLineReader originalReader,
-        in DiffData.Block block, DiffMatchMode matchMode, string lineEndings)
+        ref string? lastReadSourceLine, in DiffData.Block block, DiffMatchMode matchMode, string lineEndings)
     {
         // Need to make sure there's a newline before applying the block data
         MakeSureResultHasEndingNewLine(reuseBuilder, lineEndings);
@@ -597,6 +610,7 @@ public class DiffGenerator
                 ++readLines;
 
                 var line = originalReader.ReadCurrentLineToStart();
+                lastReadSourceLine = line;
 
                 if (lineEnd)
                     originalReader.MoveToNextLine();
