@@ -624,7 +624,9 @@ public class DiffGenerator
                     {
                         lastLineProcessed = true;
 
-                        if (reuseBuilder.Length > 0 && reuseBuilder[^1] == '\n')
+                        // Only do this processing if the block won't be adding any more lines
+                        if (reuseBuilder.Length > 0 && reuseBuilder[^1] == '\n' &&
+                            block.AddedLines is not { Count: > 0 })
                         {
                             reuseBuilder.Remove(reuseBuilder.Length - 1, 1);
                         }

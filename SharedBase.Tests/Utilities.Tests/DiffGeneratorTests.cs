@@ -537,6 +537,7 @@ public class DiffGeneratorTests
 
     [Theory]
     [InlineData(SpecificText1Old, SpecificText1New)]
+    [InlineData(SpecificText1New, SpecificText1Old)]
     public void Diff_SpecificProblematicTextsWork(string old, string updated)
     {
         var diff = DiffGenerator.Default.Generate(old, updated);
