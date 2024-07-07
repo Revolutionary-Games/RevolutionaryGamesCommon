@@ -345,30 +345,6 @@ public class DiffGenerator
         if (openBlock)
             resultBlocks.Add(blockData);
 
-        /*
-        if (resultBlocks.Count > 0)
-        {
-            // Remove last added / removed blank line if both strings end in new lines. This is necessary as the line
-            // re-convergence algorithm doesn't work with blank lines.
-            if (newText[^1] is '\r' or '\n' && oldText[^1] is '\r' or '\n')
-            {
-                // Unfortunately need to copy memory here
-                var lastBlock = resultBlocks[^1];
-
-                if (lastBlock.AddedLines is { Count: > 0 })
-                {
-                    if (lastBlock.AddedLines[^1].Length < 1)
-                        lastBlock.AddedLines.RemoveAt(lastBlock.AddedLines.Count - 1);
-                }
-
-                if (lastBlock.DeletedLines is { Count: > 0 })
-                {
-                    if (lastBlock.DeletedLines[^1].Length < 1)
-                        lastBlock.DeletedLines.RemoveAt(lastBlock.DeletedLines.Count - 1);
-                }
-            }
-        }*/
-
         return new DiffData(resultBlocks)
         {
             PreferWindowsLineEndings = ResultShouldUseWindowsLineEndings(oldText, newText),
