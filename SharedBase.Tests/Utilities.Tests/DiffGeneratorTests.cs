@@ -615,16 +615,27 @@ public class DiffGeneratorTests
     [InlineData("", Text15)]
     [InlineData("", Text16)]
     [InlineData("", Text17)]
-    public void Diff_DoubleEscapedStartLineReference(string old, string updated)
+    public void Diff_MultiEscapedStartLineReference(string old, string updated)
     {
-        old = old.Replace(DiffGenerator.StartLineReference, DiffGenerator.EscapedStartLineReference);
-        updated = updated.Replace(DiffGenerator.StartLineReference, DiffGenerator.EscapedStartLineReference);
+        for (int i = 0; i < 3; ++i)
+        {
+            string extra = string.Empty;
 
-        var diff = DiffGenerator.Default.Generate(old, updated);
+            for (int j = 0; j < i; ++j)
+            {
+                extra += "\\";
+            }
 
-        var result = DiffGenerator.Default.ApplyDiff(old, diff);
+            var text1 = old.Replace(DiffGenerator.StartLineReference, extra + DiffGenerator.EscapedStartLineReference);
+            var text2 = updated.Replace(DiffGenerator.StartLineReference,
+                extra + DiffGenerator.EscapedStartLineReference);
 
-        Assert.Equal(updated, result.ToString());
+            var diff = DiffGenerator.Default.Generate(text1, text2);
+
+            var result = DiffGenerator.Default.ApplyDiff(text1, diff);
+
+            Assert.Equal(text2, result.ToString());
+        }
     }
 
     [Theory]

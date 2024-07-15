@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 
 public class DiffGenerator
 {
@@ -13,8 +14,6 @@ public class DiffGenerator
     public const string StartLineReference = "(start)";
 
     public const string EscapedStartLineReference = "\\" + StartLineReference;
-
-    private const string DoubleEscapedReference = "\\" + EscapedStartLineReference;
 
     /// <summary>
     ///   How many lines slight deviance mode looks at from the start of the text when resolving a block that targets
@@ -26,6 +25,12 @@ public class DiffGenerator
     ///   How many deleted lines empty source text is allowed to have before added lines are not allowed to be added
     /// </summary>
     private const int SlightDevianceEmptyDeletedLines = 5;
+
+    /// <summary>
+    ///   Used to work with any level of nesting with escaping of the start line reference
+    /// </summary>
+    private static readonly Regex EscapedStartRegex =
+        new($"^\\\\+{Regex.Escape(StartLineReference)}$", RegexOptions.Compiled);
 
     /// <summary>
     ///   How closely diff blocks must match their reference lines to be able to apply
@@ -604,8 +609,9 @@ public class DiffGenerator
         if (reference == EscapedStartLineReference)
             return StartLineReference;
 
-        if (reference == DoubleEscapedReference)
-            return EscapedStartLineReference;
+        // Escape one level of escaping that would have been added when generating the diff
+        if (EscapedStartRegex.IsMatch(reference))
+            return reference.Substring(1);
 
         return reference;
     }
@@ -840,7 +846,7 @@ public class DiffGenerator
             {
                 line = "\\" + StartLineReference;
             }
-            else if (line == EscapedStartLineReference)
+            else if (EscapedStartRegex.IsMatch(line))
             {
                 // If already has escaped text, double escape it to not make it match
                 line = "\\" + line;
