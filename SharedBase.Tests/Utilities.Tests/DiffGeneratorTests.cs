@@ -536,6 +536,21 @@ public class DiffGeneratorTests
     }
 
     [Theory]
+    [InlineData(Text1, Text2 + "\n")]
+    [InlineData(Text1 + "\n", Text2 + "\n")]
+    [InlineData(Text1 + "\n", Text2)]
+    [InlineData(Text1 + "\n", Text1)]
+    [InlineData(Text1, Text1 + "\n")]
+    public void Diff_LastLineChangedWithLineEndings(string old, string updated)
+    {
+        var diff = DiffGenerator.Default.Generate(old, updated);
+
+        var result = DiffGenerator.Default.ApplyDiff(old, diff);
+
+        Assert.Equal(updated, result.ToString());
+    }
+
+    [Theory]
     [InlineData(SpecificText1Old, SpecificText1New)]
     [InlineData(SpecificText1New, SpecificText1Old)]
     public void Diff_SpecificProblematicTextsWork(string old, string updated)
