@@ -12,6 +12,10 @@ public class DiffGenerator
     /// </summary>
     public const string StartLineReference = "(start)";
 
+    public const string EscapedStartLineReference = "\\" + StartLineReference;
+
+    private const string DoubleEscapedReference = "\\" + EscapedStartLineReference;
+
     /// <summary>
     ///   How many lines slight deviance mode looks at from the start of the text when resolving a block that targets
     ///   the beginning of the text.
@@ -474,7 +478,7 @@ public class DiffGenerator
 
                         --linesLeft;
 
-                        if (line == block.Reference2)
+                        if (line == UnescapeReferenceLine(block.Reference2))
                         {
                             // Found correct position
                             break;
@@ -501,7 +505,7 @@ public class DiffGenerator
 
             // Close by blocks can have already one reference line be read
             // So this can be set to true in that case to correctly then match the second reference
-            bool reference1Matched = block.Reference1 == lastReadSourceLine;
+            bool reference1Matched = UnescapeReferenceLine(block.Reference1) == lastReadSourceLine;
 
             // Use a separate scanning reader to be able to do fuzzy matching if exact fails
             // TODO: implement fuzzy matching modes (first should be whitespace ignoring mode)
@@ -523,7 +527,7 @@ public class DiffGenerator
 
                 if (reference1Matched)
                 {
-                    if (line == block.Reference2)
+                    if (line == UnescapeReferenceLine(block.Reference2))
                     {
                         // Found correct position
 
@@ -543,7 +547,7 @@ public class DiffGenerator
                 }
                 else
                 {
-                    if (line == block.Reference1 && --referenceIgnores < 0)
+                    if (line == UnescapeReferenceLine(block.Reference1) && --referenceIgnores < 0)
                     {
                         // Potential place where the references point to
                         reference1Matched = true;
@@ -587,6 +591,23 @@ public class DiffGenerator
         // lastReadSourceLine = null;
 
         return reuseBuilder;
+    }
+
+    /// <summary>
+    ///   Unescapes lines that matched the special start reference syntax in the old or new text when a diff was
+    ///   generated
+    /// </summary>
+    /// <param name="reference">Reference line that is potentially escaped</param>
+    /// <returns>The unescaped text that is good to compare against raw source text lines</returns>
+    private static string UnescapeReferenceLine(string reference)
+    {
+        if (reference == EscapedStartLineReference)
+            return StartLineReference;
+
+        if (reference == DoubleEscapedReference)
+            return EscapedStartLineReference;
+
+        return reference;
     }
 
     private static void MakeSureResultHasEndingNewLine(StringBuilder reuseBuilder, string lineEndings)
@@ -816,7 +837,14 @@ public class DiffGenerator
 
             // If the line happens to equal the start line reference, escape it
             if (line == StartLineReference)
+            {
                 line = "\\" + StartLineReference;
+            }
+            else if (line == EscapedStartLineReference)
+            {
+                // If already has escaped text, double escape it to not make it match
+                line = "\\" + line;
+            }
 
             // Assign the line references as we read back in the right order
             if (reference2 == null)

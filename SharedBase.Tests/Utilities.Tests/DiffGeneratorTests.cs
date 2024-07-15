@@ -107,6 +107,27 @@ public class DiffGeneratorTests
                                   and ends with a match
                                   """;
 
+    private const string Text15 = """
+                                  This is just some text
+                                  with a few lines in it
+                                  (start)
+                                  but maybe just has a bit of a new thing
+                                  """;
+
+    private const string Text16 = """
+                                  This is just some text
+                                  with a few lines in it
+                                  (start)
+                                  but maybe just has a bit of a new thing that changed
+                                  """;
+
+    private const string Text17 = """
+                                  (start)
+                                  with a few lines in it
+                                  that just says basically nothing at all
+                                  but maybe just has a bit of a new thing
+                                  """;
+
     private const string SpecificText1Old = """
                                             This is just some text
                                             with multiple lines
@@ -412,6 +433,14 @@ public class DiffGeneratorTests
     [InlineData(Text8, Text12)]
     [InlineData(Text8, Text13)]
     [InlineData(Text8, Text14)]
+    [InlineData(" ", Text1)]
+    [InlineData(" ", Text11)]
+    [InlineData(" ", Text12)]
+    [InlineData(" ", Text13)]
+    [InlineData(" ", Text14)]
+    [InlineData(Text1, " ")]
+    [InlineData(Text11, " ")]
+    [InlineData(Text12, " ")]
     public void Diff_GeneratedDiffWhenAppliedGivesNewText(string old, string updated)
     {
         var diff = DiffGenerator.Default.Generate(old, updated);
@@ -427,6 +456,7 @@ public class DiffGeneratorTests
     [InlineData("", Text1)]
     [InlineData(Text9, Text10)]
     [InlineData(Text8, Text12)]
+    [InlineData(" ", Text12)]
     public void Diff_ReverseDiffApplyWorks(string old, string updated)
     {
         var diff = DiffGenerator.Default.Generate(updated, old);
@@ -543,6 +573,53 @@ public class DiffGeneratorTests
     [InlineData(Text1, Text1 + "\n")]
     public void Diff_LastLineChangedWithLineEndings(string old, string updated)
     {
+        var diff = DiffGenerator.Default.Generate(old, updated);
+
+        var result = DiffGenerator.Default.ApplyDiff(old, diff);
+
+        Assert.Equal(updated, result.ToString());
+    }
+
+    [Theory]
+    [InlineData(Text15, Text16)]
+    [InlineData(Text15, Text17)]
+    [InlineData(Text17, Text15)]
+    [InlineData(Text15, "")]
+    [InlineData(Text16, "")]
+    [InlineData(Text17, "")]
+    [InlineData("", Text15)]
+    [InlineData("", Text16)]
+    [InlineData("", Text17)]
+    public void Diff_LinesMatchingStartSpecialValueAreHandledCorrectly(string old, string updated)
+    {
+        if (!LineByLineReader.SplitToLines(old).Contains(DiffGenerator.StartLineReference) &&
+            !LineByLineReader.SplitToLines(updated).Contains(DiffGenerator.StartLineReference))
+        {
+            throw new ArgumentException("Either old or new should have the special reference line in it");
+        }
+
+        var diff = DiffGenerator.Default.Generate(old, updated);
+
+        var result = DiffGenerator.Default.ApplyDiff(old, diff);
+
+        Assert.Equal(updated, result.ToString());
+    }
+
+    [Theory]
+    [InlineData(Text15, Text16)]
+    [InlineData(Text15, Text17)]
+    [InlineData(Text17, Text15)]
+    [InlineData(Text15, "")]
+    [InlineData(Text16, "")]
+    [InlineData(Text17, "")]
+    [InlineData("", Text15)]
+    [InlineData("", Text16)]
+    [InlineData("", Text17)]
+    public void Diff_DoubleEscapedStartLineReference(string old, string updated)
+    {
+        old = old.Replace(DiffGenerator.StartLineReference, DiffGenerator.EscapedStartLineReference);
+        updated = updated.Replace(DiffGenerator.StartLineReference, DiffGenerator.EscapedStartLineReference);
+
         var diff = DiffGenerator.Default.Generate(old, updated);
 
         var result = DiffGenerator.Default.ApplyDiff(old, diff);
