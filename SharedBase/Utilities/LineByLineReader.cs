@@ -24,7 +24,7 @@ public struct LineByLineReader
     }
 
     /// <summary>
-    ///    True once this has reached the end of the <see cref="text"/>. And can no longer advance / read anything.
+    ///   True once this has reached the end of the <see cref="text"/>. And can no longer advance / read anything.
     /// </summary>
     public bool Ended { get; private set; }
 
