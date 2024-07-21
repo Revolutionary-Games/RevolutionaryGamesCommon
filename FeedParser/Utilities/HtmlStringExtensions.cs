@@ -82,10 +82,7 @@ public static class HtmlStringExtensions
             }
         }
 
-        using var stream = new MemoryStream();
-        stream.Capacity = length;
-
-        using var writer = new StreamWriter(stream, Encoding.UTF8);
+        using var writer = new StringWriter(new StringBuilder(length));
 
         var formatter = new HtmlMarkupFormatter();
 
@@ -107,12 +104,7 @@ public static class HtmlStringExtensions
         }
 
         writer.Flush();
-
-        stream.Position = 0;
-
-        using var reader = new StreamReader(stream, Encoding.UTF8);
-        var result = reader.ReadToEnd();
-        return result;
+        return writer.GetStringBuilder().ToString();
     }
 
     public static IElement CreateDummyDom()
