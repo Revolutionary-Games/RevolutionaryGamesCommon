@@ -6,7 +6,7 @@ public class ShaderCheck : LineByLineFileChecker
 {
     private bool checkingLength = true;
 
-    public ShaderCheck() : base(".shader")
+    public ShaderCheck() : base(".gdshader")
     {
     }
 
