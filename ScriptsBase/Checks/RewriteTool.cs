@@ -55,10 +55,10 @@ public class RewriteTool : CodeCheck
         SyntaxKind.OperatorDeclaration,
         SyntaxKind.IndexerDeclaration,
         SyntaxKind.MethodDeclaration,
-        SyntaxKind.ClassDeclaration,
         SyntaxKind.RecordDeclaration,
-        SyntaxKind.StructDeclaration,
         SyntaxKind.RecordStructDeclaration,
+        SyntaxKind.ClassDeclaration,
+        SyntaxKind.StructDeclaration,
     ];
 
     /// <summary>
