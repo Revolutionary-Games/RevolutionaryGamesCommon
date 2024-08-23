@@ -25,8 +25,8 @@ public class RewriteTool : CodeCheck
     ///   Basic order of class members, see <see cref="Rewriter.MemberOrderComparer"/> for the full implementation
     ///   of the rules
     /// </summary>
-    public static readonly IReadOnlyCollection<string> ModifiersOrder = new[]
-    {
+    public static readonly IReadOnlyCollection<string> ModifiersOrder =
+    [
         "public",
         NoModifierPlacementType,
         "internal",
@@ -36,13 +36,13 @@ public class RewriteTool : CodeCheck
         "protected internal",
         "protected",
         "private",
-    };
+    ];
 
     /// <summary>
     ///   This specifies the order of these types of members that can be contained in a class
     /// </summary>
-    public static readonly IReadOnlyCollection<SyntaxKind> SyntaxTypeOrder = new[]
-    {
+    public static readonly IReadOnlyCollection<SyntaxKind> SyntaxTypeOrder =
+    [
         SyntaxKind.FieldDeclaration,
         SyntaxKind.ConstructorDeclaration,
         SyntaxKind.DestructorDeclaration,
@@ -56,15 +56,17 @@ public class RewriteTool : CodeCheck
         SyntaxKind.IndexerDeclaration,
         SyntaxKind.MethodDeclaration,
         SyntaxKind.ClassDeclaration,
+        SyntaxKind.RecordDeclaration,
         SyntaxKind.StructDeclaration,
-    };
+        SyntaxKind.RecordStructDeclaration,
+    ];
 
     /// <summary>
     ///   Orders some methods specifically based on their names. Lower values are first.
     ///   0 is default when nothing matches.
     /// </summary>
-    public static readonly IReadOnlyCollection<(Regex Regex, int Order)> OrderOfMethodNames = new[]
-    {
+    public static readonly IReadOnlyCollection<(Regex Regex, int Order)> OrderOfMethodNames =
+    [
         (new Regex("^_Ready"), -100),
         (new Regex("^ResolveNodeReferences"), -99),
         (new Regex("^ResolveDerivedTypeNodeReferences"), -98),
@@ -85,7 +87,7 @@ public class RewriteTool : CodeCheck
         (new Regex("^Get(Visual)?HashCode"), 95),
         (new Regex("(Description|Detail)String$"), 99),
         (new Regex("^ToString"), 100),
-    };
+    ];
 
     private const string StartFileEnumerateFolder = "./";
 
@@ -301,8 +303,8 @@ public class RewriteTool : CodeCheck
                     return classSyntax.Identifier.ToString();
                 case StructDeclarationSyntax structSyntax:
                     return structSyntax.Identifier.ToString();
-                case RecordDeclarationSyntax structSyntax:
-                    return structSyntax.Identifier.ToString();
+                case RecordDeclarationSyntax recordSyntax:
+                    return recordSyntax.Identifier.ToString();
                 case InterfaceDeclarationSyntax interfaceSyntax:
                     return interfaceSyntax.Identifier.ToString();
                 case DelegateDeclarationSyntax delegateSyntax:
