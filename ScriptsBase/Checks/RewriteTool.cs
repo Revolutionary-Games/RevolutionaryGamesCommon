@@ -301,6 +301,8 @@ public class RewriteTool : CodeCheck
                     return classSyntax.Identifier.ToString();
                 case StructDeclarationSyntax structSyntax:
                     return structSyntax.Identifier.ToString();
+                case RecordDeclarationSyntax structSyntax:
+                    return structSyntax.Identifier.ToString();
                 case InterfaceDeclarationSyntax interfaceSyntax:
                     return interfaceSyntax.Identifier.ToString();
                 case DelegateDeclarationSyntax delegateSyntax:
