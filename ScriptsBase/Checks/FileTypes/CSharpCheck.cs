@@ -21,6 +21,12 @@ public class CSharpCheck : FileCheck
     public static readonly Regex IncorrectFloatSuffixCase = new(@"^\d+F\W", RegexOptions.Compiled);
 
     private const string RAZOR_EXTENSION = ".razor";
+    private const string NOT_ALLOWED_MATH = "Mathf" + ".";
+
+    private static readonly Regex WrongLoopIncrementSyntax =
+        new(@"for\s*\(.+;\s*(\w+\+\+)\)\s*$", RegexOptions.Compiled);
+
+    private static readonly Regex WrongIncrementSyntax = new(@"^\s*([\w\.]+\+\+);\s*$", RegexOptions.Compiled);
 
     private readonly int defaultMaxLength;
     private readonly int maxRazorLength;
@@ -88,6 +94,38 @@ public class CSharpCheck : FileCheck
             {
                 yield return
                     $"Line {lineNumber} contains an uppercase float suffix. {match.Groups[0].Value}";
+            }
+
+            match = WrongIncrementSyntax.Match(line);
+
+            if (match.Success)
+            {
+                yield return $"Line {lineNumber} contains a post-increment (pre-increment should be preferred " +
+                    $"whenever possible) to suppress incorrect warning add \"/* requires post-increment*/;\". " +
+                    $"{match.Groups[1].Value}";
+            }
+
+            if (line.Contains("for"))
+            {
+                // This is a pretty complex regex, so only check if there is a chance this matches
+                match = WrongLoopIncrementSyntax.Match(line);
+
+                if (match.Success)
+                {
+                    yield return $"Line {lineNumber} contains a for loop with post-increment " +
+                        $"(should use pre-increment syntax). Wrong post-increment: {match.Groups[1].Value}";
+                }
+            }
+
+            if (line.Contains(NOT_ALLOWED_MATH))
+            {
+                // Allow some specific stuff that's missing from core system math but Godot has it
+                if (!line.Contains(".Lerp") && !line.Contains(".LinearToDb") && !line.Contains(".DbToLinear"))
+                {
+                    yield return $"Line {lineNumber} contains a reference for Godot math library that is no longer " +
+                        $"needed due to updated dotnet version (use MathF instead, except for the few things it " +
+                        $"doesn't have equivalents for)";
+                }
             }
 
             // Further processing is done by the xml parser so we can do a real quick check here
@@ -210,7 +248,7 @@ public class CSharpCheck : FileCheck
                     "content should start on its own line.");
             }
 
-            for (var i = 0; i < startedTags.Count; i++)
+            for (var i = 0; i < startedTags.Count; ++i)
             {
                 var currentTag = startedTags[i];
                 if (currentTag == "remarks")
@@ -408,7 +446,7 @@ public class CSharpCheck : FileCheck
                         // A tag ended
                         if (tagIsSelfClosing)
                         {
-                            // Self closing tags don't need handling
+                            // Self-closing tags don't need handling
                         }
                         else if (tagIsEndTag)
                         {
@@ -451,7 +489,7 @@ public class CSharpCheck : FileCheck
 
                     if (character == '/')
                     {
-                        // Trailing '/' means this is a self closing tag
+                        // Trailing '/' means this is a self-closing tag
                         if (tagIsSelfClosing)
                             ReportParserError("multiple self closing markers", lineNumber);
 
