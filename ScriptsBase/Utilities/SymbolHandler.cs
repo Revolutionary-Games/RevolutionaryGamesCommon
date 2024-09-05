@@ -60,6 +60,7 @@ public class SymbolHandler
 
         if (result.ExitCode != 0 || result.StdOut.Length < 1)
         {
+            ColourConsole.WriteNormalLine($"Extractor was running on: {file}");
             ColourConsole.WriteErrorLine($"Failed to run extractor: {result.FullOutput.Truncate(1000)}");
             return false;
         }
