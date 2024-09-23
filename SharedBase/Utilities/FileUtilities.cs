@@ -110,4 +110,96 @@ public class FileUtilities
     {
         return Convert.ToHexString(hash).ToLowerInvariant();
     }
+
+    /// <summary>
+    ///   Copies a file if the target doesn't exist or its hash is different.
+    /// </summary>
+    /// <param name="sourceFile">File to copy from</param>
+    /// <param name="target">Target where to put the file (full path)</param>
+    /// <param name="cancellationToken">Cancellation for this operation</param>
+    /// <returns>True if copied, false if the target existed and hash was the same</returns>
+    [UnsupportedOSPlatform("browser")]
+    public static async Task<bool> CopyIfHashIsDifferent(string sourceFile, string target,
+        CancellationToken cancellationToken)
+    {
+        if (!File.Exists(target))
+        {
+            File.Copy(sourceFile, target, true);
+            return true;
+        }
+
+        // Probably no harm in using a more expensive hash than sha256 here as this isn't used that much
+        var originalHash = await CalculateSha3OfFile(sourceFile, cancellationToken);
+        var targetHash = await CalculateSha3OfFile(target, cancellationToken);
+
+        // Need to do a manual comparison
+        bool equal = originalHash.Length == targetHash.Length;
+
+        if (equal)
+        {
+            for (int i = 0; i < originalHash.Length; ++i)
+            {
+                if (originalHash[i] != targetHash[i])
+                {
+                    equal = false;
+                    break;
+                }
+            }
+        }
+
+        if (equal)
+        {
+            // Same hash, so no need to copy
+            return false;
+        }
+
+        File.Copy(sourceFile, target, true);
+        return true;
+    }
+
+    /// <summary>
+    ///   Moves a file if the target doesn't exist or its hash is different.
+    /// </summary>
+    /// <param name="sourceFile">File to copy from</param>
+    /// <param name="target">Target where to put the file (full path)</param>
+    /// <param name="cancellationToken">Cancellation for this operation</param>
+    /// <returns>True if copied, false if the target existed and hash was the same</returns>
+    [UnsupportedOSPlatform("browser")]
+    public static async Task<bool> MoveIfHashIsDifferent(string sourceFile, string target,
+        CancellationToken cancellationToken)
+    {
+        if (!File.Exists(target))
+        {
+            File.Move(sourceFile, target, true);
+            return true;
+        }
+
+        // Probably no harm in using a more expensive hash than sha256 here as this isn't used that much
+        var originalHash = await CalculateSha3OfFile(sourceFile, cancellationToken);
+        var targetHash = await CalculateSha3OfFile(target, cancellationToken);
+
+        // Need to do a manual comparison
+        bool equal = originalHash.Length == targetHash.Length;
+
+        if (equal)
+        {
+            for (int i = 0; i < originalHash.Length; ++i)
+            {
+                if (originalHash[i] != targetHash[i])
+                {
+                    equal = false;
+                    break;
+                }
+            }
+        }
+
+        if (equal)
+        {
+            // Same hash, so no need to copy
+            return false;
+        }
+
+        File.Move(sourceFile, target, true);
+        return true;
+    }
 }
