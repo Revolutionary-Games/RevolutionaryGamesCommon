@@ -11,6 +11,13 @@ using SharedBase.Utilities;
 /// </summary>
 public class CompileCheck : CodeCheck
 {
+    private readonly bool forceRebuild;
+
+    public CompileCheck(bool forceRebuild)
+    {
+        this.forceRebuild = forceRebuild;
+    }
+
     public override async Task Run(CodeCheckRun runData, CancellationToken cancellationToken)
     {
         if (runData.SolutionFile == null)
@@ -20,20 +27,29 @@ public class CompileCheck : CodeCheck
         startInfo.ArgumentList.Add("build");
         startInfo.ArgumentList.Add(runData.SolutionFile);
 
-        // Our files are locked on Windows when scripts are executing so we can't do a full rebuild
-        // TODO: find a better workaround. See: https://github.com/Revolutionary-Games/Thrive/issues/3766
-        if (OperatingSystem.IsWindows())
+        if (forceRebuild)
         {
-            runData.OutputWarningWithMutex(
-                "NOTE: on Windows this compile check can't rebuild due to the scripts being in use currently. " +
-                "As such you should manually rebuild with warnings enabled to make sure there aren't warnings");
-            runData.OutputInfoWithMutex("See: https://github.com/Revolutionary-Games/Thrive/issues/3766");
+            // Our files are locked on Windows when scripts are executing so we can't do a full rebuild
+            // TODO: find a better workaround. See: https://github.com/Revolutionary-Games/Thrive/issues/3766
+            if (OperatingSystem.IsWindows())
+            {
+                runData.OutputWarningWithMutex(
+                    "NOTE: on Windows this compile check can't rebuild due to the scripts being in use currently. " +
+                    "As such you should manually rebuild with warnings enabled to make sure there aren't warnings");
+                runData.OutputInfoWithMutex("See: https://github.com/Revolutionary-Games/Thrive/issues/3766");
 
-            startInfo.ArgumentList.Add("/t:Build");
+                startInfo.ArgumentList.Add("/t:Build");
+            }
+            else
+            {
+                startInfo.ArgumentList.Add("/t:Clean,Build");
+            }
         }
         else
         {
-            startInfo.ArgumentList.Add("/t:Clean,Build");
+            runData.OutputInfoWithMutex("Not doing a full rebuild. Warnings will be seen only from files that " +
+                "haven't been compiled yet.");
+            startInfo.ArgumentList.Add("/t:Build");
         }
 
         startInfo.ArgumentList.Add("/warnaserror");

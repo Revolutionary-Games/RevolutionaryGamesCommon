@@ -27,4 +27,8 @@ public class CheckOptionsBase : ScriptOptionsBase
 
     [Value(0, MetaName = "Checks", HelpText = "Checks to enable (leave blank for default checks)")]
     public IList<string> Checks { get; set; } = new List<string>();
+
+    [Option("no-rebuild", Required = false, Default = false,
+        HelpText = "Disable fully rebuilding the code when checking for warnings")]
+    public bool NoExtraRebuild { get; set; }
 }
