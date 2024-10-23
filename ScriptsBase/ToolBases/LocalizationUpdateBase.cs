@@ -75,6 +75,11 @@ public abstract class LocalizationUpdateBase<T>
 
     protected abstract IEnumerable<string> PathsToExtractFrom { get; }
 
+    /// <summary>
+    ///   Any file / folder ending in any of these strings will be ignored
+    /// </summary>
+    protected abstract IEnumerable<string> FilesToIgnore { get; }
+
     protected abstract string ProjectName { get; }
     protected abstract string ProjectOrganization { get; }
     protected virtual string GeneratedBy => "Thrive.Scripts";
@@ -221,7 +226,8 @@ public abstract class LocalizationUpdateBase<T>
             {
                 foreach (var file in Directory.EnumerateFiles(basePath, "*.*", SearchOption.AllDirectories))
                 {
-                    // TODO: an exclude list if some sub folders shouldn't be processed?
+                    if (FilesToIgnore.Any(s => file.EndsWith(s, StringComparison.OrdinalIgnoreCase)))
+                        continue;
 
                     string preparedPath;
                     if (OperatingSystem.IsWindows())
