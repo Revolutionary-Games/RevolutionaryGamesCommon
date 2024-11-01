@@ -36,7 +36,7 @@ public sealed class CodeCheckRun : IDisposable
     ///   Checks if a file should be processed
     /// </summary>
     /// <param name="file">The relative path to the file to check</param>
-    /// <returns>True if should be processed</returns>
+    /// <returns>True if the file should be processed</returns>
     public bool ProcessFile(string file)
     {
         if (OnlyCheckFiles != null)
