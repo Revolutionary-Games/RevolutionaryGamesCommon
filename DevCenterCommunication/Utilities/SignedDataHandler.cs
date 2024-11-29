@@ -18,8 +18,12 @@ public class SignedDataHandler
     [UnsupportedOSPlatform("browser")]
     public async Task<byte[]> CreateSignature(Stream data, string keyFile, string? keyPassword)
     {
-        using var certificate = X509CertificateLoader.LoadPkcs12(await File.ReadAllBytesAsync(keyFile), keyPassword,
-            X509KeyStorageFlags.EphemeralKeySet);
+        var certificateData = await File.ReadAllBytesAsync(keyFile);
+
+        using var certificate = string.IsNullOrEmpty(keyPassword) ?
+            X509CertificateLoader.LoadCertificate(certificateData) :
+            X509CertificateLoader.LoadPkcs12(certificateData, keyPassword,
+                X509KeyStorageFlags.EphemeralKeySet);
 
         var key = certificate.GetRSAPrivateKey();
 
@@ -47,8 +51,7 @@ public class SignedDataHandler
 
         foreach (var (potentialKeyDataRetriever, keyName) in allowedKeyData)
         {
-            using var certificate = X509CertificateLoader.LoadPkcs12(await potentialKeyDataRetriever(),
-                null, X509KeyStorageFlags.EphemeralKeySet);
+            using var certificate = X509CertificateLoader.LoadCertificate(await potentialKeyDataRetriever());
 
             // Ignore certificates that are expired or not valid yet
             if (certificate.NotBefore > now || certificate.NotAfter < now)
