@@ -19,8 +19,8 @@ public static class BinaryHelpers
 
         if (!OperatingSystem.IsMacOS())
         {
-            // Seems pretty random when the stripped binaries are accepted by the crash dumping to detect the symbol file
-            // to use when stackwalking, for now this makes as small builds as official Godot
+            // Seems pretty random when the stripped binaries are accepted by the crash dumping to detect the symbol
+            // file to use when stack-walking, for now this makes as small builds as official Godot
             startInfo.ArgumentList.Add("--keep-section=.hash");
             startInfo.ArgumentList.Add("--keep-section=.gnu.hash");
         }
