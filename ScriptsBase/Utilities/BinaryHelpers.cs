@@ -11,6 +11,8 @@ using SharedBase.Utilities;
 /// </summary>
 public static class BinaryHelpers
 {
+    private const string AssumedSelfSignedCertificateName = "SelfSigned";
+
     public static async Task Strip(string file, CancellationToken cancellationToken)
     {
         ColourConsole.WriteNormalLine($"Stripping {file}");
@@ -42,6 +44,61 @@ public static class BinaryHelpers
         {
             ColourConsole.WriteErrorLine($"Failed to run 'strip' command (is it installed?): {result.FullOutput}");
             throw new Exception($"Strip command failed, {result.ExitCode}");
+        }
+    }
+
+    /// <summary>
+    ///   Performs Mac code signing on a binary file
+    /// </summary>
+    /// <param name="filePath">File to sign</param>
+    /// <param name="entitlementsFile">What entitlements to use when signing</param>
+    /// <param name="signingCertificate">Certificate name or null for self-signed</param>
+    /// <param name="cancellationToken">Cancellation</param>
+    /// <returns>True on success</returns>
+    public static async Task<bool> SignFileForMac(string filePath, string entitlementsFile, string? signingCertificate,
+        CancellationToken cancellationToken)
+    {
+        ColourConsole.WriteNormalLine($"Signing {filePath}");
+
+        var startInfo = new ProcessStartInfo("xcrun");
+        startInfo.ArgumentList.Add("codesign");
+        startInfo.ArgumentList.Add("--force");
+        startInfo.ArgumentList.Add("--verbose");
+        startInfo.ArgumentList.Add("--timestamp");
+
+        startInfo.ArgumentList.Add("--sign");
+
+        AddCodesignName(startInfo, signingCertificate);
+
+        startInfo.ArgumentList.Add("--options=runtime");
+        startInfo.ArgumentList.Add("--entitlements");
+        startInfo.ArgumentList.Add(entitlementsFile);
+        startInfo.ArgumentList.Add(filePath);
+
+        var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken, false);
+
+        if (result.ExitCode != 0)
+        {
+            ColourConsole.WriteErrorLine($"Running codesign on '{filePath}' failed. " +
+                "Are xcode tools installed and do you have the right certificates installed / " +
+                "self-signed certificate created? A self signed certificate might also be expired.");
+            return false;
+        }
+
+        ColourConsole.WriteDebugLine("Code signing succeeded");
+
+        return true;
+    }
+
+    public static void AddCodesignName(ProcessStartInfo startInfo, string? signingCertificate)
+    {
+        if (!string.IsNullOrEmpty(signingCertificate))
+        {
+            startInfo.ArgumentList.Add(signingCertificate);
+        }
+        else
+        {
+            startInfo.ArgumentList.Add(AssumedSelfSignedCertificateName);
         }
     }
 }
