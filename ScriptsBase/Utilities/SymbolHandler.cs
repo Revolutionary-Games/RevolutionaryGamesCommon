@@ -200,8 +200,7 @@ public class SymbolHandler
                     "ArchiveIntermediates/dump_syms/InstallationBuildProductsLocation/usr/local/bin/dump_syms' " +
                     $"to a folder that is in your PATH, for example ~/bin/{SYMBOL_EXTRACTOR_MAC}");
 
-                throw new Exception(
-                    "Expected Mac symbol dumper not found, please 'install' it with xcodebuild " +
+                throw new Exception("Expected Mac symbol dumper not found, please 'install' it with xcodebuild " +
                     $"(not found: {SYMBOL_EXTRACTOR_MAC}");
             }
 
