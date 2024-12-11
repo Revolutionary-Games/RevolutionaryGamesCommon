@@ -19,6 +19,7 @@ public class SymbolHandler
 
     private const string SYMBOL_EXTRACTOR_PATH_BASE = "../breakpad/build";
     private const string SYMBOL_EXTRACTOR_LINUX = "src/tools/linux/dump_syms/dump_syms";
+    private const string SYMBOL_EXTRACTOR_MAC = "dump_syms";
 
     private const string SYMBOL_EXTRACTOR_WINDOWS = "../src/src/tools/windows/Release/dump_syms.exe";
 
@@ -167,7 +168,31 @@ public class SymbolHandler
             return startInfo;
         }
 
-        // TODO: mac
+        if (OperatingSystem.IsMacOS())
+        {
+            // Breakpad needs to be compiled with XCode project files so the end result ends up being quite different
+            // And the final copy is also annoying
+            var extractor = ExecutableFinder.Which(SYMBOL_EXTRACTOR_MAC);
+            if (string.IsNullOrEmpty(extractor))
+            {
+                ExecutableFinder.PrintPathInfo(Console.Out);
+
+                ColourConsole.WriteNormalLine("Mac compile command: xcodebuild " +
+                    "-workspace dump_syms.xcodeproj/project.xcworkspace -scheme dump_syms install");
+                ColourConsole.WriteNormalLine("That command is to be ran in the breakpad/src/src/tools/mac/dump_syms " +
+                    "folder");
+                ColourConsole.WriteNormalLine("Then copy the result (as for some reason Breakpad build doesn't work " +
+                    "with proper destination): from '/Users/LONG_INTERMEDIATE_PATH/Build/Intermediates.noindex/" +
+                    "ArchiveIntermediates/dump_syms/InstallationBuildProductsLocation/usr/local/bin/dump_syms' " +
+                    $"to a folder that is in your PATH, for example ~/bin/{SYMBOL_EXTRACTOR_MAC}");
+
+                throw new Exception(
+                    "Expected Mac symbol dumper not found, please 'install' it with xcodebuild " +
+                    $"(not found: {SYMBOL_EXTRACTOR_MAC}");
+            }
+
+            return new ProcessStartInfo(extractor);
+        }
 
         return new ProcessStartInfo(Path.Join(SYMBOL_EXTRACTOR_PATH_BASE, SYMBOL_EXTRACTOR_LINUX));
     }
