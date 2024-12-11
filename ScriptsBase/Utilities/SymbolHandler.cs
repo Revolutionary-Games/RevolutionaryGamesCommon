@@ -48,12 +48,25 @@ public class SymbolHandler
         usesRename = !string.IsNullOrEmpty(overwriteLinuxName) || !string.IsNullOrEmpty(overwriteWindowsName);
     }
 
+    /// <summary>
+    ///   Extracts symbols from a combined binary for the specified architecture (arm64 or x86_64). Used on Mac with
+    ///   lipo-ed libraries.
+    /// </summary>
+    public string? ExtractSpecificArchitecture { get; set; }
+
     public async Task<bool> ExtractSymbols(string file, string outputFolder, bool mingw,
         CancellationToken cancellationToken)
     {
         var startInfo = StartInfoForSymbolExtractor(mingw);
 
         ColourConsole.WriteDebugLine($"Trying to run symbol extractor: {startInfo.FileName}");
+
+        if (!string.IsNullOrEmpty(ExtractSpecificArchitecture))
+        {
+            ColourConsole.WriteDebugLine($"Extracting specific architecture symbols: {ExtractSpecificArchitecture}");
+            startInfo.ArgumentList.Add("-a");
+            startInfo.ArgumentList.Add(ExtractSpecificArchitecture);
+        }
 
         startInfo.ArgumentList.Add(Path.GetFullPath(file));
 
@@ -95,6 +108,7 @@ public class SymbolHandler
                 }
                 else
                 {
+                    // TODO: add mac handling here once Breakpad in Godot is setup to be used with it
                     ColourConsole.WriteWarningLine($"No special 'Thrive' symbol name known for platform: {platform}");
                 }
             }
