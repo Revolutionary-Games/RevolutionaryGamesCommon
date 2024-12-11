@@ -28,10 +28,10 @@ public static class BinaryHelpers
         {
             // Mac strip command isn't the gnu version so it needs special handling
             // Keep undefined and dynamically referenced symbols and remove all debug symbols
-            // If not specifying the -S flag then the strip command seems to remove more (but maybe too much)
-            startInfo.ArgumentList.Add("-ur");
-
-            // startInfo.ArgumentList.Add("-urS");
+            // -S flag is needed to not remove too much (so only debug symbols are removed)
+            // It might be safe to experiment in the future with removing the S flag, but it doesn't save that many
+            // more megabytes per Thrive release
+            startInfo.ArgumentList.Add("-urS");
         }
 
         startInfo.ArgumentList.Add(file);
