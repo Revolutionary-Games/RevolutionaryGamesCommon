@@ -45,6 +45,10 @@ public class CfgCheck : LineByLineFileChecker
 
         if (match.Success)
         {
+            // Ignore false positives from Mac export properties
+            if (line.Contains("xcode/") || line.Contains("macos_version"))
+                yield break;
+
             seenVersionNumber = true;
 
             var value = match.Groups[1].Value;
