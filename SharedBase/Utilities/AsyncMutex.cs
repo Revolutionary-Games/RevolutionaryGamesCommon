@@ -14,7 +14,8 @@ using System.Threading.Tasks;
 ///   <para>
 ///     This code is from: https://gist.github.com/dfederm/35c729f6218834b764fa04c219181e4e and is explained in:
 ///     https://dfederm.com/async-mutex/ There's no attached license information but hopefully here with a few
-///     modifications this is completely fine for us to include here in our code.
+///     modifications this is completely fine for us to include here in our code. And also the code has been updated to
+///     work on Linux, though not in a very intelligent way.
 ///   </para>
 /// </remarks>
 [UnsupportedOSPlatform("browser")]
@@ -49,11 +50,36 @@ public sealed class AsyncMutex : IAsyncDisposable
                 using var mutex = new Mutex(false, mutexName);
                 try
                 {
-                    // Wait for either the mutex to be acquired, or cancellation
-                    if (WaitHandle.WaitAny([mutex, taskInternalCancellation.WaitHandle]) != 0)
+                    if (OperatingSystem.IsWindows())
                     {
-                        taskCompletionSource.SetCanceled(taskInternalCancellation);
-                        return;
+                        // Wait for either the mutex to be acquired, or cancellation
+                        if (WaitHandle.WaitAny([mutex, taskInternalCancellation.WaitHandle]) != 0)
+                        {
+                            taskCompletionSource.SetCanceled(taskInternalCancellation);
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        // Can't wait on multiple things at once so we poll for cancel every 100ms
+                        // This should be fine as this code is used mostly by scripts that don't need to run
+                        // in real time (or cancel immediately)
+                        var pollTime = TimeSpan.FromMilliseconds(100);
+
+                        while (true)
+                        {
+                            if (mutex.WaitOne(pollTime))
+                            {
+                                // Got the mutex
+                                break;
+                            }
+
+                            if (taskInternalCancellation.IsCancellationRequested)
+                            {
+                                taskCompletionSource.SetCanceled(taskInternalCancellation);
+                                return;
+                            }
+                        }
                     }
                 }
                 catch (AbandonedMutexException)
