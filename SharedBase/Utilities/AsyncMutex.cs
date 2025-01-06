@@ -11,11 +11,11 @@ using System.Threading.Tasks;
 ///   inter-process synchronization and now between tasks.
 /// </summary>
 /// <remarks>
-///    <para>
-///      This code is from: https://gist.github.com/dfederm/35c729f6218834b764fa04c219181e4e and is explained in:
-///      https://dfederm.com/async-mutex/ There's no attached license information but hopefully here with a few
-///      modifications this is completely fine for us to include here in our code.
-///    </para>
+///   <para>
+///     This code is from: https://gist.github.com/dfederm/35c729f6218834b764fa04c219181e4e and is explained in:
+///     https://dfederm.com/async-mutex/ There's no attached license information but hopefully here with a few
+///     modifications this is completely fine for us to include here in our code.
+///   </para>
 /// </remarks>
 [UnsupportedOSPlatform("browser")]
 public sealed class AsyncMutex : IAsyncDisposable
