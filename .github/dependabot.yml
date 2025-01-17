@@ -7,3 +7,11 @@ updates:
     labels:
       - "review"
       - "dependencies"
+    groups:
+      microsoft-packages:
+        patterns:
+          - "Microsoft.*"
+      xunit:
+        patterns:
+          - "xunit*"
+
