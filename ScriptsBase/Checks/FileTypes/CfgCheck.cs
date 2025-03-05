@@ -22,7 +22,8 @@ public class CfgCheck : LineByLineFileChecker
         if (requiredVersion.Count(c => c == '.') != 3)
         {
             yield return $"Game version number should always specify all 4 parts of the version (version is " +
-                $"instead: {requiredVersion})";
+                $"instead: {requiredVersion}). " +
+                "This error is not from this file but passed in from project version file.";
 
             // No point in checking against bad data
             yield break;
