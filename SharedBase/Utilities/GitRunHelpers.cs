@@ -107,6 +107,20 @@ public static class GitRunHelpers
     }
 
     [UnsupportedOSPlatform("browser")]
+    public static async Task LfsPull(string folder, CancellationToken cancellationToken)
+    {
+        var startInfo = PrepareToRunGit(folder, false);
+        startInfo.ArgumentList.Add("lfs");
+        startInfo.ArgumentList.Add("pull");
+
+        var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken);
+        if (result.ExitCode != 0)
+        {
+            throw new Exception($"Failed to perform LFS pull in repo, process exited with error: {result.FullOutput}");
+        }
+    }
+
+    [UnsupportedOSPlatform("browser")]
     public static async Task Fetch(string folder, bool all, CancellationToken cancellationToken)
     {
         var startInfo = PrepareToRunGit(folder, true);
@@ -589,4 +603,6 @@ public static class GitRunHelpers
 
         return git;
     }
+
+
 }
