@@ -603,6 +603,4 @@ public static class GitRunHelpers
 
         return git;
     }
-
-
 }
