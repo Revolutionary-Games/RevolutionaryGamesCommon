@@ -19,7 +19,7 @@ using Utilities;
 /// <summary>
 ///   Base class for handling updating localization files
 /// </summary>
-/// <typeparam name="T">The type of the options class</typeparam>
+/// <typeparam name="T">The type of the options-class</typeparam>
 public abstract class LocalizationUpdateBase<T>
     where T : LocalizationOptionsBase
 {
@@ -31,13 +31,13 @@ public abstract class LocalizationUpdateBase<T>
     /// </summary>
     private const int PackedSourcesLineLength = 80;
 
-    private readonly IReadOnlyCollection<Regex> untranslatablePatterns = new[]
-    {
-        new Regex(@"^[+\-\.]*\d[\d\.\-]*%?$", RegexOptions.Compiled),
-        new Regex(@"^[+\-\.]+$", RegexOptions.Compiled),
-        new Regex(@"^\s+$", RegexOptions.Compiled),
-        new Regex(@"^[+\-\d]*[\d\.\-+/\s]*%?$", RegexOptions.Compiled),
-    };
+    private readonly IReadOnlyCollection<Regex> untranslatablePatterns =
+    [
+        new(@"^[+\-\.]*\d[\d\.\-]*%?$", RegexOptions.Compiled),
+        new(@"^[+\-\.]+$", RegexOptions.Compiled),
+        new(@"^\s+$", RegexOptions.Compiled),
+        new(@"^[+\-\d]*[\d\.\-+/\s]*%?$", RegexOptions.Compiled),
+    ];
 
     private readonly Dictionary<string, string> alreadyFoundTools = new();
 
@@ -79,6 +79,11 @@ public abstract class LocalizationUpdateBase<T>
     ///   Any file / folder ending in any of these strings will be ignored
     /// </summary>
     protected abstract IEnumerable<string> FilesToIgnore { get; }
+
+    /// <summary>
+    ///   Version of the ignore list that applies to the folder names (and paths) of files that might be extracted
+    /// </summary>
+    protected abstract IEnumerable<string> FoldersToIgnore { get; }
 
     protected abstract string ProjectName { get; }
     protected abstract string ProjectOrganization { get; }
@@ -228,6 +233,14 @@ public abstract class LocalizationUpdateBase<T>
                 {
                     if (FilesToIgnore.Any(s => file.EndsWith(s, StringComparison.OrdinalIgnoreCase)))
                         continue;
+
+                    var folder = Path.GetDirectoryName(file);
+
+                    if (!string.IsNullOrEmpty(folder) &&
+                        FoldersToIgnore.Any(s => folder.EndsWith(s, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        continue;
+                    }
 
                     string preparedPath;
                     if (OperatingSystem.IsWindows())
