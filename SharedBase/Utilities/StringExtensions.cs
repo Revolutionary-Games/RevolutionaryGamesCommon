@@ -16,6 +16,13 @@ public static class StringExtensions
             return str;
         }
 
+        if (length <= TruncateText.Length)
+        {
+            // Guard against the wanted length being less than the truncate text, in which case we only return the
+            // truncate text even if it is longer than the limit
+            return TruncateText;
+        }
+
         return str.Substring(0, length - TruncateText.Length) + TruncateText;
     }
 
