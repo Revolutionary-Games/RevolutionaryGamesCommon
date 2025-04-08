@@ -9,6 +9,8 @@ public static class AssemblyInfoReader
     private const string AssemblyVersionName = "PropertyGroup//Version";
     private const string AssemblyVersionExtraName = "PropertyGroup//InformationalVersion";
 
+    private const string TargetFramework = "PropertyGroup//TargetFramework";
+
     public static string ReadVersionFromCsproj(string csprojFile, bool includeInformationalVersion = false)
     {
         var csproj = XElement.Load(csprojFile);
@@ -45,6 +47,20 @@ public static class AssemblyInfoReader
         {
             return $"{versionString}{additionalVersion}";
         }
+
+        return versionString;
+    }
+
+    public static string ReadRunTimeFromCsproj(string csprojFile)
+    {
+        var csproj = XElement.Load(csprojFile);
+
+        var version = csproj.XPathSelectElement(TargetFramework);
+
+        if (version == null)
+            throw new ArgumentException("Could not find target framework in the file");
+
+        var versionString = version.Value;
 
         return versionString;
     }
