@@ -57,7 +57,7 @@ public abstract class FileCheck
     /// </summary>
     private IReadOnlyCollection<string> HandledFileEndings { get; }
 
-    public bool HandlesFile(string file)
+    public virtual bool HandlesFile(string file)
     {
         if (IgnoredFiles != null)
         {
