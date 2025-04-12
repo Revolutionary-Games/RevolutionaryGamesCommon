@@ -272,17 +272,18 @@ public static class GitRunHelpers
     ///   Gets a git diff
     /// </summary>
     /// <param name="folder">
-    ///   If specified this is used as working directory, otherwise current working directory is used
+    ///   If specified, this is used as working directory; otherwise current working directory is used
     /// </param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <param name="stat">If true "--stat" is passed to git</param>
     /// <param name="useWindowsWorkaround">
-    ///   If true special diff parameters are used to make things work on Windows
+    ///   If true, special diff parameters are used to make things work on Windows
     /// </param>
+    /// <param name="ignoreModeChanges">If true, diff is told to ignore execute bit changes</param>
     /// <returns>The output from git containing the diff</returns>
     [UnsupportedOSPlatform("browser")]
     public static async Task<string> Diff(string folder, CancellationToken cancellationToken, bool stat = true,
-        bool useWindowsWorkaround = true)
+        bool useWindowsWorkaround = true, bool ignoreModeChanges = false)
     {
         if (!Directory.Exists(folder))
             throw new ArgumentException($"Specified folder: \"{folder}\" doesn't exist");
@@ -293,6 +294,12 @@ public static class GitRunHelpers
         {
             startInfo.ArgumentList.Add("-c");
             startInfo.ArgumentList.Add("core.safecrlf=false");
+        }
+
+        if (ignoreModeChanges)
+        {
+            startInfo.ArgumentList.Add("-c");
+            startInfo.ArgumentList.Add("core.fileMode=false");
         }
 
         startInfo.ArgumentList.Add("diff");
