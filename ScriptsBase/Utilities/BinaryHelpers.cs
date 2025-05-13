@@ -100,9 +100,10 @@ public static class BinaryHelpers
     /// <param name="appleId">Apple developer account email address</param>
     /// <param name="appleAppPassword">App-specific password for the account</param>
     /// <param name="cancellationToken">Cancellation</param>
+    /// <param name="staple">If false won't staple automatically</param>
     /// <returns>True on success</returns>
     public static async Task<bool> NotarizeFile(string pathToApp, string teamId, string appleId,
-        string appleAppPassword, CancellationToken cancellationToken)
+        string appleAppPassword, CancellationToken cancellationToken, bool staple = true)
     {
         if (!File.Exists(pathToApp) || Directory.Exists(pathToApp))
             throw new ArgumentException("File to notarize doesn't exist", nameof(pathToApp));
@@ -128,6 +129,12 @@ public static class BinaryHelpers
             ColourConsole.WriteErrorLine($"Running notarization on '{pathToApp}' failed. " +
                 "Are xcode tools installed and do you have the right account credentials entered?");
             return false;
+        }
+
+        if (!staple)
+        {
+            ColourConsole.WriteInfoLine("Notarization succeeded, but not stapling the ticket.");
+            return true;
         }
 
         ColourConsole.WriteInfoLine("Notarization succeeded, stapling the ticket.");
@@ -158,7 +165,7 @@ public static class BinaryHelpers
         {
             ColourConsole.WriteDebugLine("Doing a raw staple");
 
-            if (!await StapleFileTicket(pathToApp))
+            if (!await StapleFileTicket(pathToApp, cancellationToken))
             {
                 ColourConsole.WriteErrorLine("Stapling ticket failed");
                 return false;
@@ -169,14 +176,14 @@ public static class BinaryHelpers
         return true;
     }
 
-    public static async Task<bool> StapleFileTicket(string pathToFile)
+    public static async Task<bool> StapleFileTicket(string pathToFile, CancellationToken cancellation)
     {
         var startInfo = new ProcessStartInfo("xcrun");
         startInfo.ArgumentList.Add("stapler");
         startInfo.ArgumentList.Add("staple");
         startInfo.ArgumentList.Add(pathToFile);
 
-        var result = await ProcessRunHelpers.RunProcessAsync(startInfo, CancellationToken.None, false);
+        var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellation, false);
 
         if (result.ExitCode != 0)
         {
@@ -244,7 +251,7 @@ public static class BinaryHelpers
             }
 
             // Staple the ticket to the .app
-            if (!await StapleFileTicket(appPath))
+            if (!await StapleFileTicket(appPath, cancellationToken))
             {
                 ColourConsole.WriteErrorLine("Stapling ticket to extracted .app failed");
                 return null;
