@@ -53,6 +53,8 @@ public static class ThriveProperties
                     return "Linux/X11_steam";
                 case PackagePlatform.Windows:
                     return "Windows Desktop_steam";
+                case PackagePlatform.Mac:
+                    return "macOS_steam";
                 default:
                     throw new ArgumentOutOfRangeException(nameof(platform), platform, null);
             }
