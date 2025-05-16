@@ -68,7 +68,7 @@ public static class CopyHelpers
     /// </summary>
     /// <param name="fromFolder">The folder to move everything from</param>
     /// <param name="targetFolder">Target folder to put the moved files and folders in</param>
-    /// <param name="overwrite">If true overwriting files happens silently</param>
+    /// <param name="overwrite">If true, overwriting files happens silently</param>
     [UnsupportedOSPlatform("browser")]
     public static void MoveFolderContents(string fromFolder, string targetFolder, bool overwrite = false)
     {
