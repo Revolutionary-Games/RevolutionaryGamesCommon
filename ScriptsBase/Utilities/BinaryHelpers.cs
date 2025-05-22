@@ -197,7 +197,7 @@ public static class BinaryHelpers
         return true;
     }
 
-    public static async Task<bool> SignThriveAppMac(string folder, string basePathToThrive, string entitlements, 
+    public static async Task<bool> SignThriveAppMac(string folder, string basePathToThrive, string entitlements,
         string? signingKey, CancellationToken cancellationToken)
     {
         var main = Path.Join(basePathToThrive, ThriveMacMainExecutable);
@@ -237,7 +237,7 @@ public static class BinaryHelpers
         ColourConsole.WriteSuccessLine("Signed the main file");
         return true;
     }
- 
+
     public static void AddCodesignName(ProcessStartInfo startInfo, string? signingCertificate)
     {
         if (!string.IsNullOrEmpty(signingCertificate))
@@ -344,6 +344,4 @@ public static class BinaryHelpers
 
         return notarizedZip;
     }
-
-
 }
