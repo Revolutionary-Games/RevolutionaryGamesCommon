@@ -198,7 +198,7 @@ public static class BinaryHelpers
     }
 
     public static async Task<bool> SignThriveAppMac(string folder, string basePathToThrive, string entitlements, 
-        string signingKey, CancellationToken cancellationToken)
+        string? signingKey, CancellationToken cancellationToken)
     {
         var main = Path.Join(basePathToThrive, ThriveMacMainExecutable);
 
