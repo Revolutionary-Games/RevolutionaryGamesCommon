@@ -200,7 +200,11 @@ public static class BinaryHelpers
     public static async Task<bool> SignThriveAppMac(string folder, string basePathToThrive, string entitlements,
         string? signingKey, CancellationToken cancellationToken)
     {
-        var main = Path.Join(basePathToThrive, ThriveMacMainExecutable);
+        if (!File.Exists(entitlements))
+            throw new ArgumentException("Entitlements file doesn't exist", nameof(entitlements));
+
+        var main = Path.GetRelativePath(Directory.GetCurrentDirectory(),
+            Path.GetFullPath(Path.Join(folder, basePathToThrive, ThriveMacMainExecutable)));
 
         ColourConsole.WriteInfoLine("Signing all parts of the Mac build");
         ColourConsole.WriteNormalLine("This may take a while as there are many items");
