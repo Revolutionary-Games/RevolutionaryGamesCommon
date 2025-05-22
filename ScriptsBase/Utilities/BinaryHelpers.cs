@@ -13,6 +13,7 @@ using SharedBase.Utilities;
 /// </summary>
 public static class BinaryHelpers
 {
+    public const string ThriveMacMainExecutable = "Thrive.app/Contents/MacOS/Thrive";
     private const string AssumedSelfSignedCertificateName = "SelfSigned";
 
     public static async Task Strip(string file, CancellationToken cancellationToken)
@@ -196,6 +197,47 @@ public static class BinaryHelpers
         return true;
     }
 
+    public static async Task<bool> SignThriveAppMac(string folder, string basePathToThrive, string entitlements, 
+        string signingKey, CancellationToken cancellationToken)
+    {
+        var main = Path.Join(basePathToThrive, ThriveMacMainExecutable);
+
+        ColourConsole.WriteInfoLine("Signing all parts of the Mac build");
+        ColourConsole.WriteNormalLine("This may take a while as there are many items");
+
+        foreach (var item in Directory.EnumerateFiles(folder, "*.*", SearchOption.AllDirectories))
+        {
+            // Skip stuff that shouldn't be signed
+            // TODO: would it offer any extra security if the .pck file was signed as well?
+            if (item.EndsWith(".txt") || item.EndsWith(".pck") || item.EndsWith(".md") || item.EndsWith(".7z"))
+            {
+                continue;
+            }
+
+            // The main executable must be signed last
+            if (item.EndsWith(ThriveMacMainExecutable))
+                continue;
+
+            if (!await SignFileForMac(item, entitlements, signingKey, cancellationToken))
+            {
+                ColourConsole.WriteErrorLine($"Failed to sign part of Mac build: {item}");
+                return false;
+            }
+        }
+
+        ColourConsole.WriteSuccessLine("Successfully signed individual parts");
+
+        // Sign the main file last
+        if (!await SignFileForMac(main, entitlements, signingKey, cancellationToken))
+        {
+            ColourConsole.WriteErrorLine("Failed to sign main file of Mac build");
+            return false;
+        }
+
+        ColourConsole.WriteSuccessLine("Signed the main file");
+        return true;
+    }
+ 
     public static void AddCodesignName(ProcessStartInfo startInfo, string? signingCertificate)
     {
         if (!string.IsNullOrEmpty(signingCertificate))
@@ -302,4 +344,6 @@ public static class BinaryHelpers
 
         return notarizedZip;
     }
+
+
 }
