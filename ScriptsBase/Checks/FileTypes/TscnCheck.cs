@@ -15,6 +15,9 @@ public class TscnCheck : LineByLineFileChecker
     /// </summary>
     private const int SCENE_EMBEDDED_LENGTH_HEURISTIC = 920;
 
+    private const string SCENE_NODE_LIST_INDICATOR = "node_paths=PackedStringArray";
+    private const int SCENE_NODE_LIST_MAX_LENGTH = 5000;
+
     private const int NODE_NAME_UPPERCASE_REQUIRED_LENGTH = 25;
     private const int NODE_NAME_UPPERCASE_ACRONYM_ALLOWED_LENGTH = 4;
 
@@ -46,8 +49,20 @@ public class TscnCheck : LineByLineFileChecker
     {
         if (line.Length > SCENE_EMBEDDED_LENGTH_HEURISTIC)
         {
-            yield return FormatErrorLineHelper(lineNumber, "probably has an embedded resource. " +
-                $"Length {line.Length} is over heuristic value of {SCENE_EMBEDDED_LENGTH_HEURISTIC}");
+            // Allow export node lists to be longer for big scenes that need a ton of export variables
+            if (!line.Contains(SCENE_NODE_LIST_INDICATOR) || line.Length > SCENE_NODE_LIST_MAX_LENGTH)
+            {
+                if (line.Contains(SCENE_NODE_LIST_INDICATOR))
+                {
+                    yield return FormatErrorLineHelper(lineNumber, "has an unusual length. " +
+                        $"Length {line.Length} is over heuristic value of {SCENE_NODE_LIST_MAX_LENGTH}");
+                }
+                else
+                {
+                    yield return FormatErrorLineHelper(lineNumber, "probably has an embedded resource. " +
+                        $"Length {line.Length} is over heuristic value of {SCENE_EMBEDDED_LENGTH_HEURISTIC}");
+                }
+            }
         }
 
         if (EmbeddedFontSignature.IsMatch(line))
