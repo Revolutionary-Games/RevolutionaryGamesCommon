@@ -16,6 +16,7 @@ public static class Compression
 {
     public static string Get7Zip(bool log = true)
     {
+        // TODO: switch to 7zz on Linux
         string lookFor = "7za";
 
         if (OperatingSystem.IsWindows())
