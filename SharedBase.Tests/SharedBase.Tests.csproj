@@ -23,4 +23,8 @@
     <ProjectReference Include="..\SharedBase\SharedBase.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Archive.Tests\" />
+  </ItemGroup>
+
 </Project>
