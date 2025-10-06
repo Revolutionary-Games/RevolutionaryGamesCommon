@@ -9,6 +9,10 @@ using System.Runtime.CompilerServices;
 /// </summary>
 public abstract class SArchiveReaderBase : ISArchiveReader
 {
+    private const int BUFFER_SIZE = 1024;
+
+    private byte[]? scratch;
+
     protected SArchiveReaderBase(IArchiveReadManager readManager)
     {
         ReadManager = readManager;
@@ -98,6 +102,14 @@ public abstract class SArchiveReaderBase : ISArchiveReader
             throw new FormatException("Too long string");
 
         var lengthAsInt = (int)length;
+
+        if (lengthAsInt <= BUFFER_SIZE)
+        {
+            scratch ??= new byte[BUFFER_SIZE];
+
+            ReadBytes(scratch.AsSpan(0, lengthAsInt));
+            return ISArchiveWriter.Utf8NoSignature.GetString(scratch, 0, lengthAsInt);
+        }
 
         var pool = ArrayPool<byte>.Shared;
         byte[] buffer = pool.Rent(lengthAsInt);
