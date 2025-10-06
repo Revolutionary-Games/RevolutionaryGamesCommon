@@ -1,5 +1,6 @@
 namespace SharedBase.Tests.Archive.Tests;
 
+using System.IO;
 using SharedBase.Archive;
 using Xunit;
 
@@ -9,11 +10,13 @@ public class BasicArchiveTests
     public void BasicArchive_IntWritingAndReading()
     {
         var manager = new DefaultArchiveManager();
-        var archive = new SArchiveMemory(manager, manager);
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, manager);
+        var reader = new SArchiveMemoryReader(memoryStream, manager);
 
-        archive.Write(1);
+        writer.Write(1);
 
-        archive.Seek(0);
-        Assert.Equal(1, archive.ReadInt32());
+        memoryStream.Seek(0, SeekOrigin.Begin);
+        Assert.Equal(1, reader.ReadInt32());
     }
 }
