@@ -21,7 +21,7 @@ public interface ISArchiveWriter
     public void Write(uint value);
     public void Write(ulong value);
 
-    public void Write(string value);
+    public void Write(string? value);
 
     public void Write(byte[] value);
 
@@ -29,6 +29,8 @@ public interface ISArchiveWriter
 
     /// <summary>
     ///   Write a variable length field that is up to 5 bytes long. Only uses 1-5 bytes depending on the value size.
+    ///   This can write negative values, however, they always use the full 5 bytes,
+    ///   and casting back is done like this: <c>unchecked((int)result)</c>
     /// </summary>
     /// <param name="value">Value to write</param>
     public void WriteVariableLengthField32(uint value);

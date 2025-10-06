@@ -90,16 +90,19 @@ public abstract class SArchiveReaderBase : ISArchiveReader
         return BitConverter.Int64BitsToDouble(ReadInt64());
     }
 
-    public virtual string ReadString()
+    public virtual string? ReadString()
     {
         // First the length of the string
         var length = ReadVariableLengthField32();
 
+        // Check null marker first
+        if (length == 0)
+            return null;
+
+        length >>= 1;
+
         if (length == 0)
             return string.Empty;
-
-        if (length > int.MaxValue)
-            throw new FormatException("Too long string");
 
         var lengthAsInt = (int)length;
 
@@ -134,8 +137,15 @@ public abstract class SArchiveReaderBase : ISArchiveReader
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public byte[] ReadBytes(ulong length)
+    public byte[] ReadBytes(ulong length, bool temporaryBuffer = false)
     {
+        if (temporaryBuffer && length <= BUFFER_SIZE)
+        {
+            scratch ??= new byte[BUFFER_SIZE];
+            ReadBytes(scratch.AsSpan(0, (int)length));
+            return scratch;
+        }
+
         var buffer = new byte[length];
         ReadBytes(buffer);
         return buffer;

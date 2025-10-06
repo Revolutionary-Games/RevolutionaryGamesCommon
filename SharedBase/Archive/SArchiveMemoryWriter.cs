@@ -8,19 +8,24 @@ using System.IO;
 /// </summary>
 public class SArchiveMemoryWriter : SArchiveWriterBase, IDisposable
 {
+    private readonly bool closeStream;
     private readonly MemoryStream stream;
 
-    public SArchiveMemoryWriter(IArchiveWriteManager writeManager, int reserve = 0) : base(writeManager)
+    public SArchiveMemoryWriter(IArchiveWriteManager writeManager, int reserve = 0, bool closeStream = true) :
+        base(writeManager)
     {
+        this.closeStream = closeStream;
         stream = new MemoryStream();
 
         if (reserve > 0)
             stream.Capacity = reserve;
     }
 
-    public SArchiveMemoryWriter(MemoryStream stream, IArchiveWriteManager writeManager) : base(writeManager)
+    public SArchiveMemoryWriter(MemoryStream stream, IArchiveWriteManager writeManager, bool closeStream = true) :
+        base(writeManager)
     {
         this.stream = stream;
+        this.closeStream = closeStream;
     }
 
     public override void Write(byte value)
@@ -56,7 +61,8 @@ public class SArchiveMemoryWriter : SArchiveWriterBase, IDisposable
     {
         if (disposing)
         {
-            stream.Dispose();
+            if (closeStream)
+                stream.Dispose();
         }
     }
 }

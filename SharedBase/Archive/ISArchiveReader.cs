@@ -24,11 +24,28 @@ public interface ISArchiveReader
     public float ReadFloat();
     public double ReadDouble();
 
-    public string ReadString();
+    /// <summary>
+    ///   Reads a string from the archive.
+    ///   Returns null if the string was originally null.
+    ///   Returns an empty string if the original string was empty.
+    /// </summary>
+    /// <returns>String or null</returns>
+    public string? ReadString();
 
     public byte[] ReadBytes(int length);
 
-    public byte[] ReadBytes(ulong length);
+    /// <summary>
+    ///   Reads a sequence of bytes as an array.
+    /// </summary>
+    /// <param name="length">Length to read</param>
+    /// <param name="temporaryBuffer">
+    ///   If set to true, then an optimised scratch buffer can be used for small lengths. Note that in this case the
+    ///   returned buffer is only allowed to be used until the next archive call!
+    /// </param>
+    /// <returns>
+    ///   Buffer containing the read bytes of the given length (will throw if not enough data is available)
+    /// </returns>
+    public byte[] ReadBytes(ulong length, bool temporaryBuffer = false);
 
     /// <summary>
     ///   Reads bytes into the buffer. This is the preferred variant of reading multiple bytes at a time.

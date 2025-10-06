@@ -2,12 +2,18 @@ namespace SharedBase.Archive;
 
 using System;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 /// <summary>
 ///   Abstract base with common methods for archive writers
 /// </summary>
 public abstract class SArchiveWriterBase : ISArchiveWriter
 {
+    private const int BUFFER_SIZE = 1024;
+
+    private Encoder? textEncoder;
+    private byte[]? scratch;
+
     protected SArchiveWriterBase(IArchiveWriteManager writeManager)
     {
         WriteManager = writeManager;
@@ -87,19 +93,53 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
         Write((byte)(value >> 56));
     }
 
-    public void Write(string value)
+    public virtual void Write(string? value)
     {
-        if ((ulong)value.Length > uint.MaxValue)
+        if (value == null)
+        {
+            WriteVariableLengthField32(0);
+            return;
+        }
+
+        if ((ulong)value.Length > uint.MaxValue >> 1)
             throw new ArgumentException("String is too long");
 
-        WriteVariableLengthField32((uint)value.Length);
+        var converted = (uint)value.Length;
+
+        // The first bit is reserved for marking null strings. So for non-null it must be 1.
+        converted = (converted << 1) | 0x1;
+
+        WriteVariableLengthField32(converted);
 
         if (value.Length < 1)
             return;
 
-        // Write the data
-        foreach (var stringByte in ISArchiveWriter.Utf8NoSignature.GetBytes(value))
-            Write(stringByte);
+        textEncoder ??= ISArchiveWriter.Utf8NoSignature.GetEncoder();
+        var encoder = textEncoder;
+
+        scratch ??= new byte[BUFFER_SIZE];
+        Span<byte> buffer = scratch;
+
+        ReadOnlySpan<char> chars = value.AsSpan();
+
+        // Encode the string in parts to avoid allocating a large buffer
+        int charIndex = 0;
+        while (charIndex < chars.Length)
+        {
+            encoder.Convert(chars.Slice(charIndex), buffer,
+                false, out int charsUsed, out int bytesUsed, out _);
+
+            Write(buffer[..bytesUsed]);
+
+            charIndex += charsUsed;
+        }
+
+        // Flush any remaining data
+        encoder.Convert(ReadOnlySpan<char>.Empty, buffer,
+            true, out _, out int finalBytes, out _);
+
+        if (finalBytes > 0)
+            Write(buffer[..finalBytes]);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -148,6 +188,9 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
         {
             Write(version);
         }
+
+        // TODO: continue
+        throw new NotImplementedException();
     }
 
     public void WriteObject(IArchivable obj, bool canBeReference)

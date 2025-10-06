@@ -4,20 +4,19 @@ using System;
 using System.IO;
 
 /// <summary>
-///   Memory-buffer-based archive for reading
+///   Memory-buffer-based archive for reading. This is separate from <see cref="SArchiveReadStream"/> as this has
+///   some specific memory optimizations.
 /// </summary>
 public class SArchiveMemoryReader : SArchiveReaderBase, IDisposable
 {
     private readonly MemoryStream stream;
+    private readonly bool closeStream;
 
-    public SArchiveMemoryReader(IArchiveReadManager readManager) : base(readManager)
-    {
-        stream = new MemoryStream();
-    }
-
-    public SArchiveMemoryReader(MemoryStream stream, IArchiveReadManager readManager) : base(readManager)
+    public SArchiveMemoryReader(MemoryStream stream, IArchiveReadManager readManager, bool closeStream = true) :
+        base(readManager)
     {
         this.stream = stream;
+        this.closeStream = closeStream;
     }
 
     public override byte ReadInt8()
@@ -31,15 +30,17 @@ public class SArchiveMemoryReader : SArchiveReaderBase, IDisposable
             throw new EndOfStreamException();
     }
 
-    public override string ReadString()
+    public override string? ReadString()
     {
         var lengthRaw = ReadVariableLengthField32();
 
         if (lengthRaw == 0)
-            return string.Empty;
+            return null;
 
-        if (lengthRaw > int.MaxValue)
-            throw new FormatException("Too long string");
+        lengthRaw >>= 1;
+
+        if (lengthRaw == 0)
+            return string.Empty;
 
         int length = (int)lengthRaw;
 
@@ -68,7 +69,8 @@ public class SArchiveMemoryReader : SArchiveReaderBase, IDisposable
     {
         if (disposing)
         {
-            stream.Dispose();
+            if (closeStream)
+                stream.Dispose();
         }
     }
 }
