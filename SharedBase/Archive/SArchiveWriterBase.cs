@@ -17,6 +17,13 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
     protected SArchiveWriterBase(IArchiveWriteManager writeManager)
     {
         WriteManager = writeManager;
+
+#if DEBUG
+        if (!BitConverter.IsLittleEndian)
+        {
+            throw new PlatformNotSupportedException("This library supports only little-endian");
+        }
+#endif
     }
 
     public IArchiveWriteManager WriteManager { get; protected set; }
