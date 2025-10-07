@@ -63,4 +63,30 @@ public interface ISArchiveReader
     ///   reference ID and full version.
     /// </summary>
     public void ReadObjectHeader(out ArchiveObjectType type, out int referenceId, out bool isNull, out ushort version);
+
+    /// <summary>
+    ///   Reads an object from the archive. Must be called just after the header is read. Not suitable for structs.
+    /// </summary>
+    /// <typeparam name="T">
+    ///   Type to read. Note that the object is read as normal first and then tries to be cast to the wanted type.
+    /// </typeparam>
+    /// <returns>Read object or null if there was a null marker instead</returns>
+    public T? ReadObject<T>();
+
+    /// <summary>
+    ///   Reads an object / struct from the archive.
+    /// </summary>
+    /// <param name="obj">Where to place the read object</param>
+    /// <typeparam name="T">Type of the object to read</typeparam>
+    public void ReadObject<T>(ref T obj)
+        where T : IArchivable;
+
+    /// <summary>
+    ///   Read properties of an object that was saved with <see cref="ISArchiveWriter.WriteObjectProperties{T}"/>
+    /// </summary>
+    /// <param name="obj">Object to update</param>
+    /// <typeparam name="T">Type of the object</typeparam>
+    /// <returns>True if properties were read</returns>
+    public bool ReadObjectProperties<T>(ref T obj)
+        where T : IArchiveUpdatable;
 }

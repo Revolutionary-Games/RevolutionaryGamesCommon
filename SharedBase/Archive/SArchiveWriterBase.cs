@@ -223,16 +223,28 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
         obj.WriteToArchive(this);
     }
 
+    public void WriteObject<T>(ref T obj)
+        where T : struct, IArchivable
+    {
+        WriteObjectHeader(obj.ArchiveObjectType, false, false, obj.CurrentArchiveVersion);
+
+        // Header handled, let the object handle saving its data
+        obj.WriteToArchive(this);
+    }
+
+    public void WriteObjectProperties<T>(ref T obj)
+        where T : IArchiveUpdatable
+    {
+        WriteObjectHeader(obj.ArchiveObjectType, false, false, obj.CurrentArchiveVersion);
+
+        obj.WritePropertiesToArchive(this);
+    }
+
     public void WriteNullObject()
     {
         WriteObjectHeader(ArchiveObjectType.Null, false, true, 1);
 
         // Nulls do not have a reference placeholder, even if they can be otherwise references
-    }
-
-    public void WriteStructHeader(ArchiveObjectType type, ushort version)
-    {
-        WriteObjectHeader(type, false, false, version);
     }
 
     public abstract long GetPosition();

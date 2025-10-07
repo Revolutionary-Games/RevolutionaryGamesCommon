@@ -194,6 +194,50 @@ public abstract class SArchiveReaderBase : ISArchiveReader
         }
     }
 
+    public T? ReadObject<T>()
+    {
+        // TODO: should this verify something more?
+        return (T?)ReadObjectLowLevel();
+    }
+
+    public void ReadObject<T>(ref T obj)
+        where T : IArchivable
+    {
+        ReadObjectHeader(out var type, out var id, out var isNull, out var version);
+
+        if (isNull)
+        {
+            throw new FormatException("Encountered null object when reading something that cannot be null");
+        }
+
+        // TODO: determine what to do with the ID, probably should be allowed if using class type here?
+
+        throw new NotImplementedException();
+    }
+
+    public bool ReadObjectProperties<T>(ref T obj)
+        where T : IArchiveUpdatable
+    {
+        ReadObjectHeader(out var type, out var id, out var isNull, out var version);
+
+        if (isNull)
+        {
+            // Theoretically, someone might want to optionally read properties of an object that may have been null
+            // when saved, so we don't throw an error here
+            return false;
+        }
+
+        if (id > 0)
+            throw new FormatException("Cannot read properties of an object that was written as a reference");
+
+        // TODO: support for derived class reading here?
+        if (obj.ArchiveObjectType != type)
+            throw new FormatException($"Cannot read properties of an object ({obj.ArchiveObjectType}) from {type}");
+
+        obj.ReadPropertiesFromArchive(this, version);
+        return true;
+    }
+
     public object? ReadObjectLowLevel()
     {
         ReadObjectHeader(out var type, out var id, out var isNull, out var version);

@@ -49,13 +49,32 @@ public interface ISArchiveWriter
     /// <param name="version">Version of the object. Must be at least 1.</param>
     public void WriteObjectHeader(ArchiveObjectType type, bool canBeReference, bool isNull, ushort version);
 
+    /// <summary>
+    ///   Writes an object. This will write the object header and the object data. Don't use this on structs as this
+    ///   will box them.
+    /// </summary>
+    /// <param name="obj">Object to write. If null use <see cref="WriteNullObject"/></param>
     public void WriteObject(IArchivable obj);
-    public void WriteNullObject();
 
     /// <summary>
-    ///   Helper for writing the object header for a struct / value type
+    ///   Writing variant that doesn't box value types like structs and cannot be a reference inside the
+    ///   archive, but otherwise works the same as the above WriteObject.
     /// </summary>
-    public void WriteStructHeader(ArchiveObjectType type, ushort version);
+    public void WriteObject<T>(ref T obj)
+        where T : struct, IArchivable;
+
+    /// <summary>
+    ///   Writes the properties of an object rather than the entire object itself.
+    /// </summary>
+    /// <param name="obj">Object that can write its properties</param>
+    /// <typeparam name="T">Type of the object to write</typeparam>
+    public void WriteObjectProperties<T>(ref T obj)
+        where T : IArchiveUpdatable;
+
+    /// <summary>
+    ///   Writes the object header and then a null value.
+    /// </summary>
+    public void WriteNullObject();
 
     public long GetPosition();
     public void Seek(long position);
