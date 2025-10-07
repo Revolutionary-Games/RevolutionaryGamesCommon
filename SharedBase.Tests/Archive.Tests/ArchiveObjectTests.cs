@@ -146,6 +146,103 @@ public class ArchiveObjectTests
         Assert.NotEqual(testObject.Value4, read.Value4);
     }
 
+    [Fact]
+    public void ArchiveObject_SerializeStruct()
+    {
+        var manager = new DefaultArchiveManager(false);
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, manager);
+        var reader = new SArchiveMemoryReader(memoryStream, manager);
+
+        var testObject = new TestObject4
+        {
+            Value1 = 1,
+            Value2 = 2,
+            Value3 = "hello, this is a much longer test string",
+            Value4 = true,
+        };
+
+        writer.WriteObject(ref testObject);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        TestObject4 read = default;
+
+        reader.ReadObject(ref read);
+
+        Assert.Equal(testObject, read);
+
+        var defaultData = default(TestObject4);
+        Assert.NotEqual(defaultData, read);
+    }
+
+    private struct TestObject3 : IArchiveUpdatable
+    {
+        public const ushort SERIALIZATION_VERSION = 1;
+
+        public float Value1;
+        public int Value2;
+        public string? Value3;
+
+        // Not saved
+        public bool Value4;
+
+        public ushort CurrentArchiveVersion => SERIALIZATION_VERSION;
+        public ArchiveObjectType ArchiveObjectType => ArchiveObjectType.TestObjectType1;
+
+        public void WritePropertiesToArchive(ISArchiveWriter writer)
+        {
+            writer.Write(Value1);
+            writer.Write(Value2);
+            writer.Write(Value3);
+
+            // Intentionally, this shows off not writing the last value
+        }
+
+        public void ReadPropertiesFromArchive(ISArchiveReader reader, ushort version)
+        {
+            if (version is > SERIALIZATION_VERSION or <= 0)
+                throw new InvalidArchiveVersionException(version, SERIALIZATION_VERSION);
+
+            Value1 = reader.ReadFloat();
+            Value2 = reader.ReadInt32();
+            Value3 = reader.ReadString();
+        }
+    }
+
+    private struct TestObject4 : IArchiveReadableVariable
+    {
+        public const ushort SERIALIZATION_VERSION = 1;
+
+        public float Value1;
+        public int Value2;
+        public string? Value3;
+        public bool Value4;
+
+        public ushort CurrentArchiveVersion => SERIALIZATION_VERSION;
+        public ArchiveObjectType ArchiveObjectType => ArchiveObjectType.TestObjectType1;
+        public bool CanBeReferencedInArchive => false;
+
+        public void WriteToArchive(ISArchiveWriter writer)
+        {
+            writer.Write(Value1);
+            writer.Write(Value2);
+            writer.Write(Value3);
+            writer.Write(Value4);
+        }
+
+        public void ReadFromArchive(ISArchiveReader reader, ushort version)
+        {
+            if (version is > SERIALIZATION_VERSION or <= 0)
+                throw new InvalidArchiveVersionException(version, SERIALIZATION_VERSION);
+
+            Value1 = reader.ReadFloat();
+            Value2 = reader.ReadInt32();
+            Value3 = reader.ReadString();
+            Value4 = reader.ReadBool();
+        }
+    }
+
     private class TestObject1 : IArchivable
     {
         public const ushort SERIALIZATION_VERSION = 1;
@@ -240,40 +337,6 @@ public class ArchiveObjectTests
             };
 
             return instance;
-        }
-    }
-
-    private struct TestObject3 : IArchiveUpdatable
-    {
-        public const ushort SERIALIZATION_VERSION = 1;
-
-        public float Value1;
-        public int Value2;
-        public string? Value3;
-
-        // Not saved
-        public bool Value4;
-
-        public ushort CurrentArchiveVersion => SERIALIZATION_VERSION;
-        public ArchiveObjectType ArchiveObjectType => ArchiveObjectType.TestObjectType1;
-
-        public void WritePropertiesToArchive(ISArchiveWriter writer)
-        {
-            writer.Write(Value1);
-            writer.Write(Value2);
-            writer.Write(Value3);
-
-            // Intentionally, this shows off not writing the last value
-        }
-
-        public void ReadPropertiesFromArchive(ISArchiveReader reader, ushort version)
-        {
-            if (version is > SERIALIZATION_VERSION or <= 0)
-                throw new InvalidArchiveVersionException(version, SERIALIZATION_VERSION);
-
-            Value1 = reader.ReadFloat();
-            Value2 = reader.ReadInt32();
-            Value3 = reader.ReadString();
         }
     }
 }

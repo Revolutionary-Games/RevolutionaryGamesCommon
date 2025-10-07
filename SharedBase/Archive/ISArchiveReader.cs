@@ -1,8 +1,6 @@
 ﻿namespace SharedBase.Archive;
 
 using System;
-using System.Buffers;
-using System.Runtime.CompilerServices;
 
 public interface ISArchiveReader
 {
@@ -79,7 +77,7 @@ public interface ISArchiveReader
     /// <param name="obj">Where to place the read object</param>
     /// <typeparam name="T">Type of the object to read</typeparam>
     public void ReadObject<T>(ref T obj)
-        where T : IArchivable;
+        where T : IArchiveReadableVariable;
 
     /// <summary>
     ///   Read properties of an object that was saved with <see cref="ISArchiveWriter.WriteObjectProperties{T}"/>

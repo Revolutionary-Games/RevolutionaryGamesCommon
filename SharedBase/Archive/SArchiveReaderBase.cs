@@ -201,7 +201,7 @@ public abstract class SArchiveReaderBase : ISArchiveReader
     }
 
     public void ReadObject<T>(ref T obj)
-        where T : IArchivable
+        where T : IArchiveReadableVariable
     {
         ReadObjectHeader(out var type, out var id, out var isNull, out var version);
 
@@ -210,9 +210,33 @@ public abstract class SArchiveReaderBase : ISArchiveReader
             throw new FormatException("Encountered null object when reading something that cannot be null");
         }
 
-        // TODO: determine what to do with the ID, probably should be allowed if using class type here?
+        // As this can be used with classes, we do support reference IDs
+        if (id > 0)
+        {
+            // If T is struct here, this will cause boxing
+#if DEBUG
+            if (typeof(T).IsValueType)
+            {
+                throw new Exception(
+                    "Causing boxing with incorrect archive reader usage (struct is marked as allowing references)");
+            }
+#endif
 
-        throw new NotImplementedException();
+            if (ReadManager.TryGetAlreadyReadObject(id, out var alreadyReadObject))
+            {
+                obj = (T)alreadyReadObject;
+                return;
+            }
+        }
+
+        ReadManager.ReadObjectToVariable(ref obj, this, type, version);
+
+        if (id > 0)
+        {
+            // Need to remember the object
+            if (!ReadManager.RememberObject(obj, id))
+                throw new FormatException($"Multiple objects with same ID: {id}");
+        }
     }
 
     public bool ReadObjectProperties<T>(ref T obj)

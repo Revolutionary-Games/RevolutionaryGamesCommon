@@ -13,9 +13,6 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
     private readonly Dictionary<ArchiveObjectType, IArchiveWriteManager.ArchiveObjectDelegate> writeDelegates = new();
     private readonly Dictionary<ArchiveObjectType, IArchiveReadManager.RestoreObjectDelegate> readDelegates = new();
 
-    // TODO: determine how to support this well
-    // private readonly Dictionary<ArchiveObjectType, IArchiveReadManager.ReadStructDelegate<object>> structReadDelegates = new();
-
     // Object reference handling
     private readonly Dictionary<object, long> objectIdPositions = new();
     private readonly Dictionary<object, int> objectIds = new();
@@ -133,6 +130,16 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
             throw new FormatException($"Unsupported object type for reading: {type}");
 
         return readDelegate(reader, version);
+    }
+
+    public void ReadObjectToVariable<T>(ref T receiver, ISArchiveReader reader, ArchiveObjectType type, ushort version)
+        where T : IArchiveReadableVariable
+    {
+        // TODO: support derived types
+        if (receiver.ArchiveObjectType != type)
+            throw new FormatException($"Object type mismatch: expected {receiver.ArchiveObjectType}, got {type}");
+
+        receiver.ReadFromArchive(reader, version);
     }
 
     public bool RememberObject(object obj, int id)

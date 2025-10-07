@@ -9,7 +9,8 @@ public interface IArchiveReadManager
 {
     public delegate object RestoreObjectDelegate(ISArchiveReader reader, ushort version);
 
-    public delegate void ReadStructDelegate<T>(ISArchiveReader reader, ArchiveObjectType type, ref T obj, ushort version);
+    public delegate void ReadStructDelegate<T>(ISArchiveReader reader, ArchiveObjectType type, ref T obj,
+        ushort version);
 
     public static void RegisterDefaultObjectReaders(IArchiveReadManager manager)
     {
@@ -44,6 +45,9 @@ public interface IArchiveReadManager
     /// <param name="version">Version of the object from the header info</param>
     /// <returns>The read object (throws on failure)</returns>
     public object ReadObject(ISArchiveReader reader, ArchiveObjectType type, ushort version);
+
+    public void ReadObjectToVariable<T>(ref T receiver, ISArchiveReader reader, ArchiveObjectType type, ushort version)
+        where T : IArchiveReadableVariable;
 
     /// <summary>
     ///   Remembers an object for <see cref="TryGetAlreadyReadObject"/>
