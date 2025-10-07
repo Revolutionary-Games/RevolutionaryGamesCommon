@@ -11,6 +11,11 @@ public interface ISArchiveReader
 
     public byte ReadInt8();
 
+    public bool ReadBool()
+    {
+        return ReadInt8() != 0;
+    }
+
     public ushort ReadUInt16();
     public uint ReadUInt32();
     public ulong ReadUInt64();
@@ -52,4 +57,10 @@ public interface ISArchiveReader
     /// </summary>
     /// <param name="buffer">Result. Should have the desired size.</param>
     public void ReadBytes(Span<byte> buffer);
+
+    /// <summary>
+    ///   Reads the header of an object from the archive at the current position. Decodes the extra header parts like
+    ///   reference ID and full version.
+    /// </summary>
+    public void ReadObjectHeader(out ArchiveObjectType type, out int referenceId, out bool isNull, out ushort version);
 }

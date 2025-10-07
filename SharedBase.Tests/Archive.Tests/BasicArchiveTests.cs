@@ -256,4 +256,53 @@ public class BasicArchiveTests
 
         Assert.Equal(data, memoryStream.ToArray());
     }
+
+    [Theory]
+    [InlineData(ArchiveObjectType.Byte, true, false, 1)]
+    [InlineData(ArchiveObjectType.Int64, true, false, 3)]
+    [InlineData(ArchiveObjectType.StartOfCustomTypes, true, false, 320)]
+    [InlineData(ArchiveObjectType.LastValidObjectType, true, false, 1)]
+    [InlineData(ArchiveObjectType.Byte, false, false, 1)]
+    [InlineData(ArchiveObjectType.Byte, false, true, 320)]
+    [InlineData(ArchiveObjectType.Byte, true, true, 320)]
+    [InlineData(ArchiveObjectType.Byte, true, true, 1)]
+    [InlineData(ArchiveObjectType.Dictionary, true, false, ushort.MaxValue)]
+    public void BasicArchive_HeaderWritingAndReading(ArchiveObjectType type, bool canBeReference, bool isNull,
+        ushort version)
+    {
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, sharedManager);
+        var reader = new SArchiveMemoryReader(memoryStream, sharedManager);
+
+        writer.WriteObjectHeader(type, canBeReference, isNull, version);
+
+        // Write placeholder object reference id as the plain header write doesn't write it.
+        if (canBeReference && !isNull)
+            writer.Write(0);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+        reader.ReadObjectHeader(out var readType, out var referenceId, out var readIsNull, out var readVersion);
+
+        Assert.Equal(type, readType);
+
+        if (canBeReference && !isNull)
+        {
+            Assert.Equal(0, referenceId);
+        }
+        else
+        {
+            Assert.Equal(-1, referenceId);
+        }
+
+        Assert.Equal(isNull, readIsNull);
+
+        if (!isNull)
+        {
+            Assert.Equal(version, readVersion);
+        }
+        else
+        {
+            Assert.Equal(0, readVersion);
+        }
+    }
 }

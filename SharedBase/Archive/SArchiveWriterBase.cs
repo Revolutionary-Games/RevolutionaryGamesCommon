@@ -176,9 +176,9 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
         Write((byte)value);
     }
 
-    public void WriteObjectHeader(ArchiveObjectType type, bool canBeReference, ushort version)
+    public void WriteObjectHeader(ArchiveObjectType type, bool canBeReference, bool isNull, ushort version)
     {
-        if (type >= ArchiveObjectType.LastValidObjectType)
+        if (type > ArchiveObjectType.LastValidObjectType)
             throw new ArgumentException("Invalid object type (value too high)");
 
         if (version <= 0)
@@ -188,21 +188,21 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
 
         // The object type takes at most 24 bits, so we have 8 bits for flags at the start
         // If the version takes more than 4 bits, we write a separate field for it
-        uint archiveValue = (uint)type << 24 | (uint)(canBeReference ? 0x1 : 0) | (uint)(version & 0x7 << 4) |
-            (uint)(versionIsLong ? 0x8 : 0);
+        uint archiveValue = (uint)type << 8 | (uint)(canBeReference ? 0x1 : 0) | (uint)(isNull ? 0x2 : 0) |
+            (uint)((version & 0x7) << 4) | (uint)(versionIsLong ? 0x80 : 0);
 
-        if (versionIsLong)
+        Write(archiveValue);
+
+        if (versionIsLong && !isNull)
         {
             Write(version);
         }
-
-        // TODO: continue
-        throw new NotImplementedException();
     }
 
-    public void WriteObject(IArchivable obj, bool canBeReference)
+    public void WriteObject(IArchivable obj)
     {
-        WriteObjectHeader(obj.ArchiveObjectType, canBeReference, obj.CurrentArchiveVersion);
+        bool canBeReference = obj.CanBeReferencedInArchive;
+        WriteObjectHeader(obj.ArchiveObjectType, canBeReference, false, obj.CurrentArchiveVersion);
 
         // If the object can be a reference, we write a placeholder for it, if it stays all 0, then it was not actually
         // referenced
@@ -222,9 +222,16 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
         obj.WriteToArchive(this);
     }
 
+    public void WriteNullObject()
+    {
+        WriteObjectHeader(ArchiveObjectType.Null, false, true, 1);
+
+        // Nulls do not have a reference placeholder, even if they can be otherwise references
+    }
+
     public void WriteStructHeader(ArchiveObjectType type, ushort version)
     {
-        WriteObjectHeader(type, false, version);
+        WriteObjectHeader(type, false, false, version);
     }
 
     public abstract long GetPosition();

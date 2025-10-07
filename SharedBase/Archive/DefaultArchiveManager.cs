@@ -75,6 +75,9 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
                 objectIds[obj] = id;
             }
 
+            // But write the ID that will be used instead of this object
+            writer.Write(id);
+
             return true;
         }
 

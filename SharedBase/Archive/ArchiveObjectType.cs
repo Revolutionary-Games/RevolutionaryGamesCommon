@@ -8,6 +8,7 @@ public enum ArchiveObjectType : uint
 {
     Invalid = 0,
 
+    Null,
     Byte,
     Int16,
     Int32,
@@ -27,6 +28,10 @@ public enum ArchiveObjectType : uint
     Array,
     Dictionary,
 
+    // Used in testing
+    TestObjectType1 = 4095,
+
+    // Extended archive types for custom projects need to be defined after this value
     StartOfCustomTypes = 4096,
 
     LastValidObjectType = uint.MaxValue & 0xFFFFFF,

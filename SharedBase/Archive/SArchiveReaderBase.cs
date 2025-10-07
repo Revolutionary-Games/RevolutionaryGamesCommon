@@ -152,4 +152,45 @@ public abstract class SArchiveReaderBase : ISArchiveReader
     }
 
     public abstract void ReadBytes(Span<byte> buffer);
+
+    public void ReadObjectHeader(out ArchiveObjectType type, out int referenceId, out bool isNull, out ushort version)
+    {
+        // Read the header and decode the bits
+        var rawData = ReadUInt32();
+
+        type = (ArchiveObjectType)(rawData >> 8);
+
+        var versionRaw = (rawData >> 4) & 0xF;
+        var versionIsLong = (versionRaw & 0x8) != 0;
+
+        version = (ushort)(versionRaw & 0x7);
+
+        bool canBeReference = (rawData & 0x1) != 0;
+        isNull = (rawData & 0x2) != 0;
+
+        // Read the extra fields if present
+        if (!isNull)
+        {
+            if (versionIsLong)
+            {
+                version = ReadUInt16();
+            }
+
+            if (version == 0)
+                throw new FormatException("Version of object should never be 0 when data is present");
+        }
+        else
+        {
+            version = 0;
+        }
+
+        if (canBeReference && !isNull)
+        {
+            referenceId = ReadInt32();
+        }
+        else
+        {
+            referenceId = -1;
+        }
+    }
 }

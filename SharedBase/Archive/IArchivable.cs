@@ -7,6 +7,7 @@ public interface IArchivable
 {
     public ushort CurrentArchiveVersion { get; }
     public ArchiveObjectType ArchiveObjectType { get; }
+    public bool CanBeReferencedInArchive { get; }
 
     public void WriteToArchive(ISArchiveWriter writer);
 }
