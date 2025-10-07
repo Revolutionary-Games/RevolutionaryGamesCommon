@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 /// <summary>
 ///   Default implementation of the archive manager that handles both reading and writing.
@@ -22,7 +23,7 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
     /// <summary>
     ///   Used on a load to know what objects are loaded
     /// </summary>
-    private readonly Dictionary<long, object> loadedObjectReferences = new();
+    private readonly Dictionary<int, object> loadedObjectReferences = new();
 
     private int nextObjectId;
 
@@ -52,7 +53,6 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
                 throw new InvalidOperationException($"Cannot find position for an object reference {id}");
             }
         }
-
 
         objectIdPositions.Clear();
         objectIds.Clear();
@@ -114,5 +114,23 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
     public void OnFinishRead(ISArchiveWriter writer)
     {
         loadedObjectReferences.Clear();
+    }
+
+    public bool TryGetAlreadyReadObject(int referenceId, [NotNullWhen(true)] out object? obj)
+    {
+        return loadedObjectReferences.TryGetValue(referenceId, out obj);
+    }
+
+    public object ReadObject(ISArchiveReader reader, ArchiveObjectType type, ushort version)
+    {
+        if (!readDelegates.TryGetValue(type, out var readDelegate))
+            throw new FormatException($"Unsupported object type for reading: {type}");
+
+        return readDelegate(reader, version);
+    }
+
+    public bool RememberObject(object obj, int id)
+    {
+        return loadedObjectReferences.TryAdd(id, obj);
     }
 }

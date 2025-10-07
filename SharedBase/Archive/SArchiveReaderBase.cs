@@ -193,4 +193,31 @@ public abstract class SArchiveReaderBase : ISArchiveReader
             referenceId = -1;
         }
     }
+
+    public object? ReadObjectLowLevel()
+    {
+        ReadObjectHeader(out var type, out var id, out var isNull, out var version);
+
+        if (isNull)
+        {
+            // Read a null object, no further data
+            return null;
+        }
+
+        // Return an already read object if we have it
+        if (id > 0 && ReadManager.TryGetAlreadyReadObject(id, out var alreadyReadObject))
+            return alreadyReadObject;
+
+        // And if not, we need to deserialize an object. For this we must rely on the read manager's mapping.
+        var read = ReadManager.ReadObject(this, type, version);
+
+        if (id > 0)
+        {
+            // Need to remember the object
+            if (!ReadManager.RememberObject(read, id))
+                throw new FormatException($"Multiple objects with same ID: {id}");
+        }
+
+        return read;
+    }
 }

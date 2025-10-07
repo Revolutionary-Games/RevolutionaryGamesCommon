@@ -7,12 +7,12 @@ using Xunit;
 
 public class BasicArchiveTests
 {
-    private readonly DefaultArchiveManager sharedManager = new();
+    private readonly DefaultArchiveManager sharedManager = new(false);
 
     [Fact]
     public void BasicArchive_IntWritingAndReading()
     {
-        var manager = new DefaultArchiveManager();
+        var manager = new DefaultArchiveManager(false);
         var memoryStream = new MemoryStream();
         var writer = new SArchiveMemoryWriter(memoryStream, manager);
         var reader = new SArchiveMemoryReader(memoryStream, manager);
@@ -57,7 +57,7 @@ public class BasicArchiveTests
     [Fact]
     public void BasicArchive_UIntWritingAndReading()
     {
-        var manager = new DefaultArchiveManager();
+        var manager = new DefaultArchiveManager(false);
         var memoryStream = new MemoryStream();
         var writer = new SArchiveMemoryWriter(memoryStream, manager);
         var reader = new SArchiveMemoryReader(memoryStream, manager);
@@ -93,7 +93,7 @@ public class BasicArchiveTests
     [Fact]
     public void BasicArchive_FloatWritingAndReading()
     {
-        var manager = new DefaultArchiveManager();
+        var manager = new DefaultArchiveManager(false);
         var memoryStream = new MemoryStream();
         var writer = new SArchiveMemoryWriter(memoryStream, manager);
         var reader = new SArchiveMemoryReader(memoryStream, manager);
