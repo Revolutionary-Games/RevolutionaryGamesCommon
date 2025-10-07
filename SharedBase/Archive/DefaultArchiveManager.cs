@@ -62,6 +62,12 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
     {
         if (objectIdPositions.TryGetValue(obj, out _))
         {
+            if (nextObjectId == 0)
+            {
+                throw new InvalidOperationException(
+                    "Archive manager has not been initialized! Make sure start / end calls are done");
+            }
+
             // Already using an existing position
 
             // Need to reserve an ID if not already (as this is the second or further use that refers back to the

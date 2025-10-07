@@ -210,7 +210,8 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
         {
             if (WriteManager.MarkStartOfReferenceObject(this, obj))
             {
-                // Object was already written, so we don't need to write it again
+                // Object was already written, so we don't need to write it again, and the manager already put the ID
+                // here, so we don't even need to write that
                 return;
             }
 
