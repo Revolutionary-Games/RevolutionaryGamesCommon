@@ -108,7 +108,7 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
 
     public bool IsReferencedAlready(object obj)
     {
-        return objectIds.ContainsKey(obj);
+        return objectIdPositions.ContainsKey(obj);
     }
 
     public void RegisterObjectType(ArchiveObjectType type, bool canBeReference,
