@@ -609,14 +609,15 @@ public abstract class SArchiveReaderBase : ISArchiveReader
         if (id > 0)
         {
             // Remove the ID if it was not used by ReportObjectConstructorDone
-            if (processingObjectIds != null && processingObjectIds.Peek() == id)
+            // Otherwise it is already remembered
+            if (processingObjectIds is { Count: > 0 } && processingObjectIds.Peek() == id)
             {
                 processingObjectIds.Pop();
-            }
 
-            // Need to remember the object
-            if (!ReadManager.RememberObject(read, id))
-                throw new FormatException($"Multiple objects with same ID: {id}");
+                // Need to remember the object
+                if (!ReadManager.RememberObject(read, id))
+                    throw new FormatException($"Multiple objects with same ID: {id}");
+            }
         }
 
         return read;
