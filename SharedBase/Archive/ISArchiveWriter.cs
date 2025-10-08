@@ -41,14 +41,20 @@ public interface ISArchiveWriter
     public void WriteVariableLengthField32(uint value);
 
     /// <summary>
-    ///   Writes an object header. Writes extra fields like the full version BUT DOES NOT WRITE THE REFERENCE or the object
-    ///   data.
+    ///   Writes an object header. Writes extra fields like the full version BUT DOES NOT WRITE THE REFERENCE or the
+    ///   object data.
     /// </summary>
     /// <param name="type">Type of the object</param>
     /// <param name="canBeReference">True if the object uses archive object references</param>
     /// <param name="isNull">True if the object instance is null (this prevents full version writing)</param>
+    /// <param name="usesExistingReference">
+    ///   If true and <see cref="canBeReference"/> then marks that there should be a valid object reference back to
+    ///   an earlier object after this header.
+    ///   This is used for programming error detection when things are misconfigured.
+    /// </param>
     /// <param name="version">Version of the object. Must be at least 1.</param>
-    public void WriteObjectHeader(ArchiveObjectType type, bool canBeReference, bool isNull, ushort version);
+    public void WriteObjectHeader(ArchiveObjectType type, bool canBeReference, bool isNull, bool usesExistingReference,
+        ushort version);
 
     /// <summary>
     ///   Writes an object. This will write the object header and the object data. Don't use this on structs as this

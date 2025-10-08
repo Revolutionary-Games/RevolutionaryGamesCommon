@@ -97,6 +97,11 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
         return false;
     }
 
+    public bool IsReferencedAlready(object obj)
+    {
+        return objectIds.ContainsKey(obj);
+    }
+
     public void RegisterObjectType(ArchiveObjectType type, bool canBeReference,
         IArchiveWriteManager.ArchiveObjectDelegate writeDelegate)
     {

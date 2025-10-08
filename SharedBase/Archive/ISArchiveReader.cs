@@ -58,9 +58,10 @@ public interface ISArchiveReader
 
     /// <summary>
     ///   Reads the header of an object from the archive at the current position. Decodes the extra header parts like
-    ///   reference ID and full version.
+    ///   reference ID and full version. For what the fields mean <see cref="ISArchiveWriter.WriteObjectHeader"/>.
     /// </summary>
-    public void ReadObjectHeader(out ArchiveObjectType type, out int referenceId, out bool isNull, out ushort version);
+    public void ReadObjectHeader(out ArchiveObjectType type, out int referenceId, out bool isNull,
+        out bool referencesEarlier, out ushort version);
 
     /// <summary>
     ///   Reads an object from the archive. Must be called just after the header is read. Not suitable for structs.
@@ -117,7 +118,8 @@ public interface ISArchiveReader
     public object ReadTupleBoxed(ushort version);
 
     /// <summary>
-    ///   Used to support objects referring to their ancestors
+    ///   Used to support objects referring to their ancestors.
+    ///   Absolutely do not call if the object is not marked as an allowed reference!
     /// </summary>
     public void ReportObjectConstructorDone(object currentlyDeserializingObject);
 

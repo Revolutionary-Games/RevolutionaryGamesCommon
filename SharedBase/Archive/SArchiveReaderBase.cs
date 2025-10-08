@@ -156,7 +156,8 @@ public abstract class SArchiveReaderBase : ISArchiveReader
 
     public abstract void ReadBytes(Span<byte> buffer);
 
-    public void ReadObjectHeader(out ArchiveObjectType type, out int referenceId, out bool isNull, out ushort version)
+    public void ReadObjectHeader(out ArchiveObjectType type, out int referenceId, out bool isNull,
+        out bool referencesEarlier, out ushort version)
     {
         // Read the header and decode the bits
         var rawData = ReadUInt32();
@@ -170,6 +171,13 @@ public abstract class SArchiveReaderBase : ISArchiveReader
 
         bool canBeReference = (rawData & 0x1) != 0;
         isNull = (rawData & 0x2) != 0;
+        referencesEarlier = (rawData & 0x4) != 0;
+
+        if (!canBeReference && referencesEarlier)
+        {
+            throw new FormatException(
+                "Object that cannot be a reference cannot be marked as referencing a previous instance");
+        }
 
         // Read the extra fields if present
         if (!isNull)
@@ -219,7 +227,7 @@ public abstract class SArchiveReaderBase : ISArchiveReader
 
     public void ReadAnyStruct<T>(ref T receiver)
     {
-        ReadObjectHeader(out var type, out var id, out var isNull, out var version);
+        ReadObjectHeader(out var type, out var id, out var isNull, out var references, out var version);
 
         if (isNull)
         {
@@ -228,7 +236,7 @@ public abstract class SArchiveReaderBase : ISArchiveReader
         }
 
 #if DEBUG
-        if (id > 0)
+        if (id > 0 || references)
         {
             throw new FormatException("Reading an archive object as a struct that has references marked for it");
         }
@@ -424,7 +432,7 @@ public abstract class SArchiveReaderBase : ISArchiveReader
     public void ReadObject<T>(ref T obj)
         where T : IArchiveReadableVariable
     {
-        ReadObjectHeader(out var type, out var id, out var isNull, out var version);
+        ReadObjectHeader(out var type, out var id, out var isNull, out var references, out var version);
 
         if (isNull)
         {
@@ -432,7 +440,7 @@ public abstract class SArchiveReaderBase : ISArchiveReader
         }
 
         // As this can be used with classes, we do support reference IDs
-        if (id > 0)
+        if (id > 0 || references)
         {
             // If T is struct here, this will cause boxing
 #if DEBUG
@@ -447,6 +455,12 @@ public abstract class SArchiveReaderBase : ISArchiveReader
             {
                 obj = (T)alreadyReadObject;
                 return;
+            }
+
+            if (references)
+            {
+                throw new FormatException("Object was marked as referencing something earlier in the archive. " +
+                    "But it was not found. This is either corruption of the file or a bug in the saving code");
             }
         }
 
@@ -463,7 +477,7 @@ public abstract class SArchiveReaderBase : ISArchiveReader
     public bool ReadObjectProperties<T>(ref T obj)
         where T : IArchiveUpdatable
     {
-        ReadObjectHeader(out var type, out var id, out var isNull, out var version);
+        ReadObjectHeader(out var type, out var id, out var isNull, out var references, out var version);
 
         if (isNull)
         {
@@ -472,7 +486,7 @@ public abstract class SArchiveReaderBase : ISArchiveReader
             return false;
         }
 
-        if (id > 0)
+        if (id > 0 || references)
             throw new FormatException("Cannot read properties of an object that was written as a reference");
 
         // TODO: support for derived class reading here?
@@ -490,7 +504,7 @@ public abstract class SArchiveReaderBase : ISArchiveReader
 
     public object? ReadObjectLowLevel(out ArchiveObjectType archiveObjectType)
     {
-        ReadObjectHeader(out archiveObjectType, out var id, out var isNull, out var version);
+        ReadObjectHeader(out archiveObjectType, out var id, out var isNull, out var references, out var version);
 
         if (isNull)
         {
@@ -499,8 +513,25 @@ public abstract class SArchiveReaderBase : ISArchiveReader
         }
 
         // Return an already read object if we have it
+        if (references)
+        {
+            if (id < 1)
+            {
+                throw new FormatException(
+                    "Reference ID cannot be less than 1, but object marked as referencing something");
+            }
+
+            if (ReadManager.TryGetAlreadyReadObject(id, out var requiredObject))
+                return requiredObject;
+
+            throw new FormatException($"Cannot find earlier object with ID {id} that is referenced by this object. " +
+                $"Is ancestor serialization configured correctly? Or Is this archive corrupted?");
+        }
+
         if (id > 0 && ReadManager.TryGetAlreadyReadObject(id, out var alreadyReadObject))
+        {
             return alreadyReadObject;
+        }
 
         object? read = null;
 

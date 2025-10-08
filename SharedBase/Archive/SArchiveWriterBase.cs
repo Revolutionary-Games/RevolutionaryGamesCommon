@@ -178,7 +178,8 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
         Write((byte)value);
     }
 
-    public void WriteObjectHeader(ArchiveObjectType type, bool canBeReference, bool isNull, ushort version)
+    public void WriteObjectHeader(ArchiveObjectType type, bool canBeReference, bool isNull, bool usesExistingReference,
+        ushort version)
     {
         if (type > ArchiveObjectType.LastValidObjectType)
             throw new ArgumentException("Invalid object type (value too high)");
@@ -191,6 +192,7 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
         // The object type takes at most 24 bits, so we have 8 bits for flags at the start
         // If the version takes more than 4 bits, we write a separate field for it
         uint archiveValue = (uint)type << 8 | (uint)(canBeReference ? 0x1 : 0) | (uint)(isNull ? 0x2 : 0) |
+            (uint)(usesExistingReference ? 0x4 : 0) |
             (uint)((version & 0x7) << 4) | (uint)(versionIsLong ? 0x80 : 0);
 
         Write(archiveValue);
@@ -204,7 +206,9 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
     public void WriteObject(IArchivable obj)
     {
         bool canBeReference = obj.CanBeReferencedInArchive;
-        WriteObjectHeader(obj.ArchiveObjectType, canBeReference, false, obj.CurrentArchiveVersion);
+        WriteObjectHeader(obj.ArchiveObjectType, canBeReference, false,
+            canBeReference && WriteManager.IsReferencedAlready(obj),
+            obj.CurrentArchiveVersion);
 
         // If the object can be a reference, we write a placeholder for it, if it stays all 0, then it was not actually
         // referenced
@@ -228,7 +232,7 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
     public void WriteObject<T>(ref T obj)
         where T : struct, IArchivable
     {
-        WriteObjectHeader(obj.ArchiveObjectType, false, false, obj.CurrentArchiveVersion);
+        WriteObjectHeader(obj.ArchiveObjectType, false, false, false, obj.CurrentArchiveVersion);
 
         // Header handled, let the object handle saving its data
         obj.WriteToArchive(this);
@@ -246,54 +250,54 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
         switch (value)
         {
             case bool boolValue:
-                WriteObjectHeader(ArchiveObjectType.Bool, false, false, 1);
+                WriteObjectHeader(ArchiveObjectType.Bool, false, false, false, 1);
                 Write(boolValue ? (byte)1 : (byte)0);
                 return;
             case byte byteValue:
-                WriteObjectHeader(ArchiveObjectType.Byte, false, false, 1);
+                WriteObjectHeader(ArchiveObjectType.Byte, false, false, false, 1);
                 Write(byteValue);
                 return;
             case short shortValue:
-                WriteObjectHeader(ArchiveObjectType.Int16, false, false, 1);
+                WriteObjectHeader(ArchiveObjectType.Int16, false, false, false, 1);
                 Write(shortValue);
                 return;
             case int intValue:
-                WriteObjectHeader(ArchiveObjectType.Int32, false, false, 1);
+                WriteObjectHeader(ArchiveObjectType.Int32, false, false, false, 1);
                 Write(intValue);
                 return;
             case long longValue:
-                WriteObjectHeader(ArchiveObjectType.Int64, false, false, 1);
+                WriteObjectHeader(ArchiveObjectType.Int64, false, false, false, 1);
                 Write(longValue);
                 return;
             case float floatValue:
-                WriteObjectHeader(ArchiveObjectType.Float, false, false, 1);
+                WriteObjectHeader(ArchiveObjectType.Float, false, false, false, 1);
                 Write(floatValue);
                 return;
             case double doubleValue:
-                WriteObjectHeader(ArchiveObjectType.Double, false, false, 1);
+                WriteObjectHeader(ArchiveObjectType.Double, false, false, false, 1);
                 Write(doubleValue);
                 return;
 
             case ushort ushortValue:
-                WriteObjectHeader(ArchiveObjectType.UInt16, false, false, 1);
+                WriteObjectHeader(ArchiveObjectType.UInt16, false, false, false, 1);
                 Write(ushortValue);
                 return;
             case uint uintValue:
-                WriteObjectHeader(ArchiveObjectType.UInt32, false, false, 1);
+                WriteObjectHeader(ArchiveObjectType.UInt32, false, false, false, 1);
                 Write(uintValue);
                 return;
             case ulong ulongValue:
-                WriteObjectHeader(ArchiveObjectType.UInt64, false, false, 1);
+                WriteObjectHeader(ArchiveObjectType.UInt64, false, false, false, 1);
                 Write(ulongValue);
                 return;
             case byte[] byteArrayValue:
-                WriteObjectHeader(ArchiveObjectType.ByteArray, false, false, 1);
+                WriteObjectHeader(ArchiveObjectType.ByteArray, false, false, false, 1);
                 WriteVariableLengthField32((uint)byteArrayValue.Length);
                 Write(byteArrayValue);
                 return;
 
             case string stringValue:
-                WriteObjectHeader(ArchiveObjectType.String, false, false, 1);
+                WriteObjectHeader(ArchiveObjectType.String, false, false, false, 1);
                 Write(stringValue);
                 return;
         }
@@ -321,14 +325,14 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
     public void WriteObjectProperties<T>(ref T obj)
         where T : IArchiveUpdatable
     {
-        WriteObjectHeader(obj.ArchiveObjectType, false, false, obj.CurrentArchiveVersion);
+        WriteObjectHeader(obj.ArchiveObjectType, false, false, false, obj.CurrentArchiveVersion);
 
         obj.WritePropertiesToArchive(this);
     }
 
     public void WriteObject<T1, T2>(in (T1 Value1, T2 Value2) tuple)
     {
-        WriteObjectHeader(ArchiveObjectType.Tuple, false, false, TUPLE_VERSION);
+        WriteObjectHeader(ArchiveObjectType.Tuple, false, false, false, TUPLE_VERSION);
 
         // Length of the tuple
         Write((byte)2);
@@ -340,7 +344,7 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
 
     public void WriteObject<T1, T2, T3>(in (T1 Value1, T2 Value2, T3 Value3) tuple)
     {
-        WriteObjectHeader(ArchiveObjectType.Tuple, false, false, TUPLE_VERSION);
+        WriteObjectHeader(ArchiveObjectType.Tuple, false, false, false, TUPLE_VERSION);
 
         // Length of the tuple
         Write((byte)3);
@@ -353,7 +357,7 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
 
     public void WriteObject<T1, T2, T3, T4>(in (T1 Value1, T2 Value2, T3 Value3, T4 Value4) tuple)
     {
-        WriteObjectHeader(ArchiveObjectType.Tuple, false, false, TUPLE_VERSION);
+        WriteObjectHeader(ArchiveObjectType.Tuple, false, false, false, TUPLE_VERSION);
 
         // Length of the tuple
         Write((byte)4);
@@ -369,7 +373,7 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
     public void WriteObject(ITuple tuple, bool valueType)
     {
         // To preserve the tuple type even if it goes through the generic method, we write the header type here
-        WriteObjectHeader(valueType ? ArchiveObjectType.Tuple : ArchiveObjectType.ReferenceTuple, false, false,
+        WriteObjectHeader(valueType ? ArchiveObjectType.Tuple : ArchiveObjectType.ReferenceTuple, false, false, false,
             TUPLE_VERSION);
 
         if (tuple.Length > byte.MaxValue)
@@ -404,7 +408,7 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
 
     public void WriteNullObject()
     {
-        WriteObjectHeader(ArchiveObjectType.Null, false, true, 1);
+        WriteObjectHeader(ArchiveObjectType.Null, false, true, false, 1);
 
         // Nulls do not have a reference placeholder, even if they can be otherwise references
     }

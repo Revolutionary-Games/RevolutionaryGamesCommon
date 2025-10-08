@@ -23,4 +23,10 @@ public interface IArchiveWriteManager
     public bool MarkStartOfReferenceObject(ISArchiveWriter writer, object obj);
 
     public void RegisterObjectType(ArchiveObjectType type, bool canBeReference, ArchiveObjectDelegate writeDelegate);
+
+    /// <summary>
+    ///   Returns true if the object is already referenced.
+    /// </summary>
+    /// <returns>True if referenced already by <see cref="MarkStartOfReferenceObject"/></returns>
+    public bool IsReferencedAlready(object obj);
 }

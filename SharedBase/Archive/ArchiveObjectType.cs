@@ -30,8 +30,9 @@ public enum ArchiveObjectType : uint
     Array,
     Dictionary,
 
-    // Used in testing
-    TestObjectType1 = 4095,
+    // Only used in testing
+    TestObjectType1 = 4094,
+    TestObjectType2 = 4095,
 
     // Extended archive types for custom projects need to be defined after this value
     StartOfCustomTypes = 4096,
