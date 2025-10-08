@@ -175,6 +175,7 @@ public abstract class SArchiveReaderBase : ISArchiveReader
 
         if (!canBeReference && referencesEarlier)
         {
+            // If new code has been added recently, and you get here, then that's likely a misconfiguration
             throw new FormatException(
                 "Object that cannot be a reference cannot be marked as referencing a previous instance");
         }
@@ -631,6 +632,14 @@ public abstract class SArchiveReaderBase : ISArchiveReader
             {
                 processingObjectIds ??= new Stack<int>();
 
+                if (processingObjectIds is { Count: > 0 } && processingObjectIds.Peek() == id)
+                {
+                    throw new FormatException($"Object with ID {id} is already on the archive read stack. " +
+                        $"This means that there is an incorrectly configured ancestor reference from an object " +
+                        $"up the tree to type {archiveObjectType}, " +
+                        $"likely missing call to ReportObjectConstructorDone.");
+                }
+
                 processingObjectIds.Push(id);
             }
 
@@ -648,6 +657,17 @@ public abstract class SArchiveReaderBase : ISArchiveReader
                 // Need to remember the object
                 if (!ReadManager.RememberObject(read, id))
                     throw new FormatException($"Multiple objects with same ID: {id}");
+            }
+#if DEBUG
+            else
+            {
+                if (!ReadManager.TryGetAlreadyReadObject(id, out var written) || !ReferenceEquals(written, read))
+                {
+                    throw new FormatException(
+                        $"Another object has stolen the ID {id}, this is likely a bug in ancestor " +
+                        $"reference configuration for: {read.GetType()}");
+                }
+#endif
             }
         }
 

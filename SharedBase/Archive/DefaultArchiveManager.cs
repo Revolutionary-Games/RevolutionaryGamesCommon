@@ -63,7 +63,7 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
 
     public bool MarkStartOfReferenceObject(ISArchiveWriter writer, object obj)
     {
-        if (objectIdPositions.TryGetValue(obj, out _))
+        if (objectIdPositions.TryGetValue(obj, out var previousPosition))
         {
             if (nextObjectId == 0)
             {
@@ -83,6 +83,12 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
                 id = nextObjectId++;
                 objectIds[obj] = id;
             }
+
+            // If we are saving things out of order, fail
+#if DEBUG
+            if (previousPosition >= writer.GetPosition())
+                throw new InvalidOperationException("Cannot write object and its reference out of order");
+#endif
 
             // But write the ID that will be used instead of this object
             writer.Write(id);
