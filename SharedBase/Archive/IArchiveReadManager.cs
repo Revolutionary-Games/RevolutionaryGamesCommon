@@ -1,6 +1,8 @@
 ﻿namespace SharedBase.Archive;
 
+using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 /// <summary>
 ///   Read-time variant of <see cref="IArchiveWriteManager"/>
@@ -15,16 +17,21 @@ public interface IArchiveReadManager
     public static void RegisterDefaultObjectReaders(IArchiveReadManager manager)
     {
         // TODO: list, dictionary, tuple etc. readers
+
+        // Reference tuple
+        manager.RegisterObjectType(ArchiveObjectType.ReferenceTuple, typeof(ITuple),
+            ArchiveBuiltInReaders.ReadReferenceTuple);
     }
 
     /// <summary>
     ///   Register a custom object type to be read from an archive
     /// </summary>
     /// <param name="type">Type the factory handles</param>
+    /// <param name="nativeType">Type of the C# object that matches the type</param>
     /// <param name="readDelegate">Factory method that is invoked to create the object on read</param>
-    public void RegisterObjectType(ArchiveObjectType type, RestoreObjectDelegate readDelegate);
+    public void RegisterObjectType(ArchiveObjectType type, Type nativeType, RestoreObjectDelegate readDelegate);
 
-    public void RegisterValueType<T>(ArchiveObjectType type, ReadStructDelegate<T> readDelegate);
+    public void RegisterValueType<T>(ArchiveObjectType type, Type nativeType, ReadStructDelegate<T> readDelegate);
 
     public void OnStartNewRead(ISArchiveWriter writer);
     public void OnFinishRead(ISArchiveWriter writer);
@@ -56,4 +63,6 @@ public interface IArchiveReadManager
     /// <param name="id">ID of the object which must be greater than 0</param>
     /// <returns>True if registered, false if already registered (this is usually a significant problem)</returns>
     public bool RememberObject(object obj, int id);
+
+    public Type? MapArchiveTypeToType(ArchiveObjectType type);
 }

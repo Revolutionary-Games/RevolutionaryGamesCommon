@@ -9,6 +9,8 @@ using System.Text;
 /// </summary>
 public abstract class SArchiveWriterBase : ISArchiveWriter
 {
+    public const ushort TUPLE_VERSION = 1;
+
     private const int BUFFER_SIZE = 1024;
 
     private Encoder? textEncoder;
@@ -232,12 +234,152 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
         obj.WriteToArchive(this);
     }
 
+    public void WriteAnyRegisteredValueAsObject<T>(T value)
+    {
+        if (ReferenceEquals(value, null))
+        {
+            WriteNullObject();
+            return;
+        }
+
+        // Primitive matching
+        switch (value)
+        {
+            case bool boolValue:
+                WriteObjectHeader(ArchiveObjectType.Bool, false, false, 1);
+                Write(boolValue ? (byte)1 : (byte)0);
+                return;
+            case byte byteValue:
+                WriteObjectHeader(ArchiveObjectType.Byte, false, false, 1);
+                Write(byteValue);
+                return;
+            case short shortValue:
+                WriteObjectHeader(ArchiveObjectType.Int16, false, false, 1);
+                Write(shortValue);
+                return;
+            case int intValue:
+                WriteObjectHeader(ArchiveObjectType.Int32, false, false, 1);
+                Write(intValue);
+                return;
+            case long longValue:
+                WriteObjectHeader(ArchiveObjectType.Int64, false, false, 1);
+                Write(longValue);
+                return;
+            case float floatValue:
+                WriteObjectHeader(ArchiveObjectType.Float, false, false, 1);
+                Write(floatValue);
+                return;
+            case double doubleValue:
+                WriteObjectHeader(ArchiveObjectType.Double, false, false, 1);
+                Write(doubleValue);
+                return;
+
+            case ushort ushortValue:
+                WriteObjectHeader(ArchiveObjectType.UInt16, false, false, 1);
+                Write(ushortValue);
+                return;
+            case uint uintValue:
+                WriteObjectHeader(ArchiveObjectType.UInt32, false, false, 1);
+                Write(uintValue);
+                return;
+            case ulong ulongValue:
+                WriteObjectHeader(ArchiveObjectType.UInt64, false, false, 1);
+                Write(ulongValue);
+                return;
+            case byte[] byteArrayValue:
+                WriteObjectHeader(ArchiveObjectType.ByteArray, false, false, 1);
+                WriteVariableLengthField32((uint)byteArrayValue.Length);
+                Write(byteArrayValue);
+                return;
+
+            case string stringValue:
+                WriteObjectHeader(ArchiveObjectType.String, false, false, 1);
+                Write(stringValue);
+                return;
+        }
+
+        // TODO: solve the case of using boxing for struct values that these casts may cause
+        if (value is IArchivable archivable)
+        {
+            WriteObject(archivable);
+            return;
+        }
+
+        // This is meant for full values, as such this does not support IArchiveUpdatable
+
+        // TODO: solve this boxing tuple problem
+        if (value is ITuple tuple)
+        {
+            WriteObject(tuple);
+        }
+
+        throw new FormatException($"No known conversion for type {typeof(T).FullName} into an archive");
+    }
+
     public void WriteObjectProperties<T>(ref T obj)
         where T : IArchiveUpdatable
     {
         WriteObjectHeader(obj.ArchiveObjectType, false, false, obj.CurrentArchiveVersion);
 
         obj.WritePropertiesToArchive(this);
+    }
+
+    public void WriteObject<T1, T2>(in (T1 Value1, T2 Value2) tuple)
+    {
+        WriteObjectHeader(ArchiveObjectType.Tuple, false, false, TUPLE_VERSION);
+
+        // Length of the tuple
+        Write((byte)2);
+
+        // And then the items
+        WriteAnyRegisteredValueAsObject(tuple.Value1);
+        WriteAnyRegisteredValueAsObject(tuple.Value2);
+    }
+
+    public void WriteObject<T1, T2, T3>(in (T1 Value1, T2 Value2, T3 Value3) tuple)
+    {
+        WriteObjectHeader(ArchiveObjectType.Tuple, false, false, TUPLE_VERSION);
+
+        // Length of the tuple
+        Write((byte)3);
+
+        // And then the items
+        WriteAnyRegisteredValueAsObject(tuple.Value1);
+        WriteAnyRegisteredValueAsObject(tuple.Value2);
+        WriteAnyRegisteredValueAsObject(tuple.Value3);
+    }
+
+    public void WriteObject<T1, T2, T3, T4>(in (T1 Value1, T2 Value2, T3 Value3, T4 Value4) tuple)
+    {
+        WriteObjectHeader(ArchiveObjectType.Tuple, false, false, TUPLE_VERSION);
+
+        // Length of the tuple
+        Write((byte)4);
+
+        // And then the items
+        WriteAnyRegisteredValueAsObject(tuple.Value1);
+        WriteAnyRegisteredValueAsObject(tuple.Value2);
+        WriteAnyRegisteredValueAsObject(tuple.Value3);
+        WriteAnyRegisteredValueAsObject(tuple.Value4);
+    }
+
+    // Other tuples are supported generically and are less performant
+    public void WriteObject(ITuple tuple)
+    {
+        WriteObjectHeader(ArchiveObjectType.ReferenceTuple, false, false, TUPLE_VERSION);
+
+        if (tuple.Length > byte.MaxValue)
+            throw new FormatException("Too long tuple type");
+
+        // Length of the tuple
+        var length = tuple.Length;
+        Write((byte)length);
+
+        // And then the items
+        for (int i = 0; i < length; ++i)
+        {
+            WriteAnyRegisteredValueAsObject(tuple[i]);
+        }
     }
 
     public void WriteNullObject()

@@ -72,6 +72,27 @@ public interface ISArchiveReader
     public T? ReadObject<T>();
 
     /// <summary>
+    ///   Pure raw read of any kind of object.
+    /// </summary>
+    /// <param name="type">Type of the returned object</param>
+    /// <returns>Read object or if the object header specified null, then a null value</returns>
+    public object? ReadObject(out ArchiveObjectType type);
+
+    /// <summary>
+    ///   Reads any struct type from the archive.
+    ///   As long as it is one that is supported by the reader.
+    ///   This variant exists to avoid boxing with the generic object read API.
+    /// </summary>
+    /// <param name="receiver">Variable that receives the struct value</param>
+    /// <typeparam name="T">Type to read, needs to be either a built-in type or one that is registered</typeparam>
+    /// <remarks>
+    ///   <para>
+    ///     This is the reading side equivalent of <see cref="ISArchiveWriter.WriteAnyRegisteredValueAsObject"/>.
+    ///   </para>
+    /// </remarks>
+    public void ReadAnyStruct<T>(ref T receiver);
+
+    /// <summary>
     ///   Reads an object / struct from the archive.
     /// </summary>
     /// <param name="obj">Where to place the read object</param>
@@ -87,4 +108,6 @@ public interface ISArchiveReader
     /// <returns>True if properties were read</returns>
     public bool ReadObjectProperties<T>(ref T obj)
         where T : IArchiveUpdatable;
+
+    public Type? MapArchiveTypeToType(ArchiveObjectType type);
 }

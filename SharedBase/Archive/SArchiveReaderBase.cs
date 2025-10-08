@@ -197,7 +197,201 @@ public abstract class SArchiveReaderBase : ISArchiveReader
     public T? ReadObject<T>()
     {
         // TODO: should this verify something more?
-        return (T?)ReadObjectLowLevel();
+        var rawRead = ReadObjectLowLevel(out _);
+
+        if (rawRead == null)
+            return (T?)rawRead;
+
+        // TODO: more complex type matching?
+
+        return (T?)rawRead;
+    }
+
+    public object? ReadObject(out ArchiveObjectType type)
+    {
+        return ReadObjectLowLevel(out type);
+    }
+
+    public void ReadAnyStruct<T>(ref T receiver)
+    {
+        ReadObjectHeader(out var type, out var id, out var isNull, out var version);
+
+        if (isNull)
+        {
+            // Read a null object
+            throw new FormatException("Encountered null object when reading something that cannot be null");
+        }
+
+#if DEBUG
+        if (id > 0)
+        {
+            throw new FormatException("Reading an archive object as a struct that has references marked for it");
+        }
+#endif
+
+        // Anything with added handling here should also be put into ReadObjectLowLevel
+        switch (type)
+        {
+            case ArchiveObjectType.Invalid:
+            case ArchiveObjectType.Null:
+                throw new FormatException("Invalid object type in archive specified (for struct)");
+
+            case ArchiveObjectType.Byte:
+                if (version > 1)
+                    throw new InvalidArchiveVersionException(version, 1);
+
+                // TODO: could allow receivers of bigger size to be used here
+                if (receiver is byte)
+                {
+                    Unsafe.As<T, byte>(ref receiver) = ReadInt8();
+                    return;
+                }
+
+                throw new FormatException($"Cannot read {type} into receiver of type {typeof(T)}");
+
+            case ArchiveObjectType.Bool:
+                if (version > 1)
+                    throw new InvalidArchiveVersionException(version, 1);
+
+                if (receiver is bool)
+                {
+                    Unsafe.As<T, bool>(ref receiver) = ReadInt8() != 0;
+                    return;
+                }
+
+                throw new FormatException($"Cannot read {type} into receiver of type {typeof(T)}");
+
+            case ArchiveObjectType.Int16:
+                if (version > 1)
+                    throw new InvalidArchiveVersionException(version, 1);
+
+                if (receiver is short)
+                {
+                    Unsafe.As<T, short>(ref receiver) = ReadInt16();
+                    return;
+                }
+
+                throw new FormatException($"Cannot read {type} into receiver of type {typeof(T)}");
+            case ArchiveObjectType.Int32:
+                if (version > 1)
+                    throw new InvalidArchiveVersionException(version, 1);
+
+                if (receiver is int)
+                {
+                    Unsafe.As<T, int>(ref receiver) = ReadInt32();
+                    return;
+                }
+
+                throw new FormatException($"Cannot read {type} into receiver of type {typeof(T)}");
+            case ArchiveObjectType.Int64:
+                if (version > 1)
+                    throw new InvalidArchiveVersionException(version, 1);
+
+                if (receiver is long)
+                {
+                    Unsafe.As<T, long>(ref receiver) = ReadInt64();
+                    return;
+                }
+
+                throw new FormatException($"Cannot read {type} into receiver of type {typeof(T)}");
+            case ArchiveObjectType.UInt16:
+                if (version > 1)
+                    throw new InvalidArchiveVersionException(version, 1);
+
+                if (receiver is ushort)
+                {
+                    Unsafe.As<T, ushort>(ref receiver) = ReadUInt16();
+                    return;
+                }
+
+                throw new FormatException($"Cannot read {type} into receiver of type {typeof(T)}");
+            case ArchiveObjectType.UInt32:
+                if (version > 1)
+                    throw new InvalidArchiveVersionException(version, 1);
+
+                if (receiver is uint)
+                {
+                    Unsafe.As<T, uint>(ref receiver) = ReadUInt32();
+                    return;
+                }
+
+                throw new FormatException($"Cannot read {type} into receiver of type {typeof(T)}");
+            case ArchiveObjectType.UInt64:
+                if (version > 1)
+                    throw new InvalidArchiveVersionException(version, 1);
+
+                if (receiver is ulong)
+                {
+                    Unsafe.As<T, ulong>(ref receiver) = ReadUInt64();
+                    return;
+                }
+
+                throw new FormatException($"Cannot read {type} into receiver of type {typeof(T)}");
+            case ArchiveObjectType.Float:
+                if (version > 1)
+                    throw new InvalidArchiveVersionException(version, 1);
+
+                if (receiver is float)
+                {
+                    Unsafe.As<T, float>(ref receiver) = ReadFloat();
+                    return;
+                }
+
+                throw new FormatException($"Cannot read {type} into receiver of type {typeof(T)}");
+            case ArchiveObjectType.Double:
+                if (version > 1)
+                    throw new InvalidArchiveVersionException(version, 1);
+
+                if (receiver is double)
+                {
+                    Unsafe.As<T, double>(ref receiver) = ReadDouble();
+                    return;
+                }
+
+                throw new FormatException($"Cannot read {type} into receiver of type {typeof(T)}");
+            case ArchiveObjectType.VariableUint32:
+                if (version > 1)
+                    throw new InvalidArchiveVersionException(version, 1);
+
+                if (receiver is uint)
+                {
+                    Unsafe.As<T, uint>(ref receiver) = ReadVariableLengthField32();
+                    return;
+                }
+
+                throw new FormatException($"Cannot read {type} into receiver of type {typeof(T)}");
+            case ArchiveObjectType.Tuple:
+                if (version > 1)
+                    throw new InvalidArchiveVersionException(version, 1);
+
+                if (receiver is ITuple)
+                {
+                    ReadTuple(ref Unsafe.As<T, ITuple>(ref receiver));
+                    return;
+                }
+
+                throw new FormatException($"Cannot read {type} into receiver of type {typeof(T)}");
+        }
+
+        throw new FormatException($"Unhandled object type for struct read: {type} (receiver: {typeof(T)})");
+    }
+
+    public void ReadTuple<T>(ref T receiver)
+        where T : ITuple
+    {
+        // Read the item count
+        var count = ReadInt8();
+
+        if (count is < 1 or > 7)
+            throw new FormatException($"Invalid tuple count for ValueTuple ({count})");
+
+        throw new NotImplementedException();
+
+        if (receiver is (int, int))
+        {
+        }
+
+        throw new FormatException($"Cannot read tuple into receiver of type {typeof(T)}");
     }
 
     public void ReadObject<T>(ref T obj)
@@ -262,9 +456,14 @@ public abstract class SArchiveReaderBase : ISArchiveReader
         return true;
     }
 
-    public object? ReadObjectLowLevel()
+    public Type? MapArchiveTypeToType(ArchiveObjectType type)
     {
-        ReadObjectHeader(out var type, out var id, out var isNull, out var version);
+        return ReadManager.MapArchiveTypeToType(type);
+    }
+
+    public object? ReadObjectLowLevel(out ArchiveObjectType archiveObjectType)
+    {
+        ReadObjectHeader(out archiveObjectType, out var id, out var isNull, out var version);
 
         if (isNull)
         {
@@ -276,8 +475,96 @@ public abstract class SArchiveReaderBase : ISArchiveReader
         if (id > 0 && ReadManager.TryGetAlreadyReadObject(id, out var alreadyReadObject))
             return alreadyReadObject;
 
-        // And if not, we need to deserialize an object. For this we must rely on the read manager's mapping.
-        var read = ReadManager.ReadObject(this, type, version);
+        object? read = null;
+
+        // Handle some builtin struct types that will cause MAJOR BOXING (memory allocations)
+        // Any values added here must also be updated in ReadAnyStruct
+        switch (archiveObjectType)
+        {
+            case ArchiveObjectType.Invalid:
+            case ArchiveObjectType.Null:
+                throw new FormatException("Invalid object type in archive specified");
+
+            case ArchiveObjectType.Byte:
+                if (version > 1)
+                    throw new InvalidArchiveVersionException(version, 1);
+
+                read = ReadInt8();
+                break;
+            case ArchiveObjectType.Bool:
+                if (version > 1)
+                    throw new InvalidArchiveVersionException(version, 1);
+
+                read = ReadInt8() != 0;
+                break;
+            case ArchiveObjectType.Int16:
+                if (version > 1)
+                    throw new InvalidArchiveVersionException(version, 1);
+
+                read = ReadInt16();
+                break;
+            case ArchiveObjectType.Int32:
+                if (version > 1)
+                    throw new InvalidArchiveVersionException(version, 1);
+
+                read = ReadInt32();
+                break;
+            case ArchiveObjectType.Int64:
+                if (version > 1)
+                    throw new InvalidArchiveVersionException(version, 1);
+
+                read = ReadInt64();
+                break;
+            case ArchiveObjectType.UInt16:
+                if (version > 1)
+                    throw new InvalidArchiveVersionException(version, 1);
+
+                read = ReadUInt16();
+                break;
+            case ArchiveObjectType.UInt32:
+                if (version > 1)
+                    throw new InvalidArchiveVersionException(version, 1);
+
+                read = ReadUInt32();
+                break;
+            case ArchiveObjectType.UInt64:
+                if (version > 1)
+                    throw new InvalidArchiveVersionException(version, 1);
+
+                read = ReadUInt64();
+                break;
+            case ArchiveObjectType.Float:
+                if (version > 1)
+                    throw new InvalidArchiveVersionException(version, 1);
+
+                read = ReadFloat();
+                break;
+            case ArchiveObjectType.Double:
+                if (version > 1)
+                    throw new InvalidArchiveVersionException(version, 1);
+
+                read = ReadDouble();
+                break;
+            case ArchiveObjectType.String:
+                if (version > 1)
+                    throw new InvalidArchiveVersionException(version, 1);
+
+                read = ReadString();
+                break;
+            case ArchiveObjectType.VariableUint32:
+                if (version > 1)
+                    throw new InvalidArchiveVersionException(version, 1);
+
+                read = ReadVariableLengthField32();
+                break;
+            case ArchiveObjectType.Tuple:
+                // TODO: tuple handling here as well?
+                break;
+        }
+
+        // If we don't have an object yet, we need to deserialize one.
+        // For this we must rely on the read manager's mapping.
+        read ??= ReadManager.ReadObject(this, archiveObjectType, version);
 
         if (id > 0)
         {

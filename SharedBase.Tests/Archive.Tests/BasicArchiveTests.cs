@@ -1,6 +1,8 @@
 namespace SharedBase.Tests.Archive.Tests;
 
 using System.IO;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using SharedBase.Archive;
 using Xunit;
@@ -172,6 +174,69 @@ public class BasicArchiveTests
 
         Assert.Equal(testData, read);
         Assert.Equal(expectedLength, memoryStream.Length);
+    }
+
+    [Fact]
+    public void BasicArchive_WritingPrimitiveByteAsObject()
+    {
+        var memoryStream = new MemoryStream(32);
+        var writer = new SArchiveMemoryWriter(memoryStream, sharedManager);
+        var reader = new SArchiveMemoryReader(memoryStream, sharedManager);
+
+        byte valueToTest = 42;
+
+        writer.WriteAnyRegisteredValueAsObject(valueToTest);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        byte valueReadBack = 0;
+        reader.ReadAnyStruct(ref valueReadBack);
+
+        Assert.Equal(valueToTest, valueReadBack);
+
+        Assert.True(memoryStream.Length > Marshal.SizeOf(valueToTest.GetType()));
+    }
+
+    [Fact]
+    public void BasicArchive_WritingPrimitiveIntAsObject()
+    {
+        var memoryStream = new MemoryStream(32);
+        var writer = new SArchiveMemoryWriter(memoryStream, sharedManager);
+        var reader = new SArchiveMemoryReader(memoryStream, sharedManager);
+
+        int valueToTest = 42;
+
+        writer.WriteAnyRegisteredValueAsObject(valueToTest);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        int valueReadBack = 0;
+        reader.ReadAnyStruct(ref valueReadBack);
+
+        Assert.Equal(valueToTest, valueReadBack);
+
+        Assert.True(memoryStream.Length > Marshal.SizeOf(valueToTest.GetType()));
+    }
+
+    [Fact]
+    public void BasicArchive_WritingPrimitiveuULongAsObject()
+    {
+        var memoryStream = new MemoryStream(32);
+        var writer = new SArchiveMemoryWriter(memoryStream, sharedManager);
+        var reader = new SArchiveMemoryReader(memoryStream, sharedManager);
+
+        ulong valueToTest = 42;
+
+        writer.WriteAnyRegisteredValueAsObject(valueToTest);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        ulong valueReadBack = 0;
+        reader.ReadAnyStruct(ref valueReadBack);
+
+        Assert.Equal(valueToTest, valueReadBack);
+
+        Assert.True(memoryStream.Length > Marshal.SizeOf(valueToTest.GetType()));
     }
 
     [Fact]

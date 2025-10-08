@@ -11,7 +11,7 @@ public class ArchiveObjectTests
     public void ArchiveObject_SimpleSerialization()
     {
         var manager = new DefaultArchiveManager(false);
-        manager.RegisterObjectType(ArchiveObjectType.TestObjectType1, TestObject1.ReadFromArchive);
+        manager.RegisterObjectType(ArchiveObjectType.TestObjectType1, typeof(TestObject1), TestObject1.ReadFromArchive);
         var memoryStream = new MemoryStream();
         var writer = new SArchiveMemoryWriter(memoryStream, manager);
         var reader = new SArchiveMemoryReader(memoryStream, manager);
@@ -28,7 +28,7 @@ public class ArchiveObjectTests
 
         memoryStream.Seek(0, SeekOrigin.Begin);
 
-        var read = reader.ReadObjectLowLevel();
+        var read = reader.ReadObjectLowLevel(out _);
 
         Assert.NotNull(read);
         Assert.Equal(testObject, read);
@@ -38,7 +38,7 @@ public class ArchiveObjectTests
     public void ArchiveObject_NonReferenceObjectsAreNotGrouped()
     {
         var manager = new DefaultArchiveManager(false);
-        manager.RegisterObjectType(ArchiveObjectType.TestObjectType1, TestObject1.ReadFromArchive);
+        manager.RegisterObjectType(ArchiveObjectType.TestObjectType1, typeof(TestObject1), TestObject1.ReadFromArchive);
         var memoryStream = new MemoryStream();
         var writer = new SArchiveMemoryWriter(memoryStream, manager);
         var reader = new SArchiveMemoryReader(memoryStream, manager);
@@ -58,12 +58,12 @@ public class ArchiveObjectTests
 
         memoryStream.Seek(0, SeekOrigin.Begin);
 
-        var read = reader.ReadObjectLowLevel();
+        var read = reader.ReadObjectLowLevel(out _);
 
         Assert.NotNull(read);
         Assert.Equal(testObject, read);
 
-        var read2 = reader.ReadObjectLowLevel();
+        var read2 = reader.ReadObjectLowLevel(out _);
 
         Assert.NotNull(read2);
         Assert.Equal(testObject, read2);
@@ -76,7 +76,7 @@ public class ArchiveObjectTests
     public void ArchiveObject_ReferencesReferToEarlierObjects()
     {
         var manager = new DefaultArchiveManager(false);
-        manager.RegisterObjectType(ArchiveObjectType.TestObjectType1, TestObject2.ReadFromArchive);
+        manager.RegisterObjectType(ArchiveObjectType.TestObjectType1, typeof(TestObject2), TestObject2.ReadFromArchive);
         var memoryStream = new MemoryStream();
         var writer = new SArchiveMemoryWriter(memoryStream, manager);
         var reader = new SArchiveMemoryReader(memoryStream, manager);
@@ -96,12 +96,12 @@ public class ArchiveObjectTests
 
         memoryStream.Seek(0, SeekOrigin.Begin);
 
-        var read = reader.ReadObjectLowLevel();
+        var read = reader.ReadObjectLowLevel(out _);
 
         Assert.NotNull(read);
         Assert.Equal(testObject, read);
 
-        var read2 = reader.ReadObjectLowLevel();
+        var read2 = reader.ReadObjectLowLevel(out _);
 
         Assert.NotNull(read2);
 

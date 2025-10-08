@@ -10,12 +10,13 @@ public enum ArchiveObjectType : uint
 
     Null,
     Byte,
+    Bool,
     Int16,
     Int32,
     Int64,
-    Uint16,
-    Uint32,
-    Uint64,
+    UInt16,
+    UInt32,
+    UInt64,
     Float,
     Double,
 
@@ -24,6 +25,7 @@ public enum ArchiveObjectType : uint
 
     // More complex types
     Tuple,
+    ReferenceTuple,
     ByteArray,
     Array,
     Dictionary,

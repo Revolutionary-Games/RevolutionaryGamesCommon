@@ -72,6 +72,14 @@ public interface ISArchiveWriter
         where T : IArchiveUpdatable;
 
     /// <summary>
+    ///   Tries to write any type of value that is archivable or has a registered writer.
+    ///   Throws if it cannot be processed.
+    /// </summary>
+    /// <param name="value">Value to write to this archive. This is always written with an object header.</param>
+    /// <typeparam name="T">Type of the value</typeparam>
+    public void WriteAnyRegisteredValueAsObject<T>(T value);
+
+    /// <summary>
     ///   Writes the object header and then a null value.
     /// </summary>
     public void WriteNullObject();

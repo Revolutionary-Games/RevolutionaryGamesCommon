@@ -13,6 +13,8 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
     private readonly Dictionary<ArchiveObjectType, IArchiveWriteManager.ArchiveObjectDelegate> writeDelegates = new();
     private readonly Dictionary<ArchiveObjectType, IArchiveReadManager.RestoreObjectDelegate> readDelegates = new();
 
+    private readonly Dictionary<ArchiveObjectType, Type> registeredTypes = new();
+
     // Object reference handling
     private readonly Dictionary<object, long> objectIdPositions = new();
     private readonly Dictionary<object, int> objectIds = new();
@@ -99,13 +101,21 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
         writeDelegates[type] = writeDelegate;
     }
 
-    public void RegisterObjectType(ArchiveObjectType type, IArchiveReadManager.RestoreObjectDelegate readDelegate)
+    public void RegisterObjectType(ArchiveObjectType type, Type nativeType,
+        IArchiveReadManager.RestoreObjectDelegate readDelegate)
     {
+        if (!registeredTypes.TryAdd(type, nativeType))
+            throw new ArgumentException("Type is already registered");
+
         readDelegates[type] = readDelegate;
     }
 
-    public void RegisterValueType<T>(ArchiveObjectType type, IArchiveReadManager.ReadStructDelegate<T> readDelegate)
+    public void RegisterValueType<T>(ArchiveObjectType type, Type nativeType,
+        IArchiveReadManager.ReadStructDelegate<T> readDelegate)
     {
+        if (!registeredTypes.TryAdd(type, nativeType))
+            throw new ArgumentException("Type is already registered");
+
         throw new System.NotImplementedException();
     }
 
@@ -145,5 +155,10 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
     public bool RememberObject(object obj, int id)
     {
         return loadedObjectReferences.TryAdd(id, obj);
+    }
+
+    public Type? MapArchiveTypeToType(ArchiveObjectType type)
+    {
+        return registeredTypes.GetValueOrDefault(type);
     }
 }
