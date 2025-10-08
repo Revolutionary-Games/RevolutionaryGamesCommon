@@ -1,6 +1,5 @@
 namespace SharedBase.Tests.Archive.Tests;
 
-using System;
 using System.IO;
 using SharedBase.Archive;
 using Xunit;

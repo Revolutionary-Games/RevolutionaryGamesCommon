@@ -648,7 +648,19 @@ public abstract class SArchiveReaderBase : ISArchiveReader
                 processingObjectIds.Push(id);
             }
 
-            read = ReadManager.ReadObject(this, archiveObjectType, version);
+            try
+            {
+                read = ReadManager.ReadObject(this, archiveObjectType, version);
+            }
+            catch (Exception)
+            {
+                // Try to exit in a bit cleaner state even if this errored out
+                // Clear this in case it is necessary later if someone tries again after the exception
+                if (processingObjectIds is { Count: > 0 })
+                    processingObjectIds.Pop();
+
+                throw;
+            }
         }
 
         if (id > 0)

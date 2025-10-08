@@ -39,6 +39,12 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
     public void OnStartNewWrite(ISArchiveWriter writer)
     {
         nextObjectId = 1;
+
+        if (objectIdPositions.Count > 0 || objectIds.Count > 0)
+        {
+            throw new InvalidOperationException(
+                "Archive manager has not been properly shutdown since the last started write");
+        }
     }
 
     public void OnFinishWrite(ISArchiveWriter writer)
@@ -139,6 +145,9 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
 
     public void OnStartNewRead(ISArchiveReader reader)
     {
+        // Just in case an exception interrupted the previous run, and someone calls a new read without finishing the
+        // previous one
+        loadedObjectReferences.Clear();
     }
 
     public void OnFinishRead(ISArchiveReader reader)
