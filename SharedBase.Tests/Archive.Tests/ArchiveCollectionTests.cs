@@ -93,4 +93,25 @@ public class ArchiveCollectionTests
 
         _ = read;
     }
+
+    [Fact]
+    public void ArchiveCollection_NestedTuple()
+    {
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, manager);
+        var reader = new SArchiveMemoryReader(memoryStream, manager);
+
+        var original = (42, ("nightmare", true));
+
+        writer.WriteObject(original);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        (int, (string, bool)) result = default;
+
+        Assert.NotEqual(original, result);
+        reader.ReadAnyStruct(ref result);
+
+        Assert.Equal(original, result);
+    }
 }

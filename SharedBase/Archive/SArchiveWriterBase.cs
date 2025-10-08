@@ -307,10 +307,12 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
 
         // This is meant for full values, as such this does not support IArchiveUpdatable
 
-        // TODO: solve this boxing tuple problem
+        // TODO: solve this boxing tuple problem (or not, as this doesn't get highlighted as allocating memory)
         if (value is ITuple tuple)
         {
-            WriteObject(tuple);
+            bool valueType = value.GetType().IsValueType;
+            WriteObject(tuple, valueType);
+            return;
         }
 
         throw new FormatException($"No known conversion for type {typeof(T).FullName} into an archive");
@@ -364,9 +366,11 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
     }
 
     // Other tuples are supported generically and are less performant
-    public void WriteObject(ITuple tuple)
+    public void WriteObject(ITuple tuple, bool valueType)
     {
-        WriteObjectHeader(ArchiveObjectType.ReferenceTuple, false, false, TUPLE_VERSION);
+        // To preserve the tuple type even if it goes through the generic method, we write the header type here
+        WriteObjectHeader(valueType ? ArchiveObjectType.Tuple : ArchiveObjectType.ReferenceTuple, false, false,
+            TUPLE_VERSION);
 
         if (tuple.Length > byte.MaxValue)
             throw new FormatException("Too long tuple type");
@@ -380,6 +384,22 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
         {
             WriteAnyRegisteredValueAsObject(tuple[i]);
         }
+    }
+
+    // Reference tuples are always less efficient than value tuples, but specifying these makes the API a bit nicer
+    public void WriteObject<T1, T2>(Tuple<T1, T2> tuple)
+    {
+        WriteObject(tuple, false);
+    }
+
+    public void WriteObject<T1, T2, T3>(Tuple<T1, T2, T3> tuple)
+    {
+        WriteObject(tuple, false);
+    }
+
+    public void WriteObject<T1, T2, T3, T4>(Tuple<T1, T2, T3, T4> tuple)
+    {
+        WriteObject(tuple, false);
     }
 
     public void WriteNullObject()
