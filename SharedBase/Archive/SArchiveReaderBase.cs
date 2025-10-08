@@ -364,9 +364,9 @@ public abstract class SArchiveReaderBase : ISArchiveReader
                 if (version > 1)
                     throw new InvalidArchiveVersionException(version, 1);
 
-                if (receiver is ITuple)
+                if (receiver is ITuple asTuple)
                 {
-                    ReadTuple(ref Unsafe.As<T, ITuple>(ref receiver));
+                    ReadTuple(ref asTuple);
                     return;
                 }
 
@@ -382,16 +382,8 @@ public abstract class SArchiveReaderBase : ISArchiveReader
         // Read the item count
         var count = ReadInt8();
 
-        if (count is < 1 or > 7)
-            throw new FormatException($"Invalid tuple count for ValueTuple ({count})");
-
-        throw new NotImplementedException();
-
-        if (receiver is (int, int))
-        {
-        }
-
-        throw new FormatException($"Cannot read tuple into receiver of type {typeof(T)}");
+        // And forward the request, let other code handle this headache
+        ArchiveBuiltInReaders.ReadValueTuple(ref receiver, count, this);
     }
 
     public void ReadObject<T>(ref T obj)
