@@ -525,8 +525,13 @@ public abstract class SArchiveReaderBase : ISArchiveReader
             if (ReadManager.TryGetAlreadyReadObject(id, out var requiredObject))
                 return requiredObject;
 
-            throw new FormatException($"Cannot find earlier object with ID {id} that is referenced by this object. " +
-                $"Is ancestor serialization configured correctly? Or Is this archive corrupted?");
+            // Hitting this exception likely means that an object is trying to deserialize itself from a reference
+            // before it has registered with the ReadManager.
+            // This happens when an object contains an object that directly or indirectly references it
+            // (so back up the tree).
+            // To support that, the object needs to construct itself with minimal parameters and
+            // call ReportObjectConstructorDone before deserializing any child objects that might reference it.
+            throw new AncestorReferenceException(id, archiveObjectType);
         }
 
         if (id > 0 && ReadManager.TryGetAlreadyReadObject(id, out var alreadyReadObject))
@@ -683,5 +688,16 @@ public abstract class SArchiveReaderBase : ISArchiveReader
             if (!ReadManager.RememberObject(currentlyDeserializingObject, id))
                 throw new FormatException($"Multiple objects with same ID: {id} (direct report)");
         }
+    }
+}
+
+public class AncestorReferenceException : FormatException
+{
+    public AncestorReferenceException(int referenceId, ArchiveObjectType archiveObjectType) : base(
+        $"Cannot find earlier object with ID {referenceId} that is referenced by this object. " +
+        $"Is this archive file corrupted? " +
+        $"Or is the code for type {archiveObjectType} misconfigured related to ancestor serialization " +
+        $"(maybe missing call to ReportObjectConstructorDone)?")
+    {
     }
 }
