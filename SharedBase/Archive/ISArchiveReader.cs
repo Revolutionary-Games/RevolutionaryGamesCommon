@@ -109,5 +109,12 @@ public interface ISArchiveReader
     public bool ReadObjectProperties<T>(ref T obj)
         where T : IArchiveUpdatable;
 
+    public void ReadTuple<T1>(ref ValueTuple<T1> receiver);
+    public void ReadTuple<T1, T2>(ref (T1 Item1, T2 Item2) receiver);
+    public void ReadTuple<T1, T2, T3>(ref (T1 Item1, T2 Item2, T3 Item3) receiver);
+    public void ReadTuple<T1, T2, T3, T4>(ref (T1 Item1, T2 Item2, T3 Item3, T4 Item4) receiver);
+
+    public object ReadTupleBoxed(ushort version);
+
     public Type? MapArchiveTypeToType(ArchiveObjectType type);
 }

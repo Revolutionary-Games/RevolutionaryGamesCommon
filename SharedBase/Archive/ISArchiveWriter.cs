@@ -1,6 +1,7 @@
 ﻿namespace SharedBase.Archive;
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 public interface ISArchiveWriter
@@ -73,11 +74,29 @@ public interface ISArchiveWriter
 
     /// <summary>
     ///   Tries to write any type of value that is archivable or has a registered writer.
+    ///   This is much less preferable to use than any of the more specific APIs available.
     ///   Throws if it cannot be processed.
     /// </summary>
     /// <param name="value">Value to write to this archive. This is always written with an object header.</param>
     /// <typeparam name="T">Type of the value</typeparam>
     public void WriteAnyRegisteredValueAsObject<T>(T value);
+
+    // ValueTuple handling without boxing
+    public void WriteObject<T1, T2>(in (T1 Value1, T2 Value2) tuple);
+    public void WriteObject<T1, T2, T3>(in (T1 Value1, T2 Value2, T3 Value3) tuple);
+    public void WriteObject<T1, T2, T3, T4>(in (T1 Value1, T2 Value2, T3 Value3, T4 Value4) tuple);
+
+    // Reference tuples are always less efficient than value tuples, but specifying these makes the API a bit nicer
+    public void WriteObject<T1, T2>(Tuple<T1, T2> tuple);
+    public void WriteObject<T1, T2, T3>(Tuple<T1, T2, T3> tuple);
+    public void WriteObject<T1, T2, T3, T4>(Tuple<T1, T2, T3, T4> tuple);
+
+    /// <summary>
+    ///   Other types of tuples are supported generically and are less performant.
+    /// </summary>
+    /// <param name="tuple">Any kind of tuple to write (may cause boxing for ValueTuple)</param>
+    /// <param name="valueType">Indicate whether the original tuple is a value tuple or a reference tuple</param>
+    public void WriteObject(ITuple tuple, bool valueType);
 
     /// <summary>
     ///   Writes the object header and then a null value.
