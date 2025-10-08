@@ -100,6 +100,9 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
         // a second time
         objectIdPositions.Add(obj, writer.GetPosition());
 
+        // Otherwise put the placeholder here where we are at the position we just saved
+        writer.Write(0);
+
         return false;
     }
 

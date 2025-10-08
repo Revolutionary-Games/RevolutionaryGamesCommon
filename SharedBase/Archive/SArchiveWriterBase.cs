@@ -214,15 +214,13 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
         // referenced
         if (canBeReference)
         {
+            // The WriteManager handles writing the reference data
             if (WriteManager.MarkStartOfReferenceObject(this, obj))
             {
                 // Object was already written, so we don't need to write it again, and the manager already put the ID
                 // here, so we don't even need to write that
                 return;
             }
-
-            // Otherwise put the placeholder here where we are at the position the WriteManager saved
-            Write(0);
         }
 
         // Header handled, let the object handle saving its data
