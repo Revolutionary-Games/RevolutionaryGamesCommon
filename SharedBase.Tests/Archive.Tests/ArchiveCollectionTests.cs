@@ -26,7 +26,10 @@ public class ArchiveCollectionTests
 
         (int, string, bool) result = default;
 
+        Assert.NotEqual(original, result);
         reader.ReadAnyStruct(ref result);
+
+        Assert.Equal(original, result);
     }
 
     [Fact]
@@ -46,5 +49,48 @@ public class ArchiveCollectionTests
 
         Assert.NotNull(result);
         Assert.Equal(original, result);
+    }
+
+    [Fact]
+    public void ArchiveCollection_MixingReferenceTupleThrows()
+    {
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, manager);
+        var reader = new SArchiveMemoryReader(memoryStream, manager);
+
+        var original = Tuple.Create(42, "stuff", true);
+
+        writer.WriteObject(original);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        (int, string, bool) result = default;
+
+        Assert.Throws<FormatException>(() => reader.ReadAnyStruct(ref result));
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        Assert.Throws<InvalidCastException>(() =>
+            result = ((int, string, bool))reader.ReadObject(out _)!);
+    }
+
+    [Fact]
+    public void ArchiveCollection_MixingValueTupleThrows()
+    {
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, manager);
+        var reader = new SArchiveMemoryReader(memoryStream, manager);
+
+        var original = (42, "stuff", true);
+
+        writer.WriteObject(original);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var read = Tuple.Create(42, "stuff", true);
+
+        Assert.Throws<InvalidCastException>(() => read = (Tuple<int, string, bool>)reader.ReadObject<ITuple>()!);
+
+        _ = read;
     }
 }

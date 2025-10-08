@@ -247,7 +247,7 @@ public abstract class SArchiveReaderBase : ISArchiveReader
                     return;
                 }
 
-                throw new FormatException($"Cannot read {type} into receiver of type {typeof(T)}");
+                throw new FormatException($"Cannot read {type} into receiver of type {receiver!.GetType()}");
 
             case ArchiveObjectType.Bool:
                 if (version > 1)
@@ -259,7 +259,7 @@ public abstract class SArchiveReaderBase : ISArchiveReader
                     return;
                 }
 
-                throw new FormatException($"Cannot read {type} into receiver of type {typeof(T)}");
+                throw new FormatException($"Cannot read {type} into receiver of type {receiver!.GetType()}");
 
             case ArchiveObjectType.Int16:
                 if (version > 1)
@@ -271,7 +271,7 @@ public abstract class SArchiveReaderBase : ISArchiveReader
                     return;
                 }
 
-                throw new FormatException($"Cannot read {type} into receiver of type {typeof(T)}");
+                throw new FormatException($"Cannot read {type} into receiver of type {receiver!.GetType()}");
             case ArchiveObjectType.Int32:
                 if (version > 1)
                     throw new InvalidArchiveVersionException(version, 1);
@@ -282,7 +282,7 @@ public abstract class SArchiveReaderBase : ISArchiveReader
                     return;
                 }
 
-                throw new FormatException($"Cannot read {type} into receiver of type {typeof(T)}");
+                throw new FormatException($"Cannot read {type} into receiver of type {receiver!.GetType()}");
             case ArchiveObjectType.Int64:
                 if (version > 1)
                     throw new InvalidArchiveVersionException(version, 1);
@@ -293,7 +293,7 @@ public abstract class SArchiveReaderBase : ISArchiveReader
                     return;
                 }
 
-                throw new FormatException($"Cannot read {type} into receiver of type {typeof(T)}");
+                throw new FormatException($"Cannot read {type} into receiver of type {receiver!.GetType()}");
             case ArchiveObjectType.UInt16:
                 if (version > 1)
                     throw new InvalidArchiveVersionException(version, 1);
@@ -304,7 +304,7 @@ public abstract class SArchiveReaderBase : ISArchiveReader
                     return;
                 }
 
-                throw new FormatException($"Cannot read {type} into receiver of type {typeof(T)}");
+                throw new FormatException($"Cannot read {type} into receiver of type {receiver!.GetType()}");
             case ArchiveObjectType.UInt32:
                 if (version > 1)
                     throw new InvalidArchiveVersionException(version, 1);
@@ -315,7 +315,7 @@ public abstract class SArchiveReaderBase : ISArchiveReader
                     return;
                 }
 
-                throw new FormatException($"Cannot read {type} into receiver of type {typeof(T)}");
+                throw new FormatException($"Cannot read {type} into receiver of type {receiver!.GetType()}");
             case ArchiveObjectType.UInt64:
                 if (version > 1)
                     throw new InvalidArchiveVersionException(version, 1);
@@ -326,7 +326,7 @@ public abstract class SArchiveReaderBase : ISArchiveReader
                     return;
                 }
 
-                throw new FormatException($"Cannot read {type} into receiver of type {typeof(T)}");
+                throw new FormatException($"Cannot read {type} into receiver of type {receiver!.GetType()}");
             case ArchiveObjectType.Float:
                 if (version > 1)
                     throw new InvalidArchiveVersionException(version, 1);
@@ -337,7 +337,7 @@ public abstract class SArchiveReaderBase : ISArchiveReader
                     return;
                 }
 
-                throw new FormatException($"Cannot read {type} into receiver of type {typeof(T)}");
+                throw new FormatException($"Cannot read {type} into receiver of type {receiver!.GetType()}");
             case ArchiveObjectType.Double:
                 if (version > 1)
                     throw new InvalidArchiveVersionException(version, 1);
@@ -348,7 +348,7 @@ public abstract class SArchiveReaderBase : ISArchiveReader
                     return;
                 }
 
-                throw new FormatException($"Cannot read {type} into receiver of type {typeof(T)}");
+                throw new FormatException($"Cannot read {type} into receiver of type {receiver!.GetType()}");
             case ArchiveObjectType.VariableUint32:
                 if (version > 1)
                     throw new InvalidArchiveVersionException(version, 1);
@@ -359,31 +359,53 @@ public abstract class SArchiveReaderBase : ISArchiveReader
                     return;
                 }
 
-                throw new FormatException($"Cannot read {type} into receiver of type {typeof(T)}");
+                throw new FormatException($"Cannot read {type} into receiver of type {receiver!.GetType()}");
             case ArchiveObjectType.Tuple:
-                if (version > 1)
-                    throw new InvalidArchiveVersionException(version, 1);
-
-                if (receiver is ITuple asTuple)
+                // This is highly not recommended when tuples are known to be used as this causes boxing
+                try
                 {
-                    ReadTuple(ref asTuple);
+                    receiver = (T)ReadTupleBoxed(version);
                     return;
                 }
-
-                throw new FormatException($"Cannot read {type} into receiver of type {typeof(T)}");
+                catch (Exception e)
+                {
+                    throw new FormatException($"Cannot read {type} into receiver of type {receiver!.GetType()}", e);
+                }
         }
 
-        throw new FormatException($"Unhandled object type for struct read: {type} (receiver: {typeof(T)})");
+        throw new FormatException($"Unhandled object type for struct read: {type} (receiver: {receiver!.GetType()})");
     }
 
-    public void ReadTuple<T>(ref T receiver)
-        where T : ITuple
+    public void ReadTuple<T1>(ref ValueTuple<T1> receiver)
     {
         // Read the item count
         var count = ReadInt8();
 
         // And forward the request, let other code handle this headache
         ArchiveBuiltInReaders.ReadValueTuple(ref receiver, count, this);
+    }
+
+    public void ReadTuple<T1, T2>(ref (T1 Item1, T2 Item2) receiver)
+    {
+        var count = ReadInt8();
+        ArchiveBuiltInReaders.ReadValueTuple(ref receiver, count, this);
+    }
+
+    public void ReadTuple<T1, T2, T3>(ref (T1 Item1, T2 Item2, T3 Item3) receiver)
+    {
+        var count = ReadInt8();
+        ArchiveBuiltInReaders.ReadValueTuple(ref receiver, count, this);
+    }
+
+    public void ReadTuple<T1, T2, T3, T4>(ref (T1 Item1, T2 Item2, T3 Item3, T4 Item4) receiver)
+    {
+        var count = ReadInt8();
+        ArchiveBuiltInReaders.ReadValueTuple(ref receiver, count, this);
+    }
+
+    public object ReadTupleBoxed(ushort version)
+    {
+        return ArchiveBuiltInReaders.ReadValueTupleBoxed(this, version);
     }
 
     public void ReadObject<T>(ref T obj)
@@ -549,8 +571,11 @@ public abstract class SArchiveReaderBase : ISArchiveReader
 
                 read = ReadVariableLengthField32();
                 break;
+
+            // Reference tuple is handled by ReadManager
+
             case ArchiveObjectType.Tuple:
-                // TODO: tuple handling here as well?
+                read = ReadTupleBoxed(version);
                 break;
         }
 
