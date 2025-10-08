@@ -176,7 +176,37 @@ public class ArchiveObjectTests
         Assert.NotEqual(defaultData, read);
     }
 
-    private struct TestObject3 : IArchiveUpdatable
+    [Fact]
+    public void ArchiveObject_DeserializeBoxedStruct()
+    {
+        var manager = new DefaultArchiveManager(false);
+        manager.RegisterBoxableValueType(ArchiveObjectType.TestObjectType1, typeof(TestObject4),
+            TestObject4.ConstructBoxedArchiveRead);
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, manager);
+        var reader = new SArchiveMemoryReader(memoryStream, manager);
+
+        var testObject = new TestObject4
+        {
+            Value1 = 1,
+            Value2 = 2,
+            Value3 = "hello, this is a much longer test string",
+            Value4 = true,
+        };
+
+        writer.WriteObject(ref testObject);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        TestObject4 read = default;
+
+        Assert.NotEqual(testObject, read);
+        reader.ReadAnyStruct(ref read);
+
+        Assert.Equal(testObject, read);
+    }
+
+    internal struct TestObject3 : IArchiveUpdatable
     {
         public const ushort SERIALIZATION_VERSION = 1;
 
@@ -210,7 +240,7 @@ public class ArchiveObjectTests
         }
     }
 
-    private struct TestObject4 : IArchiveReadableVariable
+    internal struct TestObject4 : IArchiveReadableVariable
     {
         public const ushort SERIALIZATION_VERSION = 1;
 
@@ -222,6 +252,13 @@ public class ArchiveObjectTests
         public ushort CurrentArchiveVersion => SERIALIZATION_VERSION;
         public ArchiveObjectType ArchiveObjectType => ArchiveObjectType.TestObjectType1;
         public bool CanBeReferencedInArchive => false;
+
+        public static IArchiveReadableVariable ConstructBoxedArchiveRead(ISArchiveReader reader,
+            out bool performedCustomRead, ushort version)
+        {
+            performedCustomRead = false;
+            return default(TestObject4);
+        }
 
         public void WriteToArchive(ISArchiveWriter writer)
         {
@@ -243,7 +280,7 @@ public class ArchiveObjectTests
         }
     }
 
-    private class TestObject1 : IArchivable
+    internal class TestObject1 : IArchivable
     {
         public const ushort SERIALIZATION_VERSION = 1;
 
@@ -318,7 +355,7 @@ public class ArchiveObjectTests
         }
     }
 
-    private class TestObject2 : TestObject1
+    internal class TestObject2 : TestObject1
     {
         public override bool CanBeReferencedInArchive => true;
 

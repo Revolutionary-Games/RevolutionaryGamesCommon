@@ -10,8 +10,12 @@ using System.Diagnostics.CodeAnalysis;
 public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
 {
     // Registered custom types
+    // TODO: do we need these write delegates?
     private readonly Dictionary<ArchiveObjectType, IArchiveWriteManager.ArchiveObjectDelegate> writeDelegates = new();
     private readonly Dictionary<ArchiveObjectType, IArchiveReadManager.RestoreObjectDelegate> readDelegates = new();
+
+    private readonly Dictionary<ArchiveObjectType, IArchiveReadManager.CreateStructInstanceDelegate>
+        readBoxedDelegates = new();
 
     private readonly Dictionary<ArchiveObjectType, Type> registeredTypes = new();
 
@@ -110,18 +114,17 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
         readDelegates[type] = readDelegate;
     }
 
-    public void RegisterValueType<T>(ArchiveObjectType type, Type nativeType,
-        IArchiveReadManager.ReadStructDelegate<T> readDelegate)
+    public void RegisterBoxableValueType(ArchiveObjectType type, Type nativeType,
+        IArchiveReadManager.CreateStructInstanceDelegate createInstanceDelegate)
     {
         if (!registeredTypes.TryAdd(type, nativeType))
             throw new ArgumentException("Type is already registered");
 
-        throw new System.NotImplementedException();
+        readBoxedDelegates[type] = createInstanceDelegate;
     }
 
     public void OnStartNewRead(ISArchiveWriter writer)
     {
-        throw new System.NotImplementedException();
     }
 
     public void OnFinishRead(ISArchiveWriter writer)
@@ -136,10 +139,23 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
 
     public object ReadObject(ISArchiveReader reader, ArchiveObjectType type, ushort version)
     {
-        if (!readDelegates.TryGetValue(type, out var readDelegate))
-            throw new FormatException($"Unsupported object type for reading: {type}");
+        if (readDelegates.TryGetValue(type, out var readDelegate))
+            return readDelegate(reader, version);
 
-        return readDelegate(reader, version);
+        if (readBoxedDelegates.TryGetValue(type, out var readBoxedDelegate))
+        {
+            var instance = readBoxedDelegate(reader, out var read, version);
+
+            // Perform standard read if not already done
+            if (!read)
+            {
+                instance.ReadFromArchive(reader, version);
+            }
+
+            return instance;
+        }
+
+        throw new FormatException($"Unsupported object type for reading: {type}");
     }
 
     public void ReadObjectToVariable<T>(ref T receiver, ISArchiveReader reader, ArchiveObjectType type, ushort version)

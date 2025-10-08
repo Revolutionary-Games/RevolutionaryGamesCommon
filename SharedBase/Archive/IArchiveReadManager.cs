@@ -11,7 +11,8 @@ public interface IArchiveReadManager
 {
     public delegate object RestoreObjectDelegate(ISArchiveReader reader, ushort version);
 
-    public delegate void ReadStructDelegate<T>(ISArchiveReader reader, ArchiveObjectType type, ref T obj,
+    public delegate IArchiveReadableVariable CreateStructInstanceDelegate(ISArchiveReader reader,
+        out bool performedCustomRead,
         ushort version);
 
     public static void RegisterDefaultObjectReaders(IArchiveReadManager manager)
@@ -31,7 +32,19 @@ public interface IArchiveReadManager
     /// <param name="readDelegate">Factory method that is invoked to create the object on read</param>
     public void RegisterObjectType(ArchiveObjectType type, Type nativeType, RestoreObjectDelegate readDelegate);
 
-    public void RegisterValueType<T>(ArchiveObjectType type, Type nativeType, ReadStructDelegate<T> readDelegate);
+    /// <summary>
+    ///   Registers a struct type that needs to be read to generic variables where <see cref="ReadObjectToVariable"/>
+    ///   cannot be used.
+    ///   This approach needs a constructor that makes boxed instances.
+    /// </summary>
+    /// <param name="type">Type of the object</param>
+    /// <param name="nativeType">Native type in C#</param>
+    /// <param name="createInstanceDelegate">
+    ///   Factory for making basically plain instances, though optionally, these can do a custom read if needed for
+    ///   a constructor.
+    /// </param>
+    public void RegisterBoxableValueType(ArchiveObjectType type, Type nativeType,
+        CreateStructInstanceDelegate createInstanceDelegate);
 
     public void OnStartNewRead(ISArchiveWriter writer);
     public void OnFinishRead(ISArchiveWriter writer);

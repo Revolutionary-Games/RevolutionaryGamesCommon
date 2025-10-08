@@ -2,6 +2,7 @@ namespace SharedBase.Archive;
 
 using System;
 using System.Buffers;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
 /// <summary>
@@ -12,6 +13,8 @@ public abstract class SArchiveReaderBase : ISArchiveReader
     private const int BUFFER_SIZE = 1024;
 
     private byte[]? scratch;
+
+    private Stack<int>? processingObjectIds;
 
     protected SArchiveReaderBase(IArchiveReadManager readManager)
     {
@@ -373,7 +376,15 @@ public abstract class SArchiveReaderBase : ISArchiveReader
                 }
         }
 
-        throw new FormatException($"Unhandled object type for struct read: {type} (receiver: {receiver!.GetType()})");
+        // Try a manager read for custom registered structs
+        try
+        {
+            receiver = (T)ReadManager.ReadObject(this, type, version);
+        }
+        catch (InvalidCastException e)
+        {
+            throw new FormatException($"Cannot read {type} into receiver of type {receiver!.GetType()}", e);
+        }
     }
 
     public void ReadTuple<T1>(ref ValueTuple<T1> receiver)
@@ -581,15 +592,42 @@ public abstract class SArchiveReaderBase : ISArchiveReader
 
         // If we don't have an object yet, we need to deserialize one.
         // For this we must rely on the read manager's mapping.
-        read ??= ReadManager.ReadObject(this, archiveObjectType, version);
+        if (read == null)
+        {
+            if (id > 0)
+            {
+                processingObjectIds ??= new Stack<int>();
+
+                processingObjectIds.Push(id);
+            }
+
+            read = ReadManager.ReadObject(this, archiveObjectType, version);
+        }
 
         if (id > 0)
         {
+            // Remove the ID if it was not used by ReportObjectConstructorDone
+            if (processingObjectIds != null && processingObjectIds.Peek() == id)
+            {
+                processingObjectIds.Pop();
+            }
+
             // Need to remember the object
             if (!ReadManager.RememberObject(read, id))
                 throw new FormatException($"Multiple objects with same ID: {id}");
         }
 
         return read;
+    }
+
+    public void ReportObjectConstructorDone(object currentlyDeserializingObject)
+    {
+        // Current object reports its constructor is done
+        if (processingObjectIds is { Count: > 0 })
+        {
+            var id = processingObjectIds.Pop();
+            if (!ReadManager.RememberObject(currentlyDeserializingObject, id))
+                throw new FormatException($"Multiple objects with same ID: {id} (direct report)");
+        }
     }
 }

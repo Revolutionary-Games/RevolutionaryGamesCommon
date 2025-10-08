@@ -116,5 +116,10 @@ public interface ISArchiveReader
 
     public object ReadTupleBoxed(ushort version);
 
+    /// <summary>
+    ///   Used to support objects referring to their ancestors
+    /// </summary>
+    public void ReportObjectConstructorDone(object currentlyDeserializingObject);
+
     public Type? MapArchiveTypeToType(ArchiveObjectType type);
 }
