@@ -179,6 +179,8 @@ public abstract class SArchiveReaderBase : ISArchiveReader
                 version = ReadUInt16();
             }
 
+            // If the version is 0, it is very likely a sign that the archive is corrupt, and we are reading the wrong
+            // location
             if (version == 0)
                 throw new FormatException("Version of object should never be 0 when data is present");
         }

@@ -123,11 +123,11 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
         readBoxedDelegates[type] = createInstanceDelegate;
     }
 
-    public void OnStartNewRead(ISArchiveWriter writer)
+    public void OnStartNewRead(ISArchiveReader reader)
     {
     }
 
-    public void OnFinishRead(ISArchiveWriter writer)
+    public void OnFinishRead(ISArchiveReader reader)
     {
         loadedObjectReferences.Clear();
     }

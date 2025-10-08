@@ -46,8 +46,8 @@ public interface IArchiveReadManager
     public void RegisterBoxableValueType(ArchiveObjectType type, Type nativeType,
         CreateStructInstanceDelegate createInstanceDelegate);
 
-    public void OnStartNewRead(ISArchiveWriter writer);
-    public void OnFinishRead(ISArchiveWriter writer);
+    public void OnStartNewRead(ISArchiveReader reader);
+    public void OnFinishRead(ISArchiveReader reader);
 
     /// <summary>
     ///   Tries to get an already read object by its reference ID.
