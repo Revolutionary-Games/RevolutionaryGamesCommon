@@ -200,18 +200,120 @@ public static class ArchiveBuiltInReaders
 
         var listItemType = reader.MapArchiveTypeToType(rawType) ??
             throw new FormatException("Unregistered type for list items: " + rawType);
+
+        Type listType;
+
+        // If the list item type contains generic parameters, we need to resolve those somehow here
+        if (listItemType.IsGenericType)
+        {
+            // We need to figure out what the actual type is.
+            // This is really inefficient, but we'll try to read the items first and then figure out the type to use
+            var tempData = new object?[length];
+
+            for (int i = 0; i < length; ++i)
+            {
+                tempData[i] = reader.ReadObject(out _);
+            }
+
+            bool didSomething = false;
+            Type? target = null;
+            bool done = false;
+            int steps = 0;
+
+            while (!done)
+            {
+                if (++steps > 1000)
+                    throw new Exception("Stuck trying to figure out the type of a generic list");
+
+                for (int i = 0; i < length; ++i)
+                {
+                    if (tempData[i] != null && target == null)
+                    {
+                        var itemType = tempData[i]!.GetType();
+                        target = itemType;
+                        didSomething = true;
+                        break;
+                    }
+
+                    if (tempData[i] != null && target != null)
+                    {
+                        // Need to verify all items can match the type or switch to a parent type (that isn't object)
+                        var itemType = tempData[i]!.GetType();
+
+                        if (!target.IsAssignableFrom(itemType))
+                        {
+                            // A problem
+                            if (itemType.IsAssignableFrom(target))
+                            {
+                                // Luckily, we can just swap the types as one is more generic
+                                target = itemType;
+                                didSomething = true;
+                                break;
+                            }
+
+                            // We need to find a base class common to both
+                            var commonBase = FindCommonBaseType(itemType, target);
+
+                            if (commonBase != typeof(object))
+                            {
+                                target = commonBase;
+                                didSomething = true;
+                                break;
+                            }
+
+                            // Did not find a common type, this is bad...
+                        }
+                    }
+
+                    if (i + 1 == length && target != null)
+                    {
+                        // Type should be fine now
+                        done = true;
+                        break;
+                    }
+                }
+
+                // If stuck trying to find a parent type
+                if (!didSomething)
+                    throw new FormatException("Cannot figure out generic type parameter for a list");
+            }
+
+            if (target == null!)
+            {
+                throw new FormatException(
+                    "Cannot determine type for a generically typed list with generic items when the list is empty!");
+            }
+
+            singleTypeArray[0] = target;
+            listType = MakeGenericList(singleTypeArray);
+
+            var list2 = CreateBaseList(singleTypeArray, listType, length);
+
+            // Copy the data we already read
+            for (int i = 0; i < length; ++i)
+            {
+                try
+                {
+                    list2.Add(tempData[i]);
+                }
+                catch (Exception e)
+                {
+                    throw new FormatException(
+                        $"Cannot add cpåy item to list at index {i}, item is {tempData[i]?.GetType()} " +
+                        $"and the list is: {listType}", e);
+                }
+            }
+
+            if (list2.Count != length)
+                throw new Exception("Failed to put the right number of items into a list");
+
+            return list2;
+        }
+
         singleTypeArray[0] = listItemType;
-        var listType = MakeGenericList(singleTypeArray);
+        listType = MakeGenericList(singleTypeArray);
 
-        // TODO: caching for the constructor?
-        // We want the constructor allowing specifying size upfront
-        singleTypeArray[0] = typeof(int);
-        var constructor = listType.GetConstructor(singleTypeArray) ??
-            throw new FormatException($"List constructor not found for {listType}");
-
-        var singleObjectArray = new object[1];
-        singleObjectArray[0] = length;
-        var list = (IList)constructor.Invoke(singleObjectArray);
+        var list = CreateBaseList(singleTypeArray, listType, length);
 
         for (int i = 0; i < length; ++i)
         {
@@ -234,6 +336,64 @@ public static class ArchiveBuiltInReaders
             throw new Exception("Failed to put the right number of items into a list");
 
         return list;
+    }
+
+    private static IList CreateBaseList(Type[] singleTypeArray, Type listType, int length)
+    {
+        // TODO: caching for the constructor?
+        // We want the constructor allowing specifying size upfront
+        singleTypeArray[0] = typeof(int);
+        var constructor = listType.GetConstructor(singleTypeArray) ??
+            throw new FormatException($"List constructor not found for {listType}");
+
+        var singleObjectArray = new object[1];
+        singleObjectArray[0] = length;
+        var list = (IList)constructor.Invoke(singleObjectArray);
+        return list;
+    }
+
+    private static Type FindCommonBaseType(Type type1, Type type2)
+    {
+        var cursor1 = type1.BaseType;
+
+        // First look at base types
+        while (cursor1 != null)
+        {
+            var cursor2 = type2.BaseType;
+
+            while (cursor2 != null)
+            {
+                if (cursor1.IsAssignableFrom(cursor2))
+                {
+                    // Ignore the base object type for now
+                    if (cursor1 != typeof(object))
+                        return cursor1;
+                }
+
+                cursor2 = cursor2.BaseType;
+            }
+
+            cursor1 = cursor1.BaseType;
+        }
+
+        // And then interfaces
+        var interfaces1 = type1.GetInterfaces();
+        var interfaces2 = type2.GetInterfaces();
+
+        foreach (var interface1 in interfaces1)
+        {
+            foreach (var interface2 in interfaces2)
+            {
+                if (interface1.IsAssignableFrom(interface2))
+                    return interface1;
+
+                if (interface2.IsAssignableFrom(interface1))
+                    return interface2;
+            }
+        }
+
+        // And if this can't find anything, just return the object type
+        return typeof(object);
     }
 
     private static void ReadTupleValue<TField>(ref TField fieldValue, ISArchiveReader reader, int fieldIndex,

@@ -240,9 +240,9 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
     }
 
     /// <summary>
-    ///   Writes any kind of list
+    ///   Writes most kinds of lists
     /// </summary>
-    public void WriteObject<T>(IReadOnlyList<T> list)
+    public void WriteObject<T>(IList<T> list)
     {
         WriteObjectHeader(ArchiveObjectType.List, false, false, false, COLLECTIONS_VERSION);
 
@@ -250,83 +250,46 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
         Write(list.Count);
 
         // Optimisation for some primitive types
-        if (list is IReadOnlyList<int> intList)
+        if (WriteOptimizedListIfPossible(list))
         {
-            // Write the list element type
-            Write((uint)ArchiveObjectType.Int32);
-            Write((byte)1);
-
-            int count = list.Count;
-            for (int i = 0; i < count; ++i)
-            {
-                Write(intList[i]);
-            }
+            return;
         }
-        else if (list is IReadOnlyList<byte> byteList)
-        {
-            Write((uint)ArchiveObjectType.Byte);
-            Write((byte)1);
 
-            int count = list.Count;
-            for (int i = 0; i < count; ++i)
-            {
-                Write(byteList[i]);
-            }
+        Write((uint)WriteManager.GetObjectWriteType(typeof(T)));
+        Write((byte)0);
+
+        int count = list.Count;
+        for (int i = 0; i < count; ++i)
+        {
+            WriteAnyRegisteredValueAsObject(list[i]);
         }
-        else if (list is IReadOnlyList<long> longList)
-        {
-            Write((uint)ArchiveObjectType.Int64);
-            Write((byte)1);
+    }
 
-            int count = list.Count;
-            for (int i = 0; i < count; ++i)
-            {
-                Write(longList[i]);
-            }
+    /// <summary>
+    ///   Writes all kinds of lists.
+    ///   When the type is not known, this is less efficient as this needs to use reflection to find the
+    ///   actual object type in the list.
+    /// </summary>
+    public void WriteUnknownList(IList list)
+    {
+        WriteObjectHeader(ArchiveObjectType.List, false, false, false, COLLECTIONS_VERSION);
+
+        // Write list length first
+        Write(list.Count);
+
+        // Optimisation for some primitive types
+        if (WriteOptimizedListIfPossible(list))
+        {
+            return;
         }
-        else if (list is IReadOnlyList<bool> boolList)
-        {
-            Write((uint)ArchiveObjectType.Bool);
-            Write((byte)1);
 
-            int count = list.Count;
-            for (int i = 0; i < count; i++)
-            {
-                Write(boolList[i] ? (byte)1 : (byte)0);
-            }
-        }
-        else if (list is IReadOnlyList<string> stringList)
-        {
-            Write((uint)ArchiveObjectType.String);
-            Write((byte)1);
+        Write((uint)WriteManager.GetObjectWriteType(list.GetType().GetGenericArguments()[0]));
+        Write((byte)0);
 
-            int count = list.Count;
-            for (int i = 0; i < count; i++)
-            {
-                Write(stringList[i]);
-            }
-        }
-        else if (list is IReadOnlyList<float> floatList)
+        int count = list.Count;
+        for (int i = 0; i < count; ++i)
         {
-            Write((uint)ArchiveObjectType.Float);
-            Write((byte)1);
-
-            int count = list.Count;
-            for (int i = 0; i < count; i++)
-            {
-                Write(floatList[i]);
-            }
-        }
-        else
-        {
-            Write((uint)WriteManager.GetObjectWriteType(typeof(T)));
-            Write((byte)0);
-
-            int count = list.Count;
-            for (int i = 0; i < count; ++i)
-            {
-                WriteAnyRegisteredValueAsObject(list[i]);
-            }
+            WriteAnyRegisteredValueAsObject(list[i]);
         }
     }
 
@@ -437,6 +400,12 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
             return;
         }
 
+        if (value is IList list)
+        {
+            WriteUnknownList(list);
+            return;
+        }
+
         throw new FormatException($"No known conversion for type {typeof(T).FullName} into an archive");
     }
 
@@ -533,4 +502,81 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
 
     public abstract long GetPosition();
     public abstract void Seek(long position);
+
+    private bool WriteOptimizedListIfPossible(object list)
+    {
+        if (list is IReadOnlyList<int> intList)
+        {
+            // Write the list element type
+            Write((uint)ArchiveObjectType.Int32);
+            Write((byte)1);
+
+            int count = intList.Count;
+            for (int i = 0; i < count; ++i)
+            {
+                Write(intList[i]);
+            }
+        }
+        else if (list is IReadOnlyList<byte> byteList)
+        {
+            Write((uint)ArchiveObjectType.Byte);
+            Write((byte)1);
+
+            int count = byteList.Count;
+            for (int i = 0; i < count; ++i)
+            {
+                Write(byteList[i]);
+            }
+        }
+        else if (list is IReadOnlyList<long> longList)
+        {
+            Write((uint)ArchiveObjectType.Int64);
+            Write((byte)1);
+
+            int count = longList.Count;
+            for (int i = 0; i < count; ++i)
+            {
+                Write(longList[i]);
+            }
+        }
+        else if (list is IReadOnlyList<bool> boolList)
+        {
+            Write((uint)ArchiveObjectType.Bool);
+            Write((byte)1);
+
+            int count = boolList.Count;
+            for (int i = 0; i < count; i++)
+            {
+                Write(boolList[i] ? (byte)1 : (byte)0);
+            }
+        }
+        else if (list is IReadOnlyList<string> stringList)
+        {
+            Write((uint)ArchiveObjectType.String);
+            Write((byte)1);
+
+            int count = stringList.Count;
+            for (int i = 0; i < count; i++)
+            {
+                Write(stringList[i]);
+            }
+        }
+        else if (list is IReadOnlyList<float> floatList)
+        {
+            Write((uint)ArchiveObjectType.Float);
+            Write((byte)1);
+
+            int count = floatList.Count;
+            for (int i = 0; i < count; i++)
+            {
+                Write(floatList[i]);
+            }
+        }
+        else
+        {
+            return false;
+        }
+
+        return true;
+    }
 }

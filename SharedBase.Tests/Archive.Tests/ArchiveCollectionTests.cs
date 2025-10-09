@@ -304,4 +304,35 @@ public class ArchiveCollectionTests
 
         Assert.True(memoryStream.Length <= original.Count * sizeof(byte) + 16);
     }
+
+    [Fact]
+    public void ArchiveCollection_NestedListTest()
+    {
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, manager);
+        var reader = new SArchiveMemoryReader(memoryStream, manager);
+
+        var original = new List<List<int>> { new() { 1, 2 }, new() { 34, 56, 90 } };
+
+        writer.WriteObject(original);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var read = reader.ReadObject<List<List<int>>>();
+
+        Assert.NotNull(read);
+
+        Assert.Equal(original.Count, read.Count);
+
+        for (int i = 0; i < original.Count; ++i)
+        {
+            Assert.True(original[i].SequenceEqual(read[i]));
+        }
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var read2 = (List<List<int>>?)reader.ReadObject(out _);
+        Assert.NotNull(read2);
+        Assert.Equal(original.Count, read2.Count);
+    }
 }
