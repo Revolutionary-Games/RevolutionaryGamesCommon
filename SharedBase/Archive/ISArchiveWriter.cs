@@ -1,6 +1,8 @@
 ﻿namespace SharedBase.Archive;
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -103,6 +105,22 @@ public interface ISArchiveWriter
     /// <param name="tuple">Any kind of tuple to write (may cause boxing for ValueTuple)</param>
     /// <param name="valueType">Indicate whether the original tuple is a value tuple or a reference tuple</param>
     public void WriteObject(ITuple tuple, bool valueType);
+
+    /// <summary>
+    ///   Writes most kinds of lists
+    /// </summary>
+    public void WriteObject<T>(IList<T> list);
+
+    public void WriteObject<T>(T[] array);
+
+    /// <summary>
+    ///   Writes all kinds of lists.
+    ///   When the type is not known, this is less efficient as this needs to use reflection to find the
+    ///   actual object type in the list.
+    /// </summary>
+    public void WriteUnknownList(IList list);
+
+    public void WriteObject<TKey, TValue>(IReadOnlyDictionary<TKey, TValue> dictionary);
 
     /// <summary>
     ///   Writes the object header and then a null value.
