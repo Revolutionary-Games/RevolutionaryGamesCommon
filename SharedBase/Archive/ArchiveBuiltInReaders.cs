@@ -107,6 +107,36 @@ public static class ArchiveBuiltInReaders
         ReadTupleValue(ref receiver.Item4, reader, 3, receiverType);
     }
 
+    public static object ReadList(ISArchiveReader reader, ushort version)
+    {
+        if (version > SArchiveWriterBase.COLLECTIONS_VERSION)
+            throw new InvalidArchiveVersionException(version, SArchiveWriterBase.COLLECTIONS_VERSION);
+
+        var length = reader.ReadInt32();
+        var rawType = (ArchiveObjectType)reader.ReadUInt32();
+        var optimizedPrimitive = reader.ReadBool();
+
+        if (optimizedPrimitive)
+        {
+            switch (rawType)
+            {
+                case ArchiveObjectType.Int32:
+                    var result = new List<int>(length);
+                    for (int i = 0; i < length; ++i)
+                    {
+                        result.Add(reader.ReadInt32());
+                    }
+
+                    return result;
+
+                default:
+                    throw new Exception("Unhandled optimized list primitive read type: " + rawType);
+            }
+        }
+
+        throw new NotImplementedException();
+    }
+
     private static void ReadTupleValue<TField>(ref TField fieldValue, ISArchiveReader reader, int fieldIndex,
         Type receiverType)
     {

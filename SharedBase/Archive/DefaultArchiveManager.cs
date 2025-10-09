@@ -18,6 +18,7 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
         readBoxedDelegates = new();
 
     private readonly Dictionary<ArchiveObjectType, Type> registeredTypes = new();
+    private readonly Dictionary<Type, ArchiveObjectType> registeredWriterTypes = new();
 
     // Object reference handling
     private readonly Dictionary<object, long> objectIdPositions = new();
@@ -117,10 +118,60 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
         return objectIdPositions.ContainsKey(obj);
     }
 
-    public void RegisterObjectType(ArchiveObjectType type, bool canBeReference,
+    public ArchiveObjectType GetObjectWriteType(Type type)
+    {
+        // Check custom mapping first
+        if (registeredWriterTypes.TryGetValue(type, out var value))
+            return value;
+
+        // Return common types then
+        if (type == typeof(byte))
+            return ArchiveObjectType.Byte;
+        if (type == typeof(short))
+            return ArchiveObjectType.Int16;
+        if (type == typeof(int))
+            return ArchiveObjectType.Int32;
+        if (type == typeof(long))
+            return ArchiveObjectType.Int64;
+        if (type == typeof(ushort))
+            return ArchiveObjectType.UInt16;
+        if (type == typeof(uint))
+            return ArchiveObjectType.UInt32;
+        if (type == typeof(ulong))
+            return ArchiveObjectType.UInt64;
+        if (type == typeof(float))
+            return ArchiveObjectType.Float;
+        if (type == typeof(double))
+            return ArchiveObjectType.Double;
+
+        if (type.IsGenericType)
+        {
+            var baseType = type.GetGenericTypeDefinition();
+
+            if (baseType == typeof(List<>))
+            {
+                return ArchiveObjectType.List;
+            }
+
+            if (baseType == typeof(Dictionary<,>))
+            {
+                return ArchiveObjectType.Dictionary;
+            }
+
+            if (typeof(IList<>).IsAssignableFrom(baseType))
+            {
+                return ArchiveObjectType.List;
+            }
+        }
+
+        throw new ArgumentException($"Type is not registered for archive writing: {type}");
+    }
+
+    public void RegisterObjectType(ArchiveObjectType type, Type nativeType, bool canBeReference,
         IArchiveWriteManager.ArchiveObjectDelegate writeDelegate)
     {
-        // TODO: does this need to know if this can be a reference?
+        if (!registeredWriterTypes.TryAdd(nativeType, type))
+            throw new ArgumentException("Type is already registered");
 
         writeDelegates[type] = writeDelegate;
     }

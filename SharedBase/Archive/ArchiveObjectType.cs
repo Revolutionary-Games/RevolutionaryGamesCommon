@@ -27,8 +27,10 @@ public enum ArchiveObjectType : uint
     Tuple,
     ReferenceTuple,
     ByteArray,
+    List,
     Array,
     Dictionary,
+    RawEnumerable,
 
     // Only used in testing
     TestObjectType1 = 4094,

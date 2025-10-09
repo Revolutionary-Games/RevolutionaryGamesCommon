@@ -1,6 +1,8 @@
 namespace SharedBase.Archive;
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -10,6 +12,7 @@ using System.Text;
 public abstract class SArchiveWriterBase : ISArchiveWriter
 {
     public const ushort TUPLE_VERSION = 1;
+    public const ushort COLLECTIONS_VERSION = 1;
 
     private const int BUFFER_SIZE = 1024;
 
@@ -234,6 +237,90 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
 
         // Header handled, let the object handle saving its data
         obj.WriteToArchive(this);
+    }
+
+    /// <summary>
+    ///   Writes any kind of list
+    /// </summary>
+    public void WriteObject<T>(IReadOnlyList<T> list)
+    {
+        WriteObjectHeader(ArchiveObjectType.List, false, false, false, COLLECTIONS_VERSION);
+
+        // Write list length first
+        Write(list.Count);
+
+        // Optimisation for some primitive types
+        if (list is IReadOnlyList<int> intList)
+        {
+            // Write the list element type
+            Write((uint)ArchiveObjectType.Int32);
+            Write((byte)1);
+
+            int count = list.Count;
+            for (int i = 0; i < count; ++i)
+            {
+                Write(intList[i]);
+            }
+        }
+        else if (list is IReadOnlyList<long> longList)
+        {
+            Write((uint)ArchiveObjectType.Int64);
+            Write((byte)1);
+
+            int count = list.Count;
+            for (int i = 0; i < count; ++i)
+            {
+                Write(longList[i]);
+            }
+        }
+        else if (list is IReadOnlyList<bool> boolList)
+        {
+            Write((uint)ArchiveObjectType.Bool);
+            Write((byte)1);
+
+            int count = list.Count;
+            for (int i = 0; i < count; i++)
+            {
+                Write(boolList[i] ? (byte)1 : (byte)0);
+            }
+        }
+        else
+        {
+            Write((uint)WriteManager.GetObjectWriteType(typeof(T)));
+            Write((byte)0);
+
+            int count = list.Count;
+            for (int i = 0; i < count; ++i)
+            {
+                WriteAnyRegisteredValueAsObject(list[i]);
+            }
+        }
+    }
+
+    public void WriteObject<T>(T[] array)
+    {
+        if (typeof(T) == typeof(byte))
+        {
+            // Automatic byte array conversion
+            throw new NotImplementedException();
+
+            return;
+        }
+
+        throw new NotImplementedException();
+    }
+
+    public void WriteObject<TKey, TValue>(IReadOnlyDictionary<TKey, TValue> dictionary)
+    {
+        throw new NotImplementedException();
+    }
+
+    /// <summary>
+    ///   Writes anything that kind of seems like a list. Much less efficient than a known type of collection writing.
+    /// </summary>
+    public void WriteObject<T>(IEnumerable anyEnumerable)
+    {
+        throw new NotImplementedException();
     }
 
     public void WriteAnyRegisteredValueAsObject<T>(T value)

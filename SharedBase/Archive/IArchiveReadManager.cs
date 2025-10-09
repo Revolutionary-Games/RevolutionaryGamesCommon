@@ -1,6 +1,7 @@
 ﻿namespace SharedBase.Archive;
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
@@ -17,11 +18,13 @@ public interface IArchiveReadManager
 
     public static void RegisterDefaultObjectReaders(IArchiveReadManager manager)
     {
-        // TODO: list, dictionary, tuple etc. readers
-
         // Reference tuple
         manager.RegisterObjectType(ArchiveObjectType.ReferenceTuple, typeof(ITuple),
             ArchiveBuiltInReaders.ReadReferenceTuple);
+
+        // List reader
+        manager.RegisterObjectType(ArchiveObjectType.List, typeof(IList<>),
+            ArchiveBuiltInReaders.ReadList);
     }
 
     /// <summary>

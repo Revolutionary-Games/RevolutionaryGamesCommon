@@ -1,5 +1,7 @@
 ﻿namespace SharedBase.Archive;
 
+using System;
+
 /// <summary>
 ///   Manages high-level operations and special custom type handling for archives
 /// </summary>
@@ -22,11 +24,19 @@ public interface IArchiveWriteManager
     /// </returns>
     public bool MarkStartOfReferenceObject(ISArchiveWriter writer, object obj);
 
-    public void RegisterObjectType(ArchiveObjectType type, bool canBeReference, ArchiveObjectDelegate writeDelegate);
+    public void RegisterObjectType(ArchiveObjectType type, Type nativeType, bool canBeReference,
+        ArchiveObjectDelegate writeDelegate);
 
     /// <summary>
     ///   Returns true if the object is already referenced.
     /// </summary>
     /// <returns>True if referenced already by <see cref="MarkStartOfReferenceObject"/></returns>
     public bool IsReferencedAlready(object obj);
+
+    /// <summary>
+    ///   Gets the type a given type should be written as in an archive.
+    /// </summary>
+    /// <param name="type">C# type. Note that in some cases this will return a base type.</param>
+    /// <returns>Type to use in the archive</returns>
+    public ArchiveObjectType GetObjectWriteType(Type type);
 }
