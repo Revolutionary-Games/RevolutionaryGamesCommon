@@ -25,6 +25,9 @@ public interface IArchiveReadManager
         // List reader
         manager.RegisterObjectType(ArchiveObjectType.List, typeof(IList<>),
             ArchiveBuiltInReaders.ReadList);
+
+        manager.RegisterObjectType(ArchiveObjectType.Array, typeof(Array),
+            ArchiveBuiltInReaders.ReadArray);
     }
 
     /// <summary>

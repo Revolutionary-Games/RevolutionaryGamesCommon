@@ -110,10 +110,19 @@ public static class ArchiveBuiltInReaders
 
     public static object ReadList(ISArchiveReader reader, ushort version)
     {
+        // Note that this is very similar to the array, but at key points different, still it seems quite hard to
+        // combine these two methods into one generic base, so these are separate
+
         if (version > SArchiveWriterBase.COLLECTIONS_VERSION)
             throw new InvalidArchiveVersionException(version, SArchiveWriterBase.COLLECTIONS_VERSION);
 
-        var length = reader.ReadInt32();
+        var lengthRaw = reader.ReadVariableLengthField32();
+
+        if (lengthRaw > int.MaxValue)
+            throw new FormatException($"List length is too large: {lengthRaw}");
+
+        var length = (int)lengthRaw;
+
         var rawType = (ArchiveObjectType)reader.ReadUInt32();
         var optimizedPrimitive = reader.ReadBool();
 
@@ -195,7 +204,7 @@ public static class ArchiveBuiltInReaders
 
         // Less optimised approach
 
-        // Build the tuple based on the arguments
+        // Build the list based on the arguments
         var singleTypeArray = new Type[1];
 
         var listItemType = reader.MapArchiveTypeToType(rawType) ??
@@ -215,74 +224,7 @@ public static class ArchiveBuiltInReaders
                 tempData[i] = reader.ReadObject(out _);
             }
 
-            bool didSomething = false;
-            Type? target = null;
-            bool done = false;
-            int steps = 0;
-
-            while (!done)
-            {
-                if (++steps > 1000)
-                    throw new Exception("Stuck trying to figure out the type of a generic list");
-
-                for (int i = 0; i < length; ++i)
-                {
-                    if (tempData[i] != null && target == null)
-                    {
-                        var itemType = tempData[i]!.GetType();
-                        target = itemType;
-                        didSomething = true;
-                        break;
-                    }
-
-                    if (tempData[i] != null && target != null)
-                    {
-                        // Need to verify all items can match the type or switch to a parent type (that isn't object)
-                        var itemType = tempData[i]!.GetType();
-
-                        if (!target.IsAssignableFrom(itemType))
-                        {
-                            // A problem
-                            if (itemType.IsAssignableFrom(target))
-                            {
-                                // Luckily, we can just swap the types as one is more generic
-                                target = itemType;
-                                didSomething = true;
-                                break;
-                            }
-
-                            // We need to find a base class common to both
-                            var commonBase = FindCommonBaseType(itemType, target);
-
-                            if (commonBase != typeof(object))
-                            {
-                                target = commonBase;
-                                didSomething = true;
-                                break;
-                            }
-
-                            // Did not find a common type, this is bad...
-                        }
-                    }
-
-                    if (i + 1 == length && target != null)
-                    {
-                        // Type should be fine now
-                        done = true;
-                        break;
-                    }
-                }
-
-                // If stuck trying to find a parent type
-                if (!didSomething)
-                    throw new FormatException("Cannot figure out generic type parameter for a list");
-            }
-
-            if (target == null!)
-            {
-                throw new FormatException(
-                    "Cannot determine type for a generically typed list with generic items when the list is empty!");
-            }
+            var target = DetermineCommonObjectType(length, tempData);
 
             singleTypeArray[0] = target;
             listType = MakeGenericList(singleTypeArray);
@@ -299,7 +241,7 @@ public static class ArchiveBuiltInReaders
                 catch (Exception e)
                 {
                     throw new FormatException(
-                        $"Cannot add cpåy item to list at index {i}, item is {tempData[i]?.GetType()} " +
+                        $"Cannot copy item to list at index {i}, item is {tempData[i]?.GetType()} " +
                         $"and the list is: {listType}", e);
                 }
             }
@@ -338,6 +280,236 @@ public static class ArchiveBuiltInReaders
         return list;
     }
 
+    public static object ReadArray(ISArchiveReader reader, ushort version)
+    {
+        // Note that this is very similar to the list, but at key points different, still it seems quite hard to
+        // combine these two methods into one generic base, so these are separate
+
+        if (version > SArchiveWriterBase.COLLECTIONS_VERSION)
+            throw new InvalidArchiveVersionException(version, SArchiveWriterBase.COLLECTIONS_VERSION);
+
+        var lengthRaw = reader.ReadVariableLengthField32();
+
+        if (lengthRaw > int.MaxValue)
+            throw new FormatException($"Array length is too large: {lengthRaw}");
+
+        var length = (int)lengthRaw;
+
+        var rawType = (ArchiveObjectType)reader.ReadUInt32();
+        var optimizedPrimitive = reader.ReadBool();
+
+        if (optimizedPrimitive)
+        {
+            switch (rawType)
+            {
+                case ArchiveObjectType.Int32:
+                {
+                    var result = new int[length];
+                    for (int i = 0; i < length; ++i)
+                    {
+                        result[i] = reader.ReadInt32();
+                    }
+
+                    return result;
+                }
+
+                case ArchiveObjectType.Byte:
+                {
+                    var result = new byte[length];
+                    for (int i = 0; i < length; ++i)
+                    {
+                        result[i] = reader.ReadInt8();
+                    }
+
+                    return result;
+                }
+
+                case ArchiveObjectType.Int64:
+                {
+                    var result = new long[length];
+                    for (int i = 0; i < length; ++i)
+                    {
+                        result[i] = reader.ReadInt64();
+                    }
+
+                    return result;
+                }
+
+                case ArchiveObjectType.String:
+                {
+                    // We don't know the nullability of the target type, so we need to assume things can be null
+                    var result = new string?[length];
+                    for (int i = 0; i < length; ++i)
+                    {
+                        result[i] = reader.ReadString();
+                    }
+
+                    return result;
+                }
+
+                case ArchiveObjectType.Float:
+                {
+                    var result = new float[length];
+                    for (int i = 0; i < length; ++i)
+                    {
+                        result[i] = reader.ReadFloat();
+                    }
+
+                    return result;
+                }
+
+                case ArchiveObjectType.Bool:
+                {
+                    var result = new bool[length];
+                    for (int i = 0; i < length; ++i)
+                    {
+                        result[i] = reader.ReadBool();
+                    }
+
+                    return result;
+                }
+
+                default:
+                    throw new Exception("Unhandled optimized array primitive read type: " + rawType);
+            }
+        }
+
+        // Less optimised approach
+
+        // Build the array based on the arguments
+        var arrayItemType = reader.MapArchiveTypeToType(rawType) ??
+            throw new FormatException("Unregistered type for array items: " + rawType);
+
+        // If the list item type contains generic parameters, we need to resolve those somehow here
+        if (arrayItemType.IsGenericType)
+        {
+            // We need to figure out what the actual type is.
+            // This is really inefficient, but we'll try to read the items first and then figure out the type to use
+            var tempData = new object?[length];
+
+            for (int i = 0; i < length; ++i)
+            {
+                tempData[i] = reader.ReadObject(out _);
+            }
+
+            var target = DetermineCommonObjectType(length, tempData);
+
+            var array2 = InstantiateArray(MakeArrayType(target), length);
+
+            // Copy the data we already read
+            for (int i = 0; i < length; ++i)
+            {
+                try
+                {
+                    array2.SetValue(tempData[i], i);
+                }
+                catch (Exception e)
+                {
+                    throw new FormatException(
+                        $"Cannot copy item to array at index {i}, item is {tempData[i]?.GetType()} " +
+                        $"and the array elements are: {target}", e);
+                }
+            }
+
+            return array2;
+        }
+
+        var array = InstantiateArray(MakeArrayType(arrayItemType), length);
+
+        for (int i = 0; i < length; ++i)
+        {
+            // We need to assume the list will be able to take null values (as we don't know the actual final target)
+            var item = reader.ReadObject(out var readItemType);
+
+            try
+            {
+                array.SetValue(item, i);
+            }
+            catch (Exception e)
+            {
+                throw new FormatException(
+                    $"Cannot add read item to array at index {i}, item is {item?.GetType()} / {readItemType} " +
+                    $"and the array elements are: {arrayItemType}", e);
+            }
+        }
+
+        return array;
+    }
+
+    private static Type DetermineCommonObjectType(int length, object?[] tempData)
+    {
+        bool didSomething = false;
+        Type? target = null;
+        bool done = false;
+        int steps = 0;
+
+        while (!done)
+        {
+            if (++steps > 1000)
+                throw new Exception("Stuck trying to figure out the type of a generic list");
+
+            for (int i = 0; i < length; ++i)
+            {
+                if (tempData[i] != null && target == null)
+                {
+                    var itemType = tempData[i]!.GetType();
+                    target = itemType;
+                    didSomething = true;
+                    break;
+                }
+
+                if (tempData[i] != null && target != null)
+                {
+                    // Need to verify all items can match the type or switch to a parent type (that isn't object)
+                    var itemType = tempData[i]!.GetType();
+
+                    if (!target.IsAssignableFrom(itemType))
+                    {
+                        // A problem
+                        if (itemType.IsAssignableFrom(target))
+                        {
+                            // Luckily, we can just swap the types as one is more generic
+                            target = itemType;
+                            didSomething = true;
+                            break;
+                        }
+
+                        // We need to find a base class common to both
+                        var commonBase = FindCommonBaseType(itemType, target);
+
+                        if (commonBase != typeof(object))
+                        {
+                            target = commonBase;
+                            didSomething = true;
+                            break;
+                        }
+
+                        // Did not find a common type, this is bad...
+                    }
+                }
+
+                if (i + 1 == length && target != null)
+                {
+                    // Type should be fine now
+                    done = true;
+                    break;
+                }
+            }
+
+            // If stuck trying to find a parent type
+            if (!didSomething)
+                throw new FormatException("Cannot figure out generic type parameter for a list");
+        }
+
+        if (target == null!)
+        {
+            throw new FormatException(
+                "Cannot determine type for a generically typed list with generic items when the list is empty!");
+        }
+
+        return target;
+    }
+
     private static IList CreateBaseList(Type[] singleTypeArray, Type listType, int length)
     {
         // TODO: caching for the constructor?
@@ -350,6 +522,15 @@ public static class ArchiveBuiltInReaders
         singleObjectArray[0] = length;
         var list = (IList)constructor.Invoke(singleObjectArray);
         return list;
+    }
+
+    private static Array InstantiateArray(Type type, int length)
+    {
+        var constructor = type.GetConstructor([typeof(int)]) ?? throw new Exception("Cannot find array constructor");
+
+        var singleObjectArray = new object[1];
+        singleObjectArray[0] = length;
+        return (Array)constructor.Invoke(singleObjectArray);
     }
 
     private static Type FindCommonBaseType(Type type1, Type type2)
@@ -512,6 +693,11 @@ public static class ArchiveBuiltInReaders
     private static Type MakeGenericList(Type[] argumentTypes)
     {
         return typeof(List<>).MakeGenericType(argumentTypes);
+    }
+
+    private static Type MakeArrayType(Type elementType, int rank = 1)
+    {
+        return elementType.MakeArrayType(rank);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

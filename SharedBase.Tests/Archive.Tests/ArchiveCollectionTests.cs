@@ -306,6 +306,61 @@ public class ArchiveCollectionTests
     }
 
     [Fact]
+    public void ArchiveCollection_SimpleArray()
+    {
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, manager);
+        var reader = new SArchiveMemoryReader(memoryStream, manager);
+
+        var original = new[] { 1, 2, 34, 56, 90 };
+
+        writer.WriteObject(original);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var read = reader.ReadObject<int[]>();
+
+        Assert.NotNull(read);
+        Assert.Equal(original.Length, read.Length);
+        Assert.True(original.SequenceEqual(read));
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var read2 = (int[]?)reader.ReadObject(out _);
+        Assert.NotNull(read2);
+        Assert.True(original.SequenceEqual(read2));
+    }
+
+    [Fact]
+    public void ArchiveCollection_UnOptimizedArray()
+    {
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, manager);
+        var reader = new SArchiveMemoryReader(memoryStream, manager);
+
+        var original = new ushort[] { 1, 2, 34, 56, 90 };
+
+        writer.WriteObject(original);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var read = reader.ReadObject<ushort[]>();
+
+        Assert.NotNull(read);
+        Assert.Equal(original.Length, read.Length);
+        Assert.True(original.SequenceEqual(read));
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var read2 = (ushort[]?)reader.ReadObject(out _);
+        Assert.NotNull(read2);
+        Assert.True(original.SequenceEqual(read2));
+
+        // Check memory use to confirm unoptimised use
+        Assert.True(memoryStream.Length > original.Length * sizeof(ushort) * 2 + 16);
+    }
+
+    [Fact]
     public void ArchiveCollection_NestedListTest()
     {
         var memoryStream = new MemoryStream();
@@ -335,4 +390,7 @@ public class ArchiveCollectionTests
         Assert.NotNull(read2);
         Assert.Equal(original.Count, read2.Count);
     }
+
+    // TODO: list and dictionary tests, including custom objects as dictionary keys, values, and inside lists
+    // and even a test where tuples are used in dictionaries, and lists are used in dictionaries (keys and values)
 }

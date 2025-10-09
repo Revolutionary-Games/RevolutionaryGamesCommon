@@ -247,7 +247,7 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
         WriteObjectHeader(ArchiveObjectType.List, false, false, false, COLLECTIONS_VERSION);
 
         // Write list length first
-        Write(list.Count);
+        WriteVariableLengthField32((uint)list.Count);
 
         // Optimisation for some primitive types
         if (WriteOptimizedListIfPossible(list))
@@ -275,7 +275,7 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
         WriteObjectHeader(ArchiveObjectType.List, false, false, false, COLLECTIONS_VERSION);
 
         // Write list length first
-        Write(list.Count);
+        WriteVariableLengthField32((uint)list.Count);
 
         // Optimisation for some primitive types
         if (WriteOptimizedListIfPossible(list))
@@ -295,15 +295,32 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
 
     public void WriteObject<T>(T[] array)
     {
-        if (typeof(T) == typeof(byte))
+        // Automatic byte array optimisation
+        if (array is byte[] byteArray)
         {
-            // Automatic byte array conversion
-            throw new NotImplementedException();
-
+            WriteObjectHeader(ArchiveObjectType.ByteArray, false, false, false, 1);
+            Write(byteArray);
             return;
         }
 
-        throw new NotImplementedException();
+        WriteObjectHeader(ArchiveObjectType.Array, false, false, false, COLLECTIONS_VERSION);
+
+        WriteVariableLengthField32((uint)array.Length);
+
+        // Optimisation for some primitive types
+        if (WriteOptimizedArrayIfPossible(array))
+        {
+            return;
+        }
+
+        Write((uint)WriteManager.GetObjectWriteType(typeof(T)));
+        Write((byte)0);
+
+        int count = array.Length;
+        for (int i = 0; i < count; ++i)
+        {
+            WriteAnyRegisteredValueAsObject(array[i]);
+        }
     }
 
     public void WriteObject<TKey, TValue>(IReadOnlyDictionary<TKey, TValue> dictionary)
@@ -545,7 +562,7 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
             Write((byte)1);
 
             int count = boolList.Count;
-            for (int i = 0; i < count; i++)
+            for (int i = 0; i < count; ++i)
             {
                 Write(boolList[i] ? (byte)1 : (byte)0);
             }
@@ -556,7 +573,7 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
             Write((byte)1);
 
             int count = stringList.Count;
-            for (int i = 0; i < count; i++)
+            for (int i = 0; i < count; ++i)
             {
                 Write(stringList[i]);
             }
@@ -567,9 +584,79 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
             Write((byte)1);
 
             int count = floatList.Count;
-            for (int i = 0; i < count; i++)
+            for (int i = 0; i < count; ++i)
             {
                 Write(floatList[i]);
+            }
+        }
+        else
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private bool WriteOptimizedArrayIfPossible(object array)
+    {
+        if (array is int[] intArray)
+        {
+            Write((uint)ArchiveObjectType.Int32);
+            Write((byte)1);
+
+            for (int i = 0; i < intArray.Length; ++i)
+            {
+                Write(intArray[i]);
+            }
+        }
+        else if (array is byte[] byteArray)
+        {
+            Write((uint)ArchiveObjectType.Byte);
+            Write((byte)1);
+
+            for (int i = 0; i < byteArray.Length; ++i)
+            {
+                Write(byteArray[i]);
+            }
+        }
+        else if (array is long[] longArray)
+        {
+            Write((uint)ArchiveObjectType.Int64);
+            Write((byte)1);
+
+            for (int i = 0; i < longArray.Length; ++i)
+            {
+                Write(longArray[i]);
+            }
+        }
+        else if (array is bool[] boolArray)
+        {
+            Write((uint)ArchiveObjectType.Bool);
+            Write((byte)1);
+
+            for (int i = 0; i < boolArray.Length; ++i)
+            {
+                Write(boolArray[i] ? (byte)1 : (byte)0);
+            }
+        }
+        else if (array is string[] stringArray)
+        {
+            Write((uint)ArchiveObjectType.String);
+            Write((byte)1);
+
+            for (int i = 0; i < stringArray.Length; ++i)
+            {
+                Write(stringArray[i]);
+            }
+        }
+        else if (array is float[] floatArray)
+        {
+            Write((uint)ArchiveObjectType.Float);
+            Write((byte)1);
+
+            for (int i = 0; i < floatArray.Length; ++i)
+            {
+                Write(floatArray[i]);
             }
         }
         else
