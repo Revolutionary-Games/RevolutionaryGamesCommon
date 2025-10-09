@@ -1,7 +1,9 @@
 namespace SharedBase.Tests.Archive.Tests;
 
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using SharedBase.Archive;
 using Xunit;
@@ -173,5 +175,133 @@ public class ArchiveCollectionTests
         reader.ReadAnyStruct(ref result);
 
         Assert.Equal(original, result);
+    }
+
+    [Fact]
+    public void ArchiveCollection_SimpleList()
+    {
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, manager);
+        var reader = new SArchiveMemoryReader(memoryStream, manager);
+
+        var original = new List<int> { 1, 2, 34, 56, 90 };
+
+        writer.WriteObject(original);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var read = reader.ReadObject<List<int>>();
+
+        Assert.NotNull(read);
+        Assert.True(original.SequenceEqual(read));
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var read2 = (List<int>?)reader.ReadObject(out _);
+        Assert.NotNull(read2);
+        Assert.True(original.SequenceEqual(read2));
+    }
+
+    [Fact]
+    public void ArchiveCollection_EmptyList()
+    {
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, manager);
+        var reader = new SArchiveMemoryReader(memoryStream, manager);
+
+        // Intentionally empty list
+        // ReSharper disable once CollectionNeverUpdated.Local
+        var original = new List<int>();
+
+        writer.WriteObject(original);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var read = reader.ReadObject<List<int>>();
+
+        Assert.NotNull(read);
+        Assert.Equal(original.Count, read.Count);
+        Assert.True(original.SequenceEqual(read));
+    }
+
+    [Fact]
+    public void ArchiveCollection_PrimitiveListTypes()
+    {
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, manager);
+        var reader = new SArchiveMemoryReader(memoryStream, manager);
+
+        // Bool test
+        var original1 = new List<bool> { true, false, false, true, true };
+
+        writer.WriteObject(original1);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var read1 = reader.ReadObject<List<bool>>();
+
+        Assert.NotNull(read1);
+        Assert.True(original1.SequenceEqual(read1));
+
+        // Long test
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var original2 = new List<long> { 1, 4, 123, 4356364, long.MaxValue, long.MinValue };
+
+        writer.WriteObject(original2);
+        memoryStream.Seek(0, SeekOrigin.Begin);
+        var read2 = reader.ReadObject<List<long>>();
+        Assert.NotNull(read2);
+        Assert.True(original2.SequenceEqual(read2));
+
+        // String test
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var original3 = new List<string> { "hello", "world", "this", "is", "a", "test" };
+
+        writer.WriteObject(original3);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+        var read3 = reader.ReadObject<List<string>>();
+        Assert.NotNull(read3);
+        Assert.True(original3.SequenceEqual(read3));
+
+        // Float test
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var original4 = new List<float>
+            { 1.23f, 4.56f, 7.89f, 10.11f, 12.13f, float.NaN, float.MaxValue, float.NegativeInfinity };
+
+        writer.WriteObject(original4);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+        var read4 = reader.ReadObject<List<float>>();
+        Assert.NotNull(read4);
+        Assert.True(original4.SequenceEqual(read4));
+    }
+
+    [Fact]
+    public void ArchiveCollection_PrimitiveWriteBenefitsFromDataEfficiency()
+    {
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, manager);
+        var reader = new SArchiveMemoryReader(memoryStream, manager);
+
+        var original = new List<byte>
+        {
+            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+            50, 55, 100, 150, 200, 255,
+        };
+
+        writer.WriteObject(original);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var read = reader.ReadObject<List<byte>>();
+
+        Assert.NotNull(read);
+        Assert.True(original.SequenceEqual(read));
+
+        Assert.True(memoryStream.Length <= original.Count * sizeof(byte) + 16);
     }
 }

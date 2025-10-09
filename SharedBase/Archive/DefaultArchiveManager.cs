@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 /// <summary>
 ///   Default implementation of the archive manager that handles both reading and writing.
@@ -249,6 +250,56 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
 
     public Type? MapArchiveTypeToType(ArchiveObjectType type)
     {
-        return registeredTypes.GetValueOrDefault(type);
+        if (registeredTypes.TryGetValue(type, out var registeredType))
+            return registeredType;
+
+        // Return common types
+        switch (type)
+        {
+            case ArchiveObjectType.Byte:
+                return typeof(byte);
+            case ArchiveObjectType.Bool:
+                return typeof(bool);
+            case ArchiveObjectType.Int16:
+                return typeof(short);
+            case ArchiveObjectType.Int32:
+                return typeof(int);
+            case ArchiveObjectType.Int64:
+                return typeof(long);
+            case ArchiveObjectType.UInt16:
+                return typeof(ushort);
+            case ArchiveObjectType.UInt32:
+                return typeof(uint);
+            case ArchiveObjectType.UInt64:
+                return typeof(ulong);
+            case ArchiveObjectType.Float:
+                return typeof(float);
+            case ArchiveObjectType.Double:
+                return typeof(double);
+            case ArchiveObjectType.String:
+                return typeof(string);
+            case ArchiveObjectType.VariableUint32:
+                return typeof(uint);
+            case ArchiveObjectType.Tuple:
+                return typeof(ITuple);
+            case ArchiveObjectType.ByteArray:
+                return typeof(byte[]);
+
+            case ArchiveObjectType.List:
+                return typeof(List<>);
+
+            // case ArchiveObjectType.Array:
+            //     return typeof(Array);
+            case ArchiveObjectType.Dictionary:
+                return typeof(Dictionary<,>);
+
+            // Some of these may be problematic
+            // case ArchiveObjectType.RawEnumerable:
+            //     return typeof(IEnumerable);
+            // case ArchiveObjectType.ReferenceTuple:
+            //    return typeof(Tuple<,>);
+        }
+
+        return null;
     }
 }

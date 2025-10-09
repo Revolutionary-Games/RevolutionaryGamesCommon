@@ -1,6 +1,7 @@
 namespace SharedBase.Archive;
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -121,6 +122,7 @@ public static class ArchiveBuiltInReaders
             switch (rawType)
             {
                 case ArchiveObjectType.Int32:
+                {
                     var result = new List<int>(length);
                     for (int i = 0; i < length; ++i)
                     {
@@ -128,13 +130,110 @@ public static class ArchiveBuiltInReaders
                     }
 
                     return result;
+                }
+
+                case ArchiveObjectType.Byte:
+                {
+                    var result = new List<byte>(length);
+                    for (int i = 0; i < length; ++i)
+                    {
+                        result.Add(reader.ReadInt8());
+                    }
+
+                    return result;
+                }
+
+                case ArchiveObjectType.Int64:
+                {
+                    var result = new List<long>(length);
+                    for (int i = 0; i < length; ++i)
+                    {
+                        result.Add(reader.ReadInt64());
+                    }
+
+                    return result;
+                }
+
+                case ArchiveObjectType.String:
+                {
+                    // We don't know the nullability of the target type, so we need to assume things can be null
+                    var result = new List<string?>(length);
+                    for (int i = 0; i < length; ++i)
+                    {
+                        result.Add(reader.ReadString());
+                    }
+
+                    return result;
+                }
+
+                case ArchiveObjectType.Float:
+                {
+                    var result = new List<float>(length);
+                    for (int i = 0; i < length; ++i)
+                    {
+                        result.Add(reader.ReadFloat());
+                    }
+
+                    return result;
+                }
+
+                case ArchiveObjectType.Bool:
+                {
+                    var result = new List<bool>(length);
+                    for (int i = 0; i < length; ++i)
+                    {
+                        result.Add(reader.ReadBool());
+                    }
+
+                    return result;
+                }
 
                 default:
                     throw new Exception("Unhandled optimized list primitive read type: " + rawType);
             }
         }
 
-        throw new NotImplementedException();
+        // Less optimised approach
+
+        // Build the tuple based on the arguments
+        var singleTypeArray = new Type[1];
+
+        var listItemType = reader.MapArchiveTypeToType(rawType) ??
+            throw new FormatException("Unregistered type for list items: " + rawType);
+        singleTypeArray[0] = listItemType;
+        var listType = MakeGenericList(singleTypeArray);
+
+        // TODO: caching for the constructor?
+        // We want the constructor allowing specifying size upfront
+        singleTypeArray[0] = typeof(int);
+        var constructor = listType.GetConstructor(singleTypeArray) ??
+            throw new FormatException($"List constructor not found for {listType}");
+
+        var singleObjectArray = new object[1];
+        singleObjectArray[0] = length;
+        var list = (IList)constructor.Invoke(singleObjectArray);
+
+        for (int i = 0; i < length; ++i)
+        {
+            // We need to assume the list will be able to take null values (as we don't know the actual final target)
+            var item = reader.ReadObject(out var readItemType);
+
+            try
+            {
+                list.Add(item);
+            }
+            catch (Exception e)
+            {
+                throw new FormatException(
+                    $"Cannot add read item to list at index {i}, item is {item?.GetType()} / {readItemType} " +
+                    $"and the list is: {listType}", e);
+            }
+        }
+
+        if (list.Count != length)
+            throw new Exception("Failed to put the right number of items into a list");
+
+        return list;
     }
 
     private static void ReadTupleValue<TField>(ref TField fieldValue, ISArchiveReader reader, int fieldIndex,
@@ -248,6 +347,11 @@ public static class ArchiveBuiltInReaders
             7 => typeof(ValueTuple<,,,,,,>).MakeGenericType(argumentTypes),
             _ => throw new NotSupportedException(),
         };
+    }
+
+    private static Type MakeGenericList(Type[] argumentTypes)
+    {
+        return typeof(List<>).MakeGenericType(argumentTypes);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -262,6 +262,17 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
                 Write(intList[i]);
             }
         }
+        else if (list is IReadOnlyList<byte> byteList)
+        {
+            Write((uint)ArchiveObjectType.Byte);
+            Write((byte)1);
+
+            int count = list.Count;
+            for (int i = 0; i < count; ++i)
+            {
+                Write(byteList[i]);
+            }
+        }
         else if (list is IReadOnlyList<long> longList)
         {
             Write((uint)ArchiveObjectType.Int64);
@@ -282,6 +293,28 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
             for (int i = 0; i < count; i++)
             {
                 Write(boolList[i] ? (byte)1 : (byte)0);
+            }
+        }
+        else if (list is IReadOnlyList<string> stringList)
+        {
+            Write((uint)ArchiveObjectType.String);
+            Write((byte)1);
+
+            int count = list.Count;
+            for (int i = 0; i < count; i++)
+            {
+                Write(stringList[i]);
+            }
+        }
+        else if (list is IReadOnlyList<float> floatList)
+        {
+            Write((uint)ArchiveObjectType.Float);
+            Write((byte)1);
+
+            int count = list.Count;
+            for (int i = 0; i < count; i++)
+            {
+                Write(floatList[i]);
             }
         }
         else

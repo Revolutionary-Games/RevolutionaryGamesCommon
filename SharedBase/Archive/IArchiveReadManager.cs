@@ -80,5 +80,11 @@ public interface IArchiveReadManager
     /// <returns>True if registered, false if already registered (this is usually a significant problem)</returns>
     public bool RememberObject(object obj, int id);
 
+    /// <summary>
+    ///   Maps an archive type to a C# type. Custom types need registering with <see cref="RegisterObjectType"/>.
+    ///   Supports a fixed set of built-in and basic types.
+    /// </summary>
+    /// <param name="type">Type to find a native C# match for</param>
+    /// <returns>The known matching type or null</returns>
     public Type? MapArchiveTypeToType(ArchiveObjectType type);
 }
