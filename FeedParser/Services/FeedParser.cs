@@ -50,7 +50,7 @@ public static class FeedParser
     /// </summary>
     /// <param name="feed">The feed to use to process the data and store the result in</param>
     /// <param name="rawContent">
-    ///   The raw retrieved content. Should not be the error content if a feed returned non success status code.
+    ///   The raw retrieved content. Should not be the error content if a feed returned non-success status code.
     /// </param>
     /// <returns>List of feed items</returns>
     public static IEnumerable<ParsedFeedItem> ProcessContent(this IFeed feed, string rawContent)
@@ -67,7 +67,7 @@ public static class FeedParser
         // Detect if the document changed and update our data only in that case (or if we have no data)
         if (newContentHash == feed.LatestContentHash && feed.LatestContent != null)
         {
-            // If we are a html feed with no html content, we should process that
+            // If we are an HTML feed with no HTML content, we should process that
             if (string.IsNullOrEmpty(feed.HtmlFeedVersionSuffix) || feed.HtmlLatestContent != null)
                 return feedItems;
         }
