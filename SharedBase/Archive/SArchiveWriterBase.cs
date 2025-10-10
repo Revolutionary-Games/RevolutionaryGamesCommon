@@ -239,9 +239,6 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
         obj.WriteToArchive(this);
     }
 
-    /// <summary>
-    ///   Writes most kinds of lists
-    /// </summary>
     public void WriteObject<T>(IList<T> list)
     {
         WriteObjectHeader(ArchiveObjectType.List, false, false, false, COLLECTIONS_VERSION);
@@ -265,11 +262,6 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
         }
     }
 
-    /// <summary>
-    ///   Writes all kinds of lists.
-    ///   When the type is not known, this is less efficient as this needs to use reflection to find the
-    ///   actual object type in the list.
-    /// </summary>
     public void WriteUnknownList(IList list)
     {
         WriteObjectHeader(ArchiveObjectType.List, false, false, false, COLLECTIONS_VERSION);
@@ -325,7 +317,25 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
 
     public void WriteObject<TKey, TValue>(IReadOnlyDictionary<TKey, TValue> dictionary)
     {
-        throw new NotImplementedException();
+        WriteObjectHeader(ArchiveObjectType.Dictionary, false, false, false, COLLECTIONS_VERSION);
+
+        WriteVariableLengthField32((uint)dictionary.Count);
+
+        // TODO: specific kind of dictionary speed hacks?
+        Write((byte)0);
+
+        // Key type
+        Write((uint)WriteManager.GetObjectWriteType(typeof(TKey)));
+
+        // And value type
+        Write((uint)WriteManager.GetObjectWriteType(typeof(TValue)));
+
+        // And then each key pair item
+        foreach (var pair in dictionary)
+        {
+            WriteAnyRegisteredValueAsObject(pair.Key);
+            WriteAnyRegisteredValueAsObject(pair.Value);
+        }
     }
 
     /// <summary>

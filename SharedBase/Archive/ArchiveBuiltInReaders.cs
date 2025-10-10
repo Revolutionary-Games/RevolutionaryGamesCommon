@@ -436,6 +436,70 @@ public static class ArchiveBuiltInReaders
         return array;
     }
 
+    public static object ReadDictionary(ISArchiveReader reader, ushort version)
+    {
+        if (version > SArchiveWriterBase.COLLECTIONS_VERSION)
+            throw new InvalidArchiveVersionException(version, SArchiveWriterBase.COLLECTIONS_VERSION);
+
+        var lengthRaw = reader.ReadVariableLengthField32();
+
+        if (lengthRaw > int.MaxValue)
+            throw new FormatException($"Dictionary length is too large: {lengthRaw}");
+
+        var length = (int)lengthRaw;
+
+        var optimizedPrimitive = reader.ReadBool();
+
+        var rawKeyType = (ArchiveObjectType)reader.ReadUInt32();
+        var rawValueType = (ArchiveObjectType)reader.ReadUInt32();
+
+        if (optimizedPrimitive)
+            throw new FormatException("Cannot read optimized dictionary primitive");
+
+        var keyType = reader.MapArchiveTypeToType(rawKeyType) ??
+            throw new FormatException("Unregistered type for dictionary keys: " + rawKeyType);
+
+        var valueType = reader.MapArchiveTypeToType(rawValueType) ??
+            throw new FormatException("Unregistered type for dictionary values: " + rawValueType);
+
+        Type dictionaryType;
+
+        if (keyType.IsGenericType || valueType.IsGenericType)
+        {
+            throw new NotImplementedException("Cannot read generically typed dictionary keys or values (yet)");
+
+            // Fallback if we need it (but may cause pretty horrible boxing and may not be able to be cast easily to the
+            // target dictionary kind)
+            // var dictionary = new Dictionary<object, object>(length);
+        }
+
+        var typesArray = new[] { keyType, valueType };
+        dictionaryType = MakeGenericDictionary(typesArray);
+
+        // Apparently we can't optimise based on knowing the pair count in advance, so we just need to read them
+        var dictionary = CreateDictionary(dictionaryType);
+
+        for (int i = 0; i < length; ++i)
+        {
+            var key = reader.ReadObject(out var readKeyType) ?? throw new FormatException("Null key in dictionary");
+            var value = reader.ReadObject(out var readValueType);
+
+            try
+            {
+                dictionary.Add(key, value);
+            }
+            catch (Exception e)
+            {
+                throw new FormatException(
+                    $"Cannot add read item to dictionary at index {i}, key is {key.GetType()} / {readKeyType} " +
+                    $"and value is {value?.GetType()} / {readValueType} " +
+                    $"and the dictionary is: {dictionaryType}", e);
+            }
+        }
+
+        return dictionary;
+    }
+
     private static Type DetermineCommonObjectType(int length, object?[] tempData)
     {
         bool didSomething = false;
@@ -531,6 +595,17 @@ public static class ArchiveBuiltInReaders
         var singleObjectArray = new object[1];
         singleObjectArray[0] = length;
         return (Array)constructor.Invoke(singleObjectArray);
+    }
+
+    private static IDictionary CreateDictionary(Type dictionaryType)
+    {
+        // TODO: caching for the constructor?
+        // We want the constructor allowing specifying size upfront
+        var constructor = dictionaryType.GetConstructor([]) ??
+            throw new FormatException($"Dictionary constructor not found for {dictionaryType}");
+
+        var dictionary = (IDictionary)constructor.Invoke([]);
+        return dictionary;
     }
 
     private static Type FindCommonBaseType(Type type1, Type type2)
@@ -698,6 +773,11 @@ public static class ArchiveBuiltInReaders
     private static Type MakeArrayType(Type elementType, int rank = 1)
     {
         return elementType.MakeArrayType(rank);
+    }
+
+    private static Type MakeGenericDictionary(Type[] argumentTypes)
+    {
+        return typeof(Dictionary<,>).MakeGenericType(argumentTypes);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

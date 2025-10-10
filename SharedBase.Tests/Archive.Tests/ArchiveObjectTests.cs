@@ -280,9 +280,59 @@ public class ArchiveObjectTests
         }
     }
 
+    internal struct TestObject5 : IArchiveReadableVariable
+    {
+        public const ushort SERIALIZATION_VERSION = 1;
+        public const bool CAN_BE_REFERENCE = false;
+
+        public float Value1;
+        public int Value2;
+        public string? Value3;
+        public bool Value4;
+
+        public ushort CurrentArchiveVersion => SERIALIZATION_VERSION;
+        public ArchiveObjectType ArchiveObjectType => ArchiveObjectType.TestObjectType2;
+        public bool CanBeReferencedInArchive => CAN_BE_REFERENCE;
+
+        public static IArchiveReadableVariable ConstructBoxedArchiveRead(ISArchiveReader reader,
+            out bool performedCustomRead, ushort version)
+        {
+            performedCustomRead = false;
+            return default(TestObject5);
+        }
+
+        public static void WriteToArchive(ISArchiveWriter writer, ArchiveObjectType type, object obj)
+        {
+            if (type != ArchiveObjectType.TestObjectType2)
+                throw new NotSupportedException();
+
+            ((TestObject5)obj).WriteToArchive(writer);
+        }
+
+        public void WriteToArchive(ISArchiveWriter writer)
+        {
+            writer.Write(Value1);
+            writer.Write(Value2);
+            writer.Write(Value3);
+            writer.Write(Value4);
+        }
+
+        public void ReadFromArchive(ISArchiveReader reader, ushort version)
+        {
+            if (version is > SERIALIZATION_VERSION or <= 0)
+                throw new InvalidArchiveVersionException(version, SERIALIZATION_VERSION);
+
+            Value1 = reader.ReadFloat();
+            Value2 = reader.ReadInt32();
+            Value3 = reader.ReadString();
+            Value4 = reader.ReadBool();
+        }
+    }
+
     internal class TestObject1 : IArchivable
     {
         public const ushort SERIALIZATION_VERSION = 1;
+        public const bool CAN_BE_REFERENCE = false;
 
         public float Value1;
 
@@ -295,7 +345,7 @@ public class ArchiveObjectTests
         public ushort CurrentArchiveVersion => SERIALIZATION_VERSION;
 
         public ArchiveObjectType ArchiveObjectType => ArchiveObjectType.TestObjectType1;
-        public virtual bool CanBeReferencedInArchive => false;
+        public virtual bool CanBeReferencedInArchive => CAN_BE_REFERENCE;
 
         public static bool operator ==(TestObject1? left, TestObject1? right)
         {
@@ -305,6 +355,14 @@ public class ArchiveObjectTests
         public static bool operator !=(TestObject1? left, TestObject1? right)
         {
             return !Equals(left, right);
+        }
+
+        public static void WriteToArchive(ISArchiveWriter writer, ArchiveObjectType type, object obj)
+        {
+            if (type != ArchiveObjectType.TestObjectType1)
+                throw new NotSupportedException();
+
+            ((TestObject1)obj).WriteToArchive(writer);
         }
 
         public static TestObject1 ReadFromArchive(ISArchiveReader reader, ushort version)
@@ -321,11 +379,6 @@ public class ArchiveObjectTests
             };
 
             return instance;
-        }
-
-        public override int GetHashCode()
-        {
-            return HashCode.Combine(Value1, Value2, Value3, Value4);
         }
 
         public void WriteToArchive(ISArchiveWriter writer)
@@ -346,6 +399,11 @@ public class ArchiveObjectTests
                 return false;
 
             return Equals((TestObject1)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Value1, Value2, Value3, Value4);
         }
 
         protected bool Equals(TestObject1 other)

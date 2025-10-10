@@ -391,6 +391,258 @@ public class ArchiveCollectionTests
         Assert.Equal(original.Count, read2.Count);
     }
 
-    // TODO: list and dictionary tests, including custom objects as dictionary keys, values, and inside lists
-    // and even a test where tuples are used in dictionaries, and lists are used in dictionaries (keys and values)
+    [Fact]
+    public void ArchiveCollection_ListWithCustomClassType()
+    {
+        var customManager = new DefaultArchiveManager(true);
+        customManager.RegisterObjectType(ArchiveObjectType.TestObjectType1, typeof(ArchiveObjectTests.TestObject1),
+            ArchiveObjectTests.TestObject1.CAN_BE_REFERENCE, ArchiveObjectTests.TestObject1.WriteToArchive);
+        customManager.RegisterObjectType(ArchiveObjectType.TestObjectType1, typeof(ArchiveObjectTests.TestObject1),
+            ArchiveObjectTests.TestObject1.ReadFromArchive);
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, customManager);
+        var reader = new SArchiveMemoryReader(memoryStream, customManager);
+
+        var original = new List<ArchiveObjectTests.TestObject1>
+        {
+            new()
+            {
+                Value1 = 12,
+                Value2 = 0,
+                Value3 = "A test string!",
+                Value4 = true,
+            },
+        };
+
+        writer.WriteObject(original);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var read = reader.ReadObject<List<ArchiveObjectTests.TestObject1>>();
+
+        Assert.NotNull(read);
+        Assert.True(original.SequenceEqual(read));
+    }
+
+    [Fact]
+    public void ArchiveCollection_BasicDictionary()
+    {
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, manager);
+        var reader = new SArchiveMemoryReader(memoryStream, manager);
+
+        var original = new Dictionary<string, int>
+        {
+            { "item1", 1 },
+            { "some other item", 2 },
+            { "item3", 3 },
+            { "item4", 4 },
+            { "item5", 5 },
+        };
+
+        writer.WriteObject(original);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var read = reader.ReadObject<Dictionary<string, int>>();
+
+        Assert.NotNull(read);
+        Assert.Equal(original.Count, read.Count);
+
+        // Efficiency won't matter here, just knowing if things match
+        // ReSharper disable once UsageOfDefaultStructEquality
+        Assert.True(original.SequenceEqual(read));
+    }
+
+    [Fact]
+    public void ArchiveCollection_EmptyDictionary()
+    {
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, manager);
+        var reader = new SArchiveMemoryReader(memoryStream, manager);
+
+        // Intentionally empty dictionary
+        // ReSharper disable once CollectionNeverUpdated.Local
+        var original = new Dictionary<string, int>();
+
+        writer.WriteObject(original);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var read = reader.ReadObject<Dictionary<string, int>>();
+
+        Assert.NotNull(read);
+        Assert.Equal(original.Count, read.Count);
+
+        // Efficiency won't matter here, just knowing if things match
+        // ReSharper disable once UsageOfDefaultStructEquality
+        Assert.True(original.SequenceEqual(read));
+    }
+
+    [Fact]
+    public void ArchiveCollection_DictionaryWithCustomClassKey()
+    {
+        var customManager = new DefaultArchiveManager(true);
+        customManager.RegisterObjectType(ArchiveObjectType.TestObjectType1, typeof(ArchiveObjectTests.TestObject1),
+            ArchiveObjectTests.TestObject1.CAN_BE_REFERENCE, ArchiveObjectTests.TestObject1.WriteToArchive);
+        customManager.RegisterObjectType(ArchiveObjectType.TestObjectType1, typeof(ArchiveObjectTests.TestObject1),
+            ArchiveObjectTests.TestObject1.ReadFromArchive);
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, customManager);
+        var reader = new SArchiveMemoryReader(memoryStream, customManager);
+
+        var original = new Dictionary<ArchiveObjectTests.TestObject1, string>
+        {
+            {
+                new ArchiveObjectTests.TestObject1
+                {
+                    Value1 = 12,
+                    Value2 = 0,
+                    Value3 = "A test string!",
+                    Value4 = true,
+                },
+                "important details!"
+            },
+        };
+
+        writer.WriteObject(original);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var read = reader.ReadObject<Dictionary<ArchiveObjectTests.TestObject1, string>>();
+
+        Assert.NotNull(read);
+        Assert.Equal(original.Count, read.Count);
+
+        // Efficiency won't matter here, just knowing if things match
+        // ReSharper disable once UsageOfDefaultStructEquality
+        Assert.True(original.SequenceEqual(read));
+    }
+
+    [Fact]
+    public void ArchiveCollection_DictionaryWithCustomClassValue()
+    {
+        var customManager = new DefaultArchiveManager(true);
+        customManager.RegisterObjectType(ArchiveObjectType.TestObjectType1, typeof(ArchiveObjectTests.TestObject1),
+            ArchiveObjectTests.TestObject1.CAN_BE_REFERENCE, ArchiveObjectTests.TestObject1.WriteToArchive);
+        customManager.RegisterObjectType(ArchiveObjectType.TestObjectType1, typeof(ArchiveObjectTests.TestObject1),
+            ArchiveObjectTests.TestObject1.ReadFromArchive);
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, customManager);
+        var reader = new SArchiveMemoryReader(memoryStream, customManager);
+
+        var original = new Dictionary<string, ArchiveObjectTests.TestObject1>
+        {
+            {
+                "item1",
+                new ArchiveObjectTests.TestObject1
+                {
+                    Value1 = 12,
+                    Value2 = 0,
+                    Value3 = string.Empty,
+                    Value4 = true,
+                }
+            },
+        };
+
+        writer.WriteObject(original);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var read = reader.ReadObject<Dictionary<string, ArchiveObjectTests.TestObject1>>();
+
+        Assert.NotNull(read);
+        Assert.Equal(original.Count, read.Count);
+
+        // Efficiency won't matter here, just knowing if things match
+        // ReSharper disable once UsageOfDefaultStructEquality
+        Assert.True(original.SequenceEqual(read));
+
+        Assert.True(read.ContainsKey("item1"));
+    }
+
+    [Fact]
+    public void ArchiveCollection_DictionaryWithCustomClassKeyAndValue()
+    {
+        var customManager = new DefaultArchiveManager(true);
+        customManager.RegisterObjectType(ArchiveObjectType.TestObjectType1, typeof(ArchiveObjectTests.TestObject1),
+            ArchiveObjectTests.TestObject1.CAN_BE_REFERENCE, ArchiveObjectTests.TestObject1.WriteToArchive);
+        customManager.RegisterObjectType(ArchiveObjectType.TestObjectType1, typeof(ArchiveObjectTests.TestObject1),
+            ArchiveObjectTests.TestObject1.ReadFromArchive);
+
+        customManager.RegisterObjectType(ArchiveObjectType.TestObjectType2, typeof(ArchiveObjectTests.TestObject5),
+            ArchiveObjectTests.TestObject5.CAN_BE_REFERENCE, ArchiveObjectTests.TestObject5.WriteToArchive);
+        customManager.RegisterBoxableValueType(ArchiveObjectType.TestObjectType2, typeof(ArchiveObjectTests.TestObject5),
+            ArchiveObjectTests.TestObject5.ConstructBoxedArchiveRead);
+
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, customManager);
+        var reader = new SArchiveMemoryReader(memoryStream, customManager);
+
+        var keyObject = new ArchiveObjectTests.TestObject1
+        {
+            Value1 = 12,
+            Value2 = 0,
+            Value3 = "A test string!",
+            Value4 = true,
+        };
+
+        var original = new Dictionary<ArchiveObjectTests.TestObject1, ArchiveObjectTests.TestObject5>
+        {
+            {
+                keyObject,
+                new ArchiveObjectTests.TestObject5
+                {
+                    Value1 = 1,
+                    Value2 = 2,
+                    Value3 = "third",
+                    Value4 = true,
+                }
+            },
+        };
+
+        writer.WriteObject(original);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var read = reader.ReadObject<Dictionary<ArchiveObjectTests.TestObject1, ArchiveObjectTests.TestObject5>>();
+
+        Assert.NotNull(read);
+        Assert.Equal(original.Count, read.Count);
+
+        // Efficiency won't matter here, just knowing if things match
+        // ReSharper disable once UsageOfDefaultStructEquality
+        Assert.True(original.SequenceEqual(read));
+
+        Assert.True(read.ContainsKey(keyObject));
+    }
+
+    [Fact]
+    public void ArchiveCollection_DictionaryWithTupleKey()
+    {
+        throw new NotImplementedException();
+    }
+
+    // Variant of the above test where the dictionary contains nothing would be really hard to write the code for
+
+    [Fact]
+    public void ArchiveCollection_NestedDictionaryWithDictionariesAndLists()
+    {
+        throw new NotImplementedException();
+    }
+
+    [Fact]
+    public void ArchiveCollection_NestedDictionaryWithDictionariesAndListsAndCustomClass()
+    {
+        throw new NotImplementedException();
+    }
+
+    [Fact]
+    public void ArchiveCollection_ListOfDictionaries()
+    {
+        throw new NotImplementedException();
+    }
+
+    // TODO: absolutely brutal test of nested dictionary type with no items making it not possible to determine
+    // the type?
 }

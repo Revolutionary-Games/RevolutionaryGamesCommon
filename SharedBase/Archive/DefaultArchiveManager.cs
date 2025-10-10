@@ -125,6 +125,8 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
         if (registeredWriterTypes.TryGetValue(type, out var value))
             return value;
 
+        // TODO: should this automatically support types that implement IArchiveWritableVariable?
+
         // Return common types then
         if (type == typeof(byte))
             return ArchiveObjectType.Byte;
@@ -144,6 +146,8 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
             return ArchiveObjectType.Float;
         if (type == typeof(double))
             return ArchiveObjectType.Double;
+        if (type == typeof(string))
+            return ArchiveObjectType.String;
 
         if (type.IsGenericType)
         {
