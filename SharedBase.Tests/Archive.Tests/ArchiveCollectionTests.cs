@@ -572,7 +572,8 @@ public class ArchiveCollectionTests
 
         customManager.RegisterObjectType(ArchiveObjectType.TestObjectType2, typeof(ArchiveObjectTests.TestObject5),
             ArchiveObjectTests.TestObject5.CAN_BE_REFERENCE, ArchiveObjectTests.TestObject5.WriteToArchive);
-        customManager.RegisterBoxableValueType(ArchiveObjectType.TestObjectType2, typeof(ArchiveObjectTests.TestObject5),
+        customManager.RegisterBoxableValueType(ArchiveObjectType.TestObjectType2,
+            typeof(ArchiveObjectTests.TestObject5),
             ArchiveObjectTests.TestObject5.ConstructBoxedArchiveRead);
 
         var memoryStream = new MemoryStream();
@@ -640,7 +641,31 @@ public class ArchiveCollectionTests
     [Fact]
     public void ArchiveCollection_ListOfDictionaries()
     {
-        throw new NotImplementedException();
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, manager);
+        var reader = new SArchiveMemoryReader(memoryStream, manager);
+
+        var original = new List<Dictionary<string, int>>
+        {
+            new()
+            {
+                { "thing", 1 },
+            },
+        };
+
+        writer.WriteObject(original);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var read = reader.ReadObject<List<Dictionary<string, int>>>();
+
+        Assert.NotNull(read);
+        Assert.Equal(original.Count, read.Count);
+        Assert.NotEmpty(read);
+
+        // Efficiency won't matter here, just knowing if things match
+        // ReSharper disable once UsageOfDefaultStructEquality
+        Assert.True(original[0].SequenceEqual(read[0]));
     }
 
     // TODO: absolutely brutal test of nested dictionary type with no items making it not possible to determine

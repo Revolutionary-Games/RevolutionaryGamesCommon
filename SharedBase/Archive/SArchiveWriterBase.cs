@@ -338,6 +338,77 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
         }
     }
 
+    public void WriteUnknownDictionary(IDictionary dictionary)
+    {
+        WriteObjectHeader(ArchiveObjectType.Dictionary, false, false, false, COLLECTIONS_VERSION);
+
+        WriteVariableLengthField32((uint)dictionary.Count);
+
+        Write((byte)0);
+
+        // Need a bit of a hack to get the type of the dictionary elements
+        Type keyType;
+        Type valueType;
+        var keyTypes = dictionary.Keys.GetType().GetGenericArguments();
+
+        if (keyTypes.Length == 1)
+        {
+            keyType = keyTypes[0];
+
+            var valueTypes = dictionary.Values.GetType().GetGenericArguments();
+
+            if (valueTypes.Length != 1)
+                throw new FormatException("Dictionary must have a single value type (or type detection failed)");
+
+            valueType = valueTypes[0];
+        }
+        else if (keyTypes.Length == 2)
+        {
+            // The standard collections actually have 2 params, the key and the value for both collection types
+            keyType = keyTypes[0];
+
+            var valueTypes = dictionary.Values.GetType().GetGenericArguments();
+
+            if (valueTypes.Length != 2)
+                throw new FormatException("Dictionary must have a single value type (or type detection failed)");
+
+            valueType = valueTypes[1];
+
+            if (valueTypes[0] != keyType)
+                throw new Exception("Unexpected dictionary type structure");
+        }
+        else
+        {
+            throw new FormatException("Dictionary must have a single key type (or type detection failed)");
+        }
+
+        Write((uint)WriteManager.GetObjectWriteType(keyType));
+
+        Write((uint)WriteManager.GetObjectWriteType(valueType));
+
+        foreach (DictionaryEntry entry in dictionary)
+        {
+#if DEBUG
+            if (!keyType.IsInstanceOfType(entry.Key))
+            {
+                throw new FormatException(
+                    $"Generic dictionary key type extraction failed, expected: {keyType.Name} " +
+                    $"but got: {entry.Key.GetType().Name}");
+            }
+
+            if (entry.Value != null && !valueType.IsInstanceOfType(entry.Value))
+            {
+                throw new FormatException(
+                    $"Generic dictionary value type extraction failed, expected: {valueType.Name} " +
+                    $"but got: {entry.Value.GetType().Name}");
+            }
+#endif
+
+            WriteAnyRegisteredValueAsObject(entry.Key);
+            WriteAnyRegisteredValueAsObject(entry.Value);
+        }
+    }
+
     /// <summary>
     ///   Writes anything that kind of seems like a list. Much less efficient than a known type of collection writing.
     /// </summary>
@@ -430,6 +501,12 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
         if (value is IList list)
         {
             WriteUnknownList(list);
+            return;
+        }
+
+        if (value is IDictionary dictionary)
+        {
+            WriteUnknownDictionary(dictionary);
             return;
         }
 
