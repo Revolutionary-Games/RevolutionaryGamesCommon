@@ -280,7 +280,7 @@ public class ArchiveObjectTests
         }
     }
 
-    internal struct TestObject5 : IArchiveReadableVariable
+    internal record struct TestObject5 : IArchiveReadableVariable
     {
         public const ushort SERIALIZATION_VERSION = 1;
         public const bool CAN_BE_REFERENCE = false;

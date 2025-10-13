@@ -621,7 +621,36 @@ public class ArchiveCollectionTests
     [Fact]
     public void ArchiveCollection_DictionaryWithTupleKey()
     {
-        throw new NotImplementedException();
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, manager);
+        var reader = new SArchiveMemoryReader(memoryStream, manager);
+
+        var key1 = ("some text", 1, false);
+        var key2 = ("tag", 2, true);
+
+        var original = new Dictionary<(string Tag, int Value, bool Indicator), string>
+        {
+            {
+                key1, "aa"
+            },
+            {
+                key2, "some data"
+            },
+        };
+
+        writer.WriteObject(original);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var read = reader.ReadObject<Dictionary<(string Tag, int Value, bool Indicator), string>>();
+
+        Assert.NotNull(read);
+        Assert.Equal(original.Count, read.Count);
+        Assert.NotEmpty(read);
+
+        // Efficiency won't matter here, just knowing if things match
+        // ReSharper disable once UsageOfDefaultStructEquality
+        Assert.True(original.SequenceEqual(read));
     }
 
     // Variant of the above test where the dictionary contains nothing would be really hard to write the code for
@@ -671,7 +700,70 @@ public class ArchiveCollectionTests
     [Fact]
     public void ArchiveCollection_NestedDictionaryWithDictionariesAndListsAndCustomClass()
     {
-        throw new NotImplementedException();
+        var customManager = new DefaultArchiveManager(true);
+        customManager.RegisterObjectType(ArchiveObjectType.TestObjectType1, typeof(ArchiveObjectTests.TestObject1),
+            ArchiveObjectTests.TestObject1.CAN_BE_REFERENCE, ArchiveObjectTests.TestObject1.WriteToArchive);
+        customManager.RegisterObjectType(ArchiveObjectType.TestObjectType1, typeof(ArchiveObjectTests.TestObject1),
+            ArchiveObjectTests.TestObject1.ReadFromArchive);
+
+        customManager.RegisterObjectType(ArchiveObjectType.TestObjectType2, typeof(ArchiveObjectTests.TestObject5),
+            ArchiveObjectTests.TestObject5.CAN_BE_REFERENCE, ArchiveObjectTests.TestObject5.WriteToArchive);
+        customManager.RegisterBoxableValueType(ArchiveObjectType.TestObjectType2,
+            typeof(ArchiveObjectTests.TestObject5),
+            ArchiveObjectTests.TestObject5.ConstructBoxedArchiveRead);
+
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, customManager);
+        var reader = new SArchiveMemoryReader(memoryStream, customManager);
+
+        var keyObject = new ArchiveObjectTests.TestObject1
+        {
+            Value1 = 12,
+            Value2 = 0,
+            Value3 = "A test string!",
+            Value4 = true,
+        };
+
+        var innerKey = new ArchiveObjectTests.TestObject5
+        {
+            Value1 = 1,
+            Value2 = 2,
+            Value3 = "third",
+            Value4 = true,
+        };
+
+        List<int> innerSequence = [25, 28];
+
+        var original =
+            new Dictionary<ArchiveObjectTests.TestObject1, Dictionary<ArchiveObjectTests.TestObject5, List<int>>>
+            {
+                {
+                    keyObject,
+                    new Dictionary<ArchiveObjectTests.TestObject5, List<int>>
+                    {
+                        {
+                            innerKey,
+                            innerSequence
+                        },
+                    }
+                },
+            };
+
+        writer.WriteObject(original);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var read = reader
+            .ReadObject<Dictionary<ArchiveObjectTests.TestObject1,
+                Dictionary<ArchiveObjectTests.TestObject5, List<int>>>>();
+
+        Assert.NotNull(read);
+        Assert.Equal(original.Count, read.Count);
+
+        Assert.True(read.ContainsKey(keyObject));
+        Assert.True(read[keyObject].ContainsKey(innerKey));
+
+        Assert.True(read[keyObject][innerKey].SequenceEqual(innerSequence));
     }
 
     [Fact]

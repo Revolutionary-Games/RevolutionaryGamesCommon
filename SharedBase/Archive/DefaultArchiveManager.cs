@@ -167,6 +167,14 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
             {
                 return ArchiveObjectType.List;
             }
+
+            if (typeof(ITuple).IsAssignableFrom(baseType))
+            {
+                if (baseType.IsValueType)
+                    return ArchiveObjectType.Tuple;
+
+                return ArchiveObjectType.ReferenceTuple;
+            }
         }
 
         throw new ArgumentException($"Type is not registered for archive writing: {type}");

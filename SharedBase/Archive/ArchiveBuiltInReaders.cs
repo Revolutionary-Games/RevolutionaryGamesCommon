@@ -464,7 +464,7 @@ public static class ArchiveBuiltInReaders
 
         Type dictionaryType;
 
-        if (keyType.IsGenericType || valueType.IsGenericType)
+        if (NeedsToResolveTypeFurther(keyType) || NeedsToResolveTypeFurther(valueType))
         {
             // Again, reading generically typed things is a lot less efficient than normal reading
 
@@ -532,6 +532,19 @@ public static class ArchiveBuiltInReaders
         }
 
         return dictionary;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool NeedsToResolveTypeFurther(Type type)
+    {
+        if (type.IsGenericType)
+            return true;
+
+        // We need to specifically resolve tuples further to avoid cast errors
+        if (typeof(ITuple).IsAssignableFrom(type))
+            return true;
+
+        return false;
     }
 
     private static Type DetermineCommonObjectType(int length, object?[] tempData)
