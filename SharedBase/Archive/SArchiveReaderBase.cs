@@ -157,7 +157,7 @@ public abstract class SArchiveReaderBase : ISArchiveReader
     public abstract void ReadBytes(Span<byte> buffer);
 
     public void ReadObjectHeader(out ArchiveObjectType type, out int referenceId, out bool isNull,
-        out bool referencesEarlier, out ushort version)
+        out bool referencesEarlier, out bool extendedType, out ushort version)
     {
         // Read the header and decode the bits
         var rawData = ReadUInt32();
@@ -206,6 +206,41 @@ public abstract class SArchiveReaderBase : ISArchiveReader
         {
             referenceId = -1;
         }
+
+        extendedType = type.IsExtendedType();
+    }
+
+    public void ReadExtendedObjectType(ArchiveObjectType baseType, Span<ArchiveObjectType> extendedStorage,
+        out int readElements)
+    {
+        var length = ReadInt8();
+
+        if (length <= 0)
+            throw new FormatException("Extended type length cannot be less than 1");
+
+        if (length > ISArchiveWriter.ReasonableMaxExtendedType)
+            throw new FormatException($"Extended type length too long: {length}");
+
+        // Each type requires 24 bits
+        var readLength = length * 3;
+
+        Span<byte> readBuffer = stackalloc byte[readLength];
+
+        ReadBytes(readBuffer);
+
+        readElements = length;
+
+        if (extendedStorage.Length < length)
+        {
+            throw new ArgumentException(
+                $"Extended type length ({length}) is larger than the provided buffer ({extendedStorage.Length})");
+        }
+
+        // Decode the bytes into the receiver
+        for (int i = 0; i < length; i += 3)
+        {
+            extendedStorage[i] = (ArchiveObjectType)(readBuffer[i] | readBuffer[i + 1] << 8 | readBuffer[i + 2] << 16);
+        }
     }
 
     public T? ReadObject<T>()
@@ -228,7 +263,8 @@ public abstract class SArchiveReaderBase : ISArchiveReader
 
     public void ReadAnyStruct<T>(ref T receiver)
     {
-        ReadObjectHeader(out var type, out var id, out var isNull, out var references, out var version);
+        ReadObjectHeader(out var type, out var id, out var isNull, out var references, out var extended,
+            out var version);
 
         if (isNull)
         {
@@ -242,6 +278,16 @@ public abstract class SArchiveReaderBase : ISArchiveReader
             throw new FormatException("Reading an archive object as a struct that has references marked for it");
         }
 #endif
+
+        // Read the extended type if present
+        Span<ArchiveObjectType> extendedStorage =
+            stackalloc ArchiveObjectType[ISArchiveWriter.ReasonableMaxExtendedType];
+        int usedExtendedStorage = 0;
+
+        if (extended)
+        {
+            ReadExtendedObjectType(type, extendedStorage, out usedExtendedStorage);
+        }
 
         // Anything with added handling here should also be put into ReadObjectLowLevel
         switch (type)
@@ -375,6 +421,7 @@ public abstract class SArchiveReaderBase : ISArchiveReader
 
                 throw new FormatException($"Cannot read {type} into receiver of type {receiver!.GetType()}");
             case ArchiveObjectType.Tuple:
+                // TODO: tuple with extended types?
                 // This is highly not recommended when tuples are known to be used as this causes boxing
                 try
                 {
@@ -390,7 +437,7 @@ public abstract class SArchiveReaderBase : ISArchiveReader
         // Try a manager read for custom registered structs
         try
         {
-            receiver = (T)ReadManager.ReadObject(this, type, version);
+            receiver = (T)ReadManager.ReadObject(this, type, extendedStorage.Slice(0, usedExtendedStorage), version);
         }
         catch (InvalidCastException e)
         {
@@ -433,7 +480,8 @@ public abstract class SArchiveReaderBase : ISArchiveReader
     public void ReadObject<T>(ref T obj)
         where T : IArchiveReadableVariable
     {
-        ReadObjectHeader(out var type, out var id, out var isNull, out var references, out var version);
+        ReadObjectHeader(out var type, out var id, out var isNull, out var references, out var extended,
+            out var version);
 
         if (isNull)
         {
@@ -465,6 +513,25 @@ public abstract class SArchiveReaderBase : ISArchiveReader
             }
         }
 
+        Span<ArchiveObjectType> extendedStorage =
+            stackalloc ArchiveObjectType[ISArchiveWriter.ReasonableMaxExtendedType];
+
+        if (extended)
+        {
+            ReadExtendedObjectType(type, extendedStorage, out var usedExtendedStorage);
+
+            if (usedExtendedStorage > 0)
+            {
+                // We could in theory use the extended information here, but we already have a target object.
+                // So instead we just ignore the information to support changing the target type of the object /
+                // the used read method; that should be safe.
+
+                // We could also throw an exception here, but that wouldn't allow changing the reading code without
+                // forcing an archive version upgrade.
+                _ = usedExtendedStorage;
+            }
+        }
+
         ReadManager.ReadObjectToVariable(ref obj, this, type, version);
 
         if (id > 0)
@@ -478,7 +545,8 @@ public abstract class SArchiveReaderBase : ISArchiveReader
     public bool ReadObjectProperties<T>(ref T obj)
         where T : IArchiveUpdatable
     {
-        ReadObjectHeader(out var type, out var id, out var isNull, out var references, out var version);
+        ReadObjectHeader(out var type, out var id, out var isNull, out var references, out var extended,
+            out var version);
 
         if (isNull)
         {
@@ -494,6 +562,15 @@ public abstract class SArchiveReaderBase : ISArchiveReader
         if (obj.ArchiveObjectType != type)
             throw new FormatException($"Cannot read properties of an object ({obj.ArchiveObjectType}) from {type}");
 
+        if (extended)
+        {
+            // ReadExtendedObjectType(type, extendedStorage, out var usedExtendedStorage);
+
+            throw new FormatException(
+                "Object we are reading properties into has extended type information, this would be totally ignored, " +
+                "instead we throw this exception");
+        }
+
         obj.ReadPropertiesFromArchive(this, version);
         return true;
     }
@@ -505,7 +582,8 @@ public abstract class SArchiveReaderBase : ISArchiveReader
 
     public object? ReadObjectLowLevel(out ArchiveObjectType archiveObjectType)
     {
-        ReadObjectHeader(out archiveObjectType, out var id, out var isNull, out var references, out var version);
+        ReadObjectHeader(out archiveObjectType, out var id, out var isNull, out var references, out var extended,
+            out var version);
 
         if (isNull)
         {
@@ -537,6 +615,15 @@ public abstract class SArchiveReaderBase : ISArchiveReader
         if (id > 0 && ReadManager.TryGetAlreadyReadObject(id, out var alreadyReadObject))
         {
             return alreadyReadObject;
+        }
+
+        Span<ArchiveObjectType> extendedStorage =
+            stackalloc ArchiveObjectType[ISArchiveWriter.ReasonableMaxExtendedType];
+        int usedExtendedStorage = 0;
+
+        if (extended)
+        {
+            ReadExtendedObjectType(archiveObjectType, extendedStorage, out usedExtendedStorage);
         }
 
         object? read = null;
@@ -650,7 +737,8 @@ public abstract class SArchiveReaderBase : ISArchiveReader
 
             try
             {
-                read = ReadManager.ReadObject(this, archiveObjectType, version);
+                read = ReadManager.ReadObject(this, archiveObjectType, extendedStorage.Slice(0, usedExtendedStorage),
+                    version);
             }
             catch (Exception)
             {

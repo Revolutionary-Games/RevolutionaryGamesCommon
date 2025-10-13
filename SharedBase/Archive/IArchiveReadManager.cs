@@ -23,7 +23,7 @@ public interface IArchiveReadManager
             ArchiveBuiltInReaders.ReadReferenceTuple);
 
         // List reader
-        manager.RegisterObjectType(ArchiveObjectType.List, typeof(IList<>),
+        manager.RegisterObjectType(ArchiveObjectType.ExtendedList, typeof(IList<>),
             ArchiveBuiltInReaders.ReadList);
 
         // Array reader
@@ -31,7 +31,7 @@ public interface IArchiveReadManager
             ArchiveBuiltInReaders.ReadArray);
 
         // Dictionaries
-        manager.RegisterObjectType(ArchiveObjectType.Dictionary, typeof(Dictionary<,>),
+        manager.RegisterObjectType(ArchiveObjectType.ExtendedDictionary, typeof(Dictionary<,>),
             ArchiveBuiltInReaders.ReadDictionary);
     }
 
@@ -73,9 +73,11 @@ public interface IArchiveReadManager
     /// </summary>
     /// <param name="reader">Reader for performing the data read</param>
     /// <param name="type">Type of the object. Must have been previously registered.</param>
+    /// <param name="extendedType">Extended type specification (empty if not used)</param>
     /// <param name="version">Version of the object from the header info</param>
     /// <returns>The read object (throws on failure)</returns>
-    public object ReadObject(ISArchiveReader reader, ArchiveObjectType type, ushort version);
+    public object ReadObject(ISArchiveReader reader, ArchiveObjectType type,
+        ReadOnlySpan<ArchiveObjectType> extendedType, ushort version);
 
     public void ReadObjectToVariable<T>(ref T receiver, ISArchiveReader reader, ArchiveObjectType type, ushort version)
         where T : IArchiveReadableVariable;

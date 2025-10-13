@@ -30,7 +30,6 @@ public enum ArchiveObjectType : uint
     List,
     Array,
     Dictionary,
-    RawEnumerable,
 
     // Only used in testing
     TestObjectType1 = 4094,
@@ -39,5 +38,26 @@ public enum ArchiveObjectType : uint
     // Extended archive types for custom projects need to be defined after this value
     StartOfCustomTypes = 4096,
 
-    LastValidObjectType = uint.MaxValue & 0xFFFFFF,
+    LastValidObjectType = uint.MaxValue & 0x7FFFFF,
+
+    /// <summary>
+    ///   If this bit is set, then the object type is actually an extended type, meaning that after the object header,
+    ///   there's a special section for the extended type.
+    /// </summary>
+    ExtendedTypeFlag = 1 << 23,
+
+    /// <summary>
+    ///   These types are stored with 24 bits only, so these are the valid bits
+    /// </summary>
+    ValidBits = uint.MaxValue & 0xFFFFFF,
+
+    // Easy access values to some commonly extended types
+    ExtendedList = List | ExtendedTypeFlag,
+    ExtendedDictionary = Dictionary | ExtendedTypeFlag,
+
+    // ExtendedArray = Array | ExtendedTypeFlag,
+
+    // TODO: should tuples use extended types?
+    // ExtendedTuple = Tuple | ExtendedTypeFlag,
+    // ExtendedReferenceTuple = ReferenceTuple | ExtendedTypeFlag,
 }

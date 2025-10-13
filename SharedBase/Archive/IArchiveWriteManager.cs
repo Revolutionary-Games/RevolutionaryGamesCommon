@@ -24,8 +24,7 @@ public interface IArchiveWriteManager
     /// </returns>
     public bool MarkStartOfReferenceObject(ISArchiveWriter writer, object obj);
 
-    public void RegisterObjectType(ArchiveObjectType type, Type nativeType, bool canBeReference,
-        ArchiveObjectDelegate writeDelegate);
+    public void RegisterObjectType(ArchiveObjectType type, Type nativeType, ArchiveObjectDelegate writeDelegate);
 
     /// <summary>
     ///   Returns true if the object is already referenced.
@@ -39,4 +38,12 @@ public interface IArchiveWriteManager
     /// <param name="type">C# type. Note that in some cases this will return a base type.</param>
     /// <returns>Type to use in the archive</returns>
     public ArchiveObjectType GetObjectWriteType(Type type);
+
+    public bool ObjectChildTypeRequiresExtendedType(Type type);
+
+    public void CalculateExtendedObjectType(ArchiveObjectType baseType, Type type,
+        Span<ArchiveObjectType> extendedTypes, out int elementsWritten);
+
+    public Type ResolveExtendedObjectType(ArchiveObjectType baseType, Span<ArchiveObjectType> extendedType,
+        int elementCount);
 }

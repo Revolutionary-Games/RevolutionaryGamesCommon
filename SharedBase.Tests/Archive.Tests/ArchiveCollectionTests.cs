@@ -396,7 +396,7 @@ public class ArchiveCollectionTests
     {
         var customManager = new DefaultArchiveManager(true);
         customManager.RegisterObjectType(ArchiveObjectType.TestObjectType1, typeof(ArchiveObjectTests.TestObject1),
-            ArchiveObjectTests.TestObject1.CAN_BE_REFERENCE, ArchiveObjectTests.TestObject1.WriteToArchive);
+            ArchiveObjectTests.TestObject1.WriteToArchive);
         customManager.RegisterObjectType(ArchiveObjectType.TestObjectType1, typeof(ArchiveObjectTests.TestObject1),
             ArchiveObjectTests.TestObject1.ReadFromArchive);
         var memoryStream = new MemoryStream();
@@ -484,7 +484,7 @@ public class ArchiveCollectionTests
     {
         var customManager = new DefaultArchiveManager(true);
         customManager.RegisterObjectType(ArchiveObjectType.TestObjectType1, typeof(ArchiveObjectTests.TestObject1),
-            ArchiveObjectTests.TestObject1.CAN_BE_REFERENCE, ArchiveObjectTests.TestObject1.WriteToArchive);
+            ArchiveObjectTests.TestObject1.WriteToArchive);
         customManager.RegisterObjectType(ArchiveObjectType.TestObjectType1, typeof(ArchiveObjectTests.TestObject1),
             ArchiveObjectTests.TestObject1.ReadFromArchive);
         var memoryStream = new MemoryStream();
@@ -524,7 +524,7 @@ public class ArchiveCollectionTests
     {
         var customManager = new DefaultArchiveManager(true);
         customManager.RegisterObjectType(ArchiveObjectType.TestObjectType1, typeof(ArchiveObjectTests.TestObject1),
-            ArchiveObjectTests.TestObject1.CAN_BE_REFERENCE, ArchiveObjectTests.TestObject1.WriteToArchive);
+            ArchiveObjectTests.TestObject1.WriteToArchive);
         customManager.RegisterObjectType(ArchiveObjectType.TestObjectType1, typeof(ArchiveObjectTests.TestObject1),
             ArchiveObjectTests.TestObject1.ReadFromArchive);
         var memoryStream = new MemoryStream();
@@ -566,12 +566,12 @@ public class ArchiveCollectionTests
     {
         var customManager = new DefaultArchiveManager(true);
         customManager.RegisterObjectType(ArchiveObjectType.TestObjectType1, typeof(ArchiveObjectTests.TestObject1),
-            ArchiveObjectTests.TestObject1.CAN_BE_REFERENCE, ArchiveObjectTests.TestObject1.WriteToArchive);
+            ArchiveObjectTests.TestObject1.WriteToArchive);
         customManager.RegisterObjectType(ArchiveObjectType.TestObjectType1, typeof(ArchiveObjectTests.TestObject1),
             ArchiveObjectTests.TestObject1.ReadFromArchive);
 
         customManager.RegisterObjectType(ArchiveObjectType.TestObjectType2, typeof(ArchiveObjectTests.TestObject5),
-            ArchiveObjectTests.TestObject5.CAN_BE_REFERENCE, ArchiveObjectTests.TestObject5.WriteToArchive);
+            ArchiveObjectTests.TestObject5.WriteToArchive);
         customManager.RegisterBoxableValueType(ArchiveObjectType.TestObjectType2,
             typeof(ArchiveObjectTests.TestObject5),
             ArchiveObjectTests.TestObject5.ConstructBoxedArchiveRead);
@@ -702,12 +702,12 @@ public class ArchiveCollectionTests
     {
         var customManager = new DefaultArchiveManager(true);
         customManager.RegisterObjectType(ArchiveObjectType.TestObjectType1, typeof(ArchiveObjectTests.TestObject1),
-            ArchiveObjectTests.TestObject1.CAN_BE_REFERENCE, ArchiveObjectTests.TestObject1.WriteToArchive);
+            ArchiveObjectTests.TestObject1.WriteToArchive);
         customManager.RegisterObjectType(ArchiveObjectType.TestObjectType1, typeof(ArchiveObjectTests.TestObject1),
             ArchiveObjectTests.TestObject1.ReadFromArchive);
 
         customManager.RegisterObjectType(ArchiveObjectType.TestObjectType2, typeof(ArchiveObjectTests.TestObject5),
-            ArchiveObjectTests.TestObject5.CAN_BE_REFERENCE, ArchiveObjectTests.TestObject5.WriteToArchive);
+            ArchiveObjectTests.TestObject5.WriteToArchive);
         customManager.RegisterBoxableValueType(ArchiveObjectType.TestObjectType2,
             typeof(ArchiveObjectTests.TestObject5),
             ArchiveObjectTests.TestObject5.ConstructBoxedArchiveRead);

@@ -61,7 +61,19 @@ public interface ISArchiveReader
     ///   reference ID and full version. For what the fields mean <see cref="ISArchiveWriter.WriteObjectHeader"/>.
     /// </summary>
     public void ReadObjectHeader(out ArchiveObjectType type, out int referenceId, out bool isNull,
-        out bool referencesEarlier, out ushort version);
+        out bool referencesEarlier, out bool extendedType, out ushort version);
+
+    /// <summary>
+    ///   Reads extended object types after a <see cref="ReadObjectHeader"/>
+    /// </summary>
+    /// <param name="baseType">Base type from the header (maybe used for custom operations in the future)</param>
+    /// <param name="extendedStorage">
+    ///     Where the data is placed, this needs to be enough storage for any reasonable extended type (
+    ///     <see cref="ISArchiveWriter.ReasonableMaxExtendedType"/>)
+    /// </param>
+    /// <param name="readElements">Returns how many elements were actually used</param>
+    public void ReadExtendedObjectType(ArchiveObjectType baseType, Span<ArchiveObjectType> extendedStorage,
+        out int readElements);
 
     /// <summary>
     ///   Reads an object from the archive. Must be called just after the header is read. Not suitable for structs.

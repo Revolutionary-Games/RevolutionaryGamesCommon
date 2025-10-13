@@ -155,21 +155,22 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
 
             if (baseType == typeof(List<>))
             {
-                return ArchiveObjectType.List;
+                return ArchiveObjectType.ExtendedList;
             }
 
             if (baseType == typeof(Dictionary<,>))
             {
-                return ArchiveObjectType.Dictionary;
+                return ArchiveObjectType.ExtendedDictionary;
             }
 
             if (typeof(IList<>).IsAssignableFrom(baseType))
             {
-                return ArchiveObjectType.List;
+                return ArchiveObjectType.ExtendedList;
             }
 
             if (typeof(ITuple).IsAssignableFrom(baseType))
             {
+                // TODO: extended types for tuples?
                 if (baseType.IsValueType)
                     return ArchiveObjectType.Tuple;
 
@@ -180,7 +181,114 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
         throw new ArgumentException($"Type is not registered for archive writing: {type}");
     }
 
-    public void RegisterObjectType(ArchiveObjectType type, Type nativeType, bool canBeReference,
+    public bool ObjectChildTypeRequiresExtendedType(Type type)
+    {
+        if (type.IsGenericType)
+            return true;
+
+        // TODO: should tuples use extended types?
+        /*if (typeof(ITuple).IsAssignableFrom(type))
+            return true;*/
+
+        return false;
+    }
+
+    public void CalculateExtendedObjectType(ArchiveObjectType baseType, Type type,
+        Span<ArchiveObjectType> extendedTypes, out int elementsWritten)
+    {
+        if (!baseType.IsExtendedType() || !type.IsGenericType)
+            throw new ArgumentException("Base type must be an extended type");
+
+        if (extendedTypes.Length < 2)
+            throw new ArgumentException("Out of space in extended object type span");
+
+        elementsWritten = 0;
+
+        // We could look up the actual base type again, but for simplicity we just use the given type
+        extendedTypes[0] = baseType.RemoveExtendedFlag();
+        elementsWritten += 1;
+
+        // Then write the child element types
+        foreach (var childType in type.GetGenericArguments())
+        {
+            var typeToWrite = GetObjectWriteType(childType);
+            extendedTypes[elementsWritten] = typeToWrite;
+            elementsWritten += 1;
+
+            // If the child type is extended, recursively write out its types as well
+            if (typeToWrite.IsExtendedType())
+            {
+                CalculateExtendedObjectType(typeToWrite, childType,
+                    extendedTypes.Slice(elementsWritten, extendedTypes.Length - elementsWritten), out var newElements);
+                elementsWritten += newElements;
+            }
+        }
+
+        // Check we didn't write accidentally too much
+        if (elementsWritten > ISArchiveWriter.ReasonableMaxExtendedType)
+            throw new ArgumentException($"Extended type length too long: {elementsWritten}");
+    }
+
+    public Type ResolveExtendedObjectType(ArchiveObjectType baseType, Span<ArchiveObjectType> extendedType,
+        int elementCount)
+    {
+        if (!baseType.IsExtendedType())
+            throw new ArgumentException("Base type must be an extended type");
+
+        if (elementCount < 1)
+            throw new ArgumentException("Cannot decode empty extended type");
+
+        if (extendedType.Length < elementCount)
+            throw new ArgumentException("Span length mismatch");
+
+        var nextType = extendedType[0];
+
+        var typeToCheckAgainst = nextType;
+
+        if (typeToCheckAgainst.IsExtendedType())
+            typeToCheckAgainst = typeToCheckAgainst.RemoveExtendedFlag();
+
+        if (baseType.RemoveExtendedFlag() != typeToCheckAgainst)
+        {
+            throw new FormatException(
+                $"Extended type mismatch, expected to see: {baseType} but read from archive: {nextType}");
+        }
+
+        var type = MapArchiveTypeToType(nextType);
+
+        if (type == null)
+            throw new FormatException($"Unknown extended type base: {nextType}");
+
+        if (!type.IsGenericType)
+            throw new Exception($"Extended type base is not a generic type: {type}");
+
+        // var genericBase = type.GetGenericTypeDefinition();
+        var types = new Type[type.GenericTypeArguments.Length];
+
+        for (int i = 0; i < types.Length; ++i)
+        {
+            int elementIndex = i + 1;
+            if (elementIndex >= type.GenericTypeArguments.Length)
+                throw new FormatException($"Ran out of extended type elements for {type} at index: {i}");
+
+            var nextElement = extendedType[elementIndex];
+
+            if (nextElement.IsExtendedType())
+            {
+                types[i] = ResolveExtendedObjectType(nextElement,
+                    extendedType.Slice(elementIndex, extendedType.Length - elementIndex), elementCount - elementIndex);
+            }
+            else
+            {
+                types[i] = MapArchiveTypeToType(nextElement) ??
+                    throw new FormatException($"Unknown extended type part ({i}): {nextElement}");
+            }
+        }
+
+        return type.MakeGenericType(types);
+    }
+
+    public void RegisterObjectType(ArchiveObjectType type, Type nativeType,
         IArchiveWriteManager.ArchiveObjectDelegate writeDelegate)
     {
         if (!registeredWriterTypes.TryAdd(nativeType, type))
@@ -224,7 +332,8 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
         return loadedObjectReferences.TryGetValue(referenceId, out obj);
     }
 
-    public object ReadObject(ISArchiveReader reader, ArchiveObjectType type, ushort version)
+    public object ReadObject(ISArchiveReader reader, ArchiveObjectType type,
+        ReadOnlySpan<ArchiveObjectType> extendedType, ushort version)
     {
         if (readDelegates.TryGetValue(type, out var readDelegate))
             return readDelegate(reader, version);
@@ -297,11 +406,13 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
             case ArchiveObjectType.ByteArray:
                 return typeof(byte[]);
 
+            case ArchiveObjectType.ExtendedList:
             case ArchiveObjectType.List:
                 return typeof(List<>);
 
             // case ArchiveObjectType.Array:
             //     return typeof(Array);
+            case ArchiveObjectType.ExtendedDictionary:
             case ArchiveObjectType.Dictionary:
                 return typeof(Dictionary<,>);
 

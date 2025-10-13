@@ -182,13 +182,23 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
     }
 
     public void WriteObjectHeader(ArchiveObjectType type, bool canBeReference, bool isNull, bool usesExistingReference,
-        ushort version)
+        bool extendedType, ushort version)
     {
-        if (type > ArchiveObjectType.LastValidObjectType)
+        // If the bits don't fit, throw an error
+        if (type > ArchiveObjectType.ValidBits)
             throw new ArgumentException("Invalid object type (value too high)");
 
         if (version <= 0)
             throw new ArgumentException("Version must be at least 1");
+
+        if (type.IsExtendedType() != extendedType)
+            throw new ArgumentException("Extended bool must match what is flagged in the main type variable");
+
+        if (isNull && usesExistingReference)
+            throw new ArgumentException("Cannot be null and use an existing reference");
+
+        if (!canBeReference && usesExistingReference)
+            throw new ArgumentException("Cannot use an existing reference if the object cannot be a reference");
 
         bool versionIsLong = version > 0x7;
 
@@ -206,11 +216,45 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
         }
     }
 
+    public void WriteExtendedObjectType(ArchiveObjectType baseType, Span<ArchiveObjectType> extendedTypes, int count)
+    {
+        if (count <= 0)
+            throw new FormatException("Extended type length cannot be less than 1");
+
+        if (count > ISArchiveWriter.ReasonableMaxExtendedType)
+            throw new ArgumentException($"Extended type length too long: {count}");
+
+        Write((byte)count);
+
+        // Each type requires 24 bits
+        var writeLength = count * 3;
+
+        Span<byte> writeBuffer = stackalloc byte[writeLength];
+
+        // Encode bytes
+        int writeIndex = 0;
+        for (int i = 0; i < count; ++i)
+        {
+            var element = extendedTypes[i];
+
+            writeBuffer[writeIndex++] = (byte)((uint)element & 0xFF);
+            writeBuffer[writeIndex++] = (byte)(((uint)element >> 8) & 0xFF);
+            writeBuffer[writeIndex++] = (byte)(((uint)element >> 16) & 0xFF);
+        }
+
+        if (writeIndex != writeLength)
+            throw new Exception("Logic error in extended type encoding");
+
+        Write(writeBuffer);
+    }
+
     public void WriteObject(IArchivable obj)
     {
         bool canBeReference = obj.CanBeReferencedInArchive;
+        bool extended = obj.ArchiveObjectType.IsExtendedType();
+
         WriteObjectHeader(obj.ArchiveObjectType, canBeReference, false,
-            canBeReference && WriteManager.IsReferencedAlready(obj),
+            canBeReference && WriteManager.IsReferencedAlready(obj), extended,
             obj.CurrentArchiveVersion);
 
         // If the object can be a reference, we write a placeholder for it, if it stays all 0, then it was not actually
@@ -226,14 +270,32 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
             }
         }
 
+        if (extended)
+        {
+            HandleExtendedTypeWrite(obj.ArchiveObjectType, obj.GetType());
+        }
+
         // Header handled, let the object handle saving its data
         obj.WriteToArchive(this);
+    }
+
+    public void HandleExtendedTypeWrite(ArchiveObjectType baseType, Type type)
+    {
+        Span<ArchiveObjectType> extendedTypes = stackalloc ArchiveObjectType[ISArchiveWriter.ReasonableMaxExtendedType];
+
+        WriteManager.CalculateExtendedObjectType(baseType, type, extendedTypes, out var count);
+        WriteExtendedObjectType(baseType, extendedTypes, count);
     }
 
     public void WriteObject<T>(ref T obj)
         where T : struct, IArchivable
     {
-        WriteObjectHeader(obj.ArchiveObjectType, false, false, false, obj.CurrentArchiveVersion);
+        bool extended = obj.ArchiveObjectType.IsExtendedType();
+
+        WriteObjectHeader(obj.ArchiveObjectType, false, false, false, extended, obj.CurrentArchiveVersion);
+
+        if (extended)
+            HandleExtendedTypeWrite(obj.ArchiveObjectType, obj.GetType());
 
         // Header handled, let the object handle saving its data
         obj.WriteToArchive(this);
@@ -241,7 +303,13 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
 
     public void WriteObject<T>(IList<T> list)
     {
-        WriteObjectHeader(ArchiveObjectType.List, false, false, false, COLLECTIONS_VERSION);
+        // Use an extended type when the value is not fully known
+        bool extended = WriteManager.ObjectChildTypeRequiresExtendedType(typeof(T));
+        var type = extended ? ArchiveObjectType.ExtendedList : ArchiveObjectType.List;
+        WriteObjectHeader(type, false, false, false, extended, COLLECTIONS_VERSION);
+
+        if (extended)
+            HandleExtendedTypeWrite(type, list.GetType());
 
         // Write list length first
         WriteVariableLengthField32((uint)list.Count);
@@ -264,7 +332,13 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
 
     public void WriteUnknownList(IList list)
     {
-        WriteObjectHeader(ArchiveObjectType.List, false, false, false, COLLECTIONS_VERSION);
+        bool extended = WriteManager.ObjectChildTypeRequiresExtendedType(list.GetType());
+        var type = extended ? ArchiveObjectType.ExtendedList : ArchiveObjectType.List;
+
+        WriteObjectHeader(type, false, false, false, extended, COLLECTIONS_VERSION);
+
+        if (extended)
+            HandleExtendedTypeWrite(type, list.GetType());
 
         // Write list length first
         WriteVariableLengthField32((uint)list.Count);
@@ -290,12 +364,12 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
         // Automatic byte array optimisation
         if (array is byte[] byteArray)
         {
-            WriteObjectHeader(ArchiveObjectType.ByteArray, false, false, false, 1);
+            WriteObjectHeader(ArchiveObjectType.ByteArray, false, false, false, false, 1);
             Write(byteArray);
             return;
         }
 
-        WriteObjectHeader(ArchiveObjectType.Array, false, false, false, COLLECTIONS_VERSION);
+        WriteObjectHeader(ArchiveObjectType.Array, false, false, false, false, COLLECTIONS_VERSION);
 
         WriteVariableLengthField32((uint)array.Length);
 
@@ -317,7 +391,14 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
 
     public void WriteObject<TKey, TValue>(IReadOnlyDictionary<TKey, TValue> dictionary)
     {
-        WriteObjectHeader(ArchiveObjectType.Dictionary, false, false, false, COLLECTIONS_VERSION);
+        bool extended = WriteManager.ObjectChildTypeRequiresExtendedType(typeof(TKey)) ||
+            WriteManager.ObjectChildTypeRequiresExtendedType(typeof(TValue));
+        var type = extended ? ArchiveObjectType.ExtendedDictionary : ArchiveObjectType.Dictionary;
+
+        WriteObjectHeader(type, false, false, false, extended, COLLECTIONS_VERSION);
+
+        if (extended)
+            HandleExtendedTypeWrite(type, dictionary.GetType());
 
         WriteVariableLengthField32((uint)dictionary.Count);
 
@@ -340,12 +421,6 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
 
     public void WriteUnknownDictionary(IDictionary dictionary)
     {
-        WriteObjectHeader(ArchiveObjectType.Dictionary, false, false, false, COLLECTIONS_VERSION);
-
-        WriteVariableLengthField32((uint)dictionary.Count);
-
-        Write((byte)0);
-
         // Need a bit of a hack to get the type of the dictionary elements
         Type keyType;
         Type valueType;
@@ -382,6 +457,19 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
             throw new FormatException("Dictionary must have a single key type (or type detection failed)");
         }
 
+        bool extended = WriteManager.ObjectChildTypeRequiresExtendedType(keyType) ||
+            WriteManager.ObjectChildTypeRequiresExtendedType(valueType);
+        var type = extended ? ArchiveObjectType.ExtendedDictionary : ArchiveObjectType.Dictionary;
+
+        WriteObjectHeader(type, false, false, false, extended, COLLECTIONS_VERSION);
+
+        if (extended)
+            HandleExtendedTypeWrite(type, dictionary.GetType());
+
+        WriteVariableLengthField32((uint)dictionary.Count);
+
+        Write((byte)0);
+
         Write((uint)WriteManager.GetObjectWriteType(keyType));
 
         Write((uint)WriteManager.GetObjectWriteType(valueType));
@@ -391,8 +479,7 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
 #if DEBUG
             if (!keyType.IsInstanceOfType(entry.Key))
             {
-                throw new FormatException(
-                    $"Generic dictionary key type extraction failed, expected: {keyType.Name} " +
+                throw new FormatException($"Generic dictionary key type extraction failed, expected: {keyType.Name} " +
                     $"but got: {entry.Key.GetType().Name}");
             }
 
@@ -409,14 +496,6 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
         }
     }
 
-    /// <summary>
-    ///   Writes anything that kind of seems like a list. Much less efficient than a known type of collection writing.
-    /// </summary>
-    public void WriteObject<T>(IEnumerable anyEnumerable)
-    {
-        throw new NotImplementedException();
-    }
-
     public void WriteAnyRegisteredValueAsObject<T>(T value)
     {
         if (ReferenceEquals(value, null))
@@ -429,54 +508,54 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
         switch (value)
         {
             case bool boolValue:
-                WriteObjectHeader(ArchiveObjectType.Bool, false, false, false, 1);
+                WriteObjectHeader(ArchiveObjectType.Bool, false, false, false, false, 1);
                 Write(boolValue ? (byte)1 : (byte)0);
                 return;
             case byte byteValue:
-                WriteObjectHeader(ArchiveObjectType.Byte, false, false, false, 1);
+                WriteObjectHeader(ArchiveObjectType.Byte, false, false, false, false, 1);
                 Write(byteValue);
                 return;
             case short shortValue:
-                WriteObjectHeader(ArchiveObjectType.Int16, false, false, false, 1);
+                WriteObjectHeader(ArchiveObjectType.Int16, false, false, false, false, 1);
                 Write(shortValue);
                 return;
             case int intValue:
-                WriteObjectHeader(ArchiveObjectType.Int32, false, false, false, 1);
+                WriteObjectHeader(ArchiveObjectType.Int32, false, false, false, false, 1);
                 Write(intValue);
                 return;
             case long longValue:
-                WriteObjectHeader(ArchiveObjectType.Int64, false, false, false, 1);
+                WriteObjectHeader(ArchiveObjectType.Int64, false, false, false, false, 1);
                 Write(longValue);
                 return;
             case float floatValue:
-                WriteObjectHeader(ArchiveObjectType.Float, false, false, false, 1);
+                WriteObjectHeader(ArchiveObjectType.Float, false, false, false, false, 1);
                 Write(floatValue);
                 return;
             case double doubleValue:
-                WriteObjectHeader(ArchiveObjectType.Double, false, false, false, 1);
+                WriteObjectHeader(ArchiveObjectType.Double, false, false, false, false, 1);
                 Write(doubleValue);
                 return;
 
             case ushort ushortValue:
-                WriteObjectHeader(ArchiveObjectType.UInt16, false, false, false, 1);
+                WriteObjectHeader(ArchiveObjectType.UInt16, false, false, false, false, 1);
                 Write(ushortValue);
                 return;
             case uint uintValue:
-                WriteObjectHeader(ArchiveObjectType.UInt32, false, false, false, 1);
+                WriteObjectHeader(ArchiveObjectType.UInt32, false, false, false, false, 1);
                 Write(uintValue);
                 return;
             case ulong ulongValue:
-                WriteObjectHeader(ArchiveObjectType.UInt64, false, false, false, 1);
+                WriteObjectHeader(ArchiveObjectType.UInt64, false, false, false, false, 1);
                 Write(ulongValue);
                 return;
             case byte[] byteArrayValue:
-                WriteObjectHeader(ArchiveObjectType.ByteArray, false, false, false, 1);
+                WriteObjectHeader(ArchiveObjectType.ByteArray, false, false, false, false, 1);
                 WriteVariableLengthField32((uint)byteArrayValue.Length);
                 Write(byteArrayValue);
                 return;
 
             case string stringValue:
-                WriteObjectHeader(ArchiveObjectType.String, false, false, false, 1);
+                WriteObjectHeader(ArchiveObjectType.String, false, false, false, false, 1);
                 Write(stringValue);
                 return;
         }
@@ -516,14 +595,16 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
     public void WriteObjectProperties<T>(ref T obj)
         where T : IArchiveUpdatable
     {
-        WriteObjectHeader(obj.ArchiveObjectType, false, false, false, obj.CurrentArchiveVersion);
+        WriteObjectHeader(obj.ArchiveObjectType, false, false, false, false, obj.CurrentArchiveVersion);
 
         obj.WritePropertiesToArchive(this);
     }
 
     public void WriteObject<T1, T2>(in (T1 Value1, T2 Value2) tuple)
     {
-        WriteObjectHeader(ArchiveObjectType.Tuple, false, false, false, TUPLE_VERSION);
+        // TODO: should tuples use extended types?
+
+        WriteObjectHeader(ArchiveObjectType.Tuple, false, false, false, false, TUPLE_VERSION);
 
         // Length of the tuple
         Write((byte)2);
@@ -535,7 +616,7 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
 
     public void WriteObject<T1, T2, T3>(in (T1 Value1, T2 Value2, T3 Value3) tuple)
     {
-        WriteObjectHeader(ArchiveObjectType.Tuple, false, false, false, TUPLE_VERSION);
+        WriteObjectHeader(ArchiveObjectType.Tuple, false, false, false, false, TUPLE_VERSION);
 
         // Length of the tuple
         Write((byte)3);
@@ -548,7 +629,7 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
 
     public void WriteObject<T1, T2, T3, T4>(in (T1 Value1, T2 Value2, T3 Value3, T4 Value4) tuple)
     {
-        WriteObjectHeader(ArchiveObjectType.Tuple, false, false, false, TUPLE_VERSION);
+        WriteObjectHeader(ArchiveObjectType.Tuple, false, false, false, false, TUPLE_VERSION);
 
         // Length of the tuple
         Write((byte)4);
@@ -565,7 +646,7 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
     {
         // To preserve the tuple type even if it goes through the generic method, we write the header type here
         WriteObjectHeader(valueType ? ArchiveObjectType.Tuple : ArchiveObjectType.ReferenceTuple, false, false, false,
-            TUPLE_VERSION);
+            false, TUPLE_VERSION);
 
         if (tuple.Length > byte.MaxValue)
             throw new FormatException("Too long tuple type");
@@ -599,7 +680,7 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
 
     public void WriteNullObject()
     {
-        WriteObjectHeader(ArchiveObjectType.Null, false, true, false, 1);
+        WriteObjectHeader(ArchiveObjectType.Null, false, true, false, false, 1);
 
         // Nulls do not have a reference placeholder, even if they can be otherwise references
     }

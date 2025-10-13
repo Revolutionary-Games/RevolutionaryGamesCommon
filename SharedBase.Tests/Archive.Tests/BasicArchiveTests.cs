@@ -1,5 +1,6 @@
 namespace SharedBase.Tests.Archive.Tests;
 
+using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -13,6 +14,15 @@ public class BasicArchiveTests
     [Fact]
     public void BasicArchive_IntWritingAndReading()
     {
+        // ReSharper disable once HeuristicUnreachableCode
+#pragma warning disable CS0162 // Unreachable code detected
+        if (ArchiveObjectType.LastValidObjectType > ArchiveObjectType.ValidBits ||
+            ArchiveObjectType.ExtendedTypeFlag > ArchiveObjectType.ValidBits)
+        {
+            Assert.Fail("Archive object type enum is misconfigured");
+        }
+#pragma warning restore CS0162 // Unreachable code detected
+
         var manager = new DefaultArchiveManager(false);
         var memoryStream = new MemoryStream();
         var writer = new SArchiveMemoryWriter(memoryStream, manager);
@@ -325,26 +335,26 @@ public class BasicArchiveTests
     // [InlineData(ArchiveObjectType.Byte, false, false, true, 1)]
 
     [Theory]
-    [InlineData(ArchiveObjectType.Byte, true, false, false, 1)]
-    [InlineData(ArchiveObjectType.Int64, true, false, false, 3)]
-    [InlineData(ArchiveObjectType.Int64, true, false, true, 3)]
-    [InlineData(ArchiveObjectType.StartOfCustomTypes, true, false, false, 320)]
-    [InlineData(ArchiveObjectType.StartOfCustomTypes, true, false, true, 320)]
-    [InlineData(ArchiveObjectType.LastValidObjectType, true, false, false, 1)]
-    [InlineData(ArchiveObjectType.Byte, false, false, false, 1)]
-    [InlineData(ArchiveObjectType.Byte, false, true, false, 320)]
-    [InlineData(ArchiveObjectType.Byte, true, true, false, 320)]
-    [InlineData(ArchiveObjectType.Byte, true, true, false, 1)]
-    [InlineData(ArchiveObjectType.Dictionary, true, false, false, ushort.MaxValue)]
+    [InlineData(ArchiveObjectType.Byte, true, false, false, false, 1)]
+    [InlineData(ArchiveObjectType.Int64, true, false, false, false, 3)]
+    [InlineData(ArchiveObjectType.Int64, true, false, true, false, 3)]
+    [InlineData(ArchiveObjectType.StartOfCustomTypes, true, false, false, false, 320)]
+    [InlineData(ArchiveObjectType.StartOfCustomTypes, true, false, true, false, 320)]
+    [InlineData(ArchiveObjectType.LastValidObjectType, true, false, false, false, 1)]
+    [InlineData(ArchiveObjectType.Byte, false, false, false, false, 1)]
+    [InlineData(ArchiveObjectType.Byte, false, true, false, false, 320)]
+    [InlineData(ArchiveObjectType.Byte, true, true, false, false, 320)]
+    [InlineData(ArchiveObjectType.Byte, true, true, false, false, 1)]
+    [InlineData(ArchiveObjectType.Dictionary, true, false, false, false, ushort.MaxValue)]
+    [InlineData(ArchiveObjectType.ExtendedDictionary, true, false, false, true, ushort.MaxValue)]
     public void BasicArchive_HeaderWritingAndReading(ArchiveObjectType type, bool canBeReference, bool isNull,
-        bool alreadyReferenced,
-        ushort version)
+        bool alreadyReferenced, bool extendedType, ushort version)
     {
         var memoryStream = new MemoryStream();
         var writer = new SArchiveMemoryWriter(memoryStream, sharedManager);
         var reader = new SArchiveMemoryReader(memoryStream, sharedManager);
 
-        writer.WriteObjectHeader(type, canBeReference, isNull, alreadyReferenced, version);
+        writer.WriteObjectHeader(type, canBeReference, isNull, alreadyReferenced, extendedType, version);
 
         // Write placeholder object reference id as the plain header write doesn't write it.
         if (canBeReference && !isNull)
@@ -352,7 +362,7 @@ public class BasicArchiveTests
 
         memoryStream.Seek(0, SeekOrigin.Begin);
         reader.ReadObjectHeader(out var readType, out var referenceId, out var readIsNull, out var readIsReferenced,
-            out var readVersion);
+            out var readExtendedType, out var readVersion);
 
         Assert.Equal(type, readType);
 
@@ -380,5 +390,31 @@ public class BasicArchiveTests
         {
             Assert.Equal(alreadyReferenced, readIsReferenced);
         }
+
+        Assert.Equal(extendedType, readExtendedType);
+    }
+
+    // Objects can be null even if not references
+    // [InlineData(ArchiveObjectType.Byte, false, true, false, false)]
+
+    // This doesn't currently hit anything as incrementing into the flag area does all fit, and this would need extra
+    // byte checks to see if this problem was triggered
+    // [InlineData(ArchiveObjectType.LastValidObjectType + 1, false, false, false, true)]
+
+    [Theory]
+    [InlineData(ArchiveObjectType.Byte, false, true, true, false)]
+    [InlineData(ArchiveObjectType.Byte, true, true, true, false)]
+    [InlineData(ArchiveObjectType.Byte, false, false, true, false)]
+    [InlineData(ArchiveObjectType.Dictionary, false, false, false, true)]
+    [InlineData(ArchiveObjectType.ExtendedDictionary, false, false, false, false)]
+    [InlineData(ArchiveObjectType.LastValidObjectType + 1, false, false, false, false)]
+    public void BasicArchive_IncorrectFlagWritingGivesAnException(ArchiveObjectType type, bool canBeReference,
+        bool isNull, bool alreadyReferenced, bool extendedType)
+    {
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, sharedManager);
+
+        Assert.Throws<ArgumentException>(() =>
+            writer.WriteObjectHeader(type, canBeReference, isNull, alreadyReferenced, extendedType, 1));
     }
 }
