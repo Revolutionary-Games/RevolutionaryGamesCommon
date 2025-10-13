@@ -629,7 +629,43 @@ public class ArchiveCollectionTests
     [Fact]
     public void ArchiveCollection_NestedDictionaryWithDictionariesAndLists()
     {
-        throw new NotImplementedException();
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, manager);
+        var reader = new SArchiveMemoryReader(memoryStream, manager);
+
+        var original = new Dictionary<string, Dictionary<string, List<int>>>
+        {
+            {
+                "thing", new Dictionary<string, List<int>>
+                {
+                    { "second value", [2, 4] },
+                    { "more nested stuff", [50] },
+                }
+            },
+            {
+                "thing2", new Dictionary<string, List<int>> { { "stuff", [5] } }
+            },
+        };
+
+        writer.WriteObject(original);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var read = reader.ReadObject<Dictionary<string, Dictionary<string, List<int>>>>();
+
+        Assert.NotNull(read);
+        Assert.Equal(original.Count, read.Count);
+        Assert.NotEmpty(read);
+
+        Assert.NotEmpty(read["thing"]);
+        Assert.True(read["thing"].ContainsKey("second value"));
+        Assert.True(read["thing"].ContainsKey("more nested stuff"));
+        Assert.NotEmpty(read["thing2"]);
+        Assert.True(read["thing2"].ContainsKey("stuff"));
+
+        Assert.True(original["thing"]["second value"].SequenceEqual(read["thing"]["second value"]));
+        Assert.True(original["thing"]["more nested stuff"].SequenceEqual(read["thing"]["more nested stuff"]));
+        Assert.True(original["thing2"]["stuff"].SequenceEqual(read["thing2"]["stuff"]));
     }
 
     [Fact]

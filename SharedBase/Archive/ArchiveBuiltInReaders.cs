@@ -466,11 +466,45 @@ public static class ArchiveBuiltInReaders
 
         if (keyType.IsGenericType || valueType.IsGenericType)
         {
-            throw new NotImplementedException("Cannot read generically typed dictionary keys or values (yet)");
+            // Again, reading generically typed things is a lot less efficient than normal reading
 
             // Fallback if we need it (but may cause pretty horrible boxing and may not be able to be cast easily to the
             // target dictionary kind)
-            // var dictionary = new Dictionary<object, object>(length);
+            var items = new object?[length];
+            var keys = new object[length];
+
+            for (int i = 0; i < length; ++i)
+            {
+                keys[i] = reader.ReadObject(out _) ?? throw new FormatException("Null key in dictionary");
+                items[i] = reader.ReadObject(out _);
+            }
+
+            // Determine the common type for the key and value
+            keyType = DetermineCommonObjectType(length, keys);
+            valueType = DetermineCommonObjectType(length, items);
+
+            var resolvedTypes = new[] { keyType, valueType };
+            dictionaryType = MakeGenericDictionary(resolvedTypes);
+
+            // Then make the dictionary and copy the data we have
+            var dictionary2 = CreateDictionary(dictionaryType);
+
+            for (int i = 0; i < length; ++i)
+            {
+                try
+                {
+                    dictionary2.Add(keys[i], items[i]);
+                }
+                catch (Exception e)
+                {
+                    throw new FormatException(
+                        $"Cannot add buffered item to dictionary at index {i}, key is {keys[i].GetType()} " +
+                        $"and value is {items[i]?.GetType()} " +
+                        $"and the dictionary is: {dictionaryType}", e);
+                }
+            }
+
+            return dictionary2;
         }
 
         var typesArray = new[] { keyType, valueType };
