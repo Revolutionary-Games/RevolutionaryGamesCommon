@@ -678,7 +678,30 @@ public class ArchiveCollectionTests
         Assert.True(original.SequenceEqual(read));
     }
 
-    // TODO: Variant of the above test where the dictionary contains nothing would be really hard to write the code for
+    [Fact]
+    public void ArchiveCollection_DictionaryWithTupleKeyThatIsEmpty()
+    {
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, manager);
+        var reader = new SArchiveMemoryReader(memoryStream, manager);
+
+        // Intentionally empty dictionary
+        // ReSharper disable once CollectionNeverUpdated.Local
+        var original = new Dictionary<(string Tag, int Value, bool Indicator), string>();
+
+        writer.WriteObject(original);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var read = reader.ReadObject<Dictionary<(string Tag, int Value, bool Indicator), string>>();
+
+        Assert.NotNull(read);
+        Assert.Equal(original.Count, read.Count);
+
+        // Efficiency won't matter here, just knowing if things match
+        // ReSharper disable once UsageOfDefaultStructEquality
+        Assert.True(original.SequenceEqual(read));
+    }
 
     [Fact]
     public void ArchiveCollection_NestedDictionaryWithDictionariesAndLists()
@@ -792,6 +815,52 @@ public class ArchiveCollectionTests
     }
 
     [Fact]
+    public void ArchiveCollection_NestedDictionaryWithDictionariesAndListsAndCustomClassThatIsEmpty()
+    {
+        var customManager = new DefaultArchiveManager(true);
+        customManager.RegisterObjectType(ArchiveObjectType.TestObjectType1, typeof(ArchiveObjectTests.TestObject1),
+            ArchiveObjectTests.TestObject1.WriteToArchive);
+        customManager.RegisterObjectType(ArchiveObjectType.TestObjectType1, typeof(ArchiveObjectTests.TestObject1),
+            ArchiveObjectTests.TestObject1.ReadFromArchive);
+
+        customManager.RegisterObjectType(ArchiveObjectType.TestObjectType2, typeof(ArchiveObjectTests.TestObject5),
+            ArchiveObjectTests.TestObject5.WriteToArchive);
+        customManager.RegisterBoxableValueType(ArchiveObjectType.TestObjectType2,
+            typeof(ArchiveObjectTests.TestObject5),
+            ArchiveObjectTests.TestObject5.ConstructBoxedArchiveRead);
+
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, customManager);
+        var reader = new SArchiveMemoryReader(memoryStream, customManager);
+
+        // Intentionally empty dictionary
+        // ReSharper disable once CollectionNeverUpdated.Local
+        var original =
+            new Dictionary<ArchiveObjectTests.TestObject1, Dictionary<ArchiveObjectTests.TestObject5, List<int>>>();
+
+        writer.WriteObject(original);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var read = reader
+            .ReadObject<Dictionary<ArchiveObjectTests.TestObject1,
+                Dictionary<ArchiveObjectTests.TestObject5, List<int>>>>();
+
+        Assert.NotNull(read);
+        Assert.Equal(original.Count, read.Count);
+
+        // Efficiency won't matter here, just knowing if things match
+        // ReSharper disable once UsageOfDefaultStructEquality
+        Assert.True(original.SequenceEqual(read));
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var read2 = reader.ReadObject(out var type);
+        Assert.Equal(ArchiveObjectType.ExtendedDictionary, type);
+        Assert.IsType(original.GetType(), read2);
+    }
+
+    [Fact]
     public void ArchiveCollection_ListOfDictionaries()
     {
         var memoryStream = new MemoryStream();
@@ -821,8 +890,26 @@ public class ArchiveCollectionTests
         Assert.True(original[0].SequenceEqual(read[0]));
     }
 
+    [Fact]
+    public void ArchiveCollection_ListOfDictionariesThatIsEmpty()
+    {
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, manager);
+        var reader = new SArchiveMemoryReader(memoryStream, manager);
 
+        var original = new List<Dictionary<string, int>>();
 
-    // TODO: absolutely brutal test of nested dictionary type with no items making it not possible to determine
-    // the type?
+        writer.WriteObject(original);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var read = reader.ReadObject<List<Dictionary<string, int>>>();
+
+        Assert.NotNull(read);
+        Assert.Equal(original.Count, read.Count);
+
+        // Efficiency won't matter here, just knowing if things match
+        // ReSharper disable once UsageOfDefaultStructEquality
+        Assert.True(original.SequenceEqual(read));
+    }
 }
