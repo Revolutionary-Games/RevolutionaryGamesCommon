@@ -41,9 +41,14 @@ public interface IArchiveWriteManager
 
     public bool ObjectChildTypeRequiresExtendedType(Type type);
 
+    /// <summary>
+    ///   Calculates the extended type data for a given type. Note that the calculated data can include special values
+    ///   that are not by themselves valid <see cref="ArchiveObjectType"/> values."/>
+    /// </summary>
+    /// <param name="baseType">Base type to get extended data for</param>
+    /// <param name="type">The C# type to inspect</param>
+    /// <param name="extendedTypes">Return value</param>
+    /// <param name="elementsWritten">Specifies how much data was actually written</param>
     public void CalculateExtendedObjectType(ArchiveObjectType baseType, Type type,
         Span<ArchiveObjectType> extendedTypes, out int elementsWritten);
-
-    public Type ResolveExtendedObjectType(ArchiveObjectType baseType, Span<ArchiveObjectType> extendedType,
-        int elementCount);
 }

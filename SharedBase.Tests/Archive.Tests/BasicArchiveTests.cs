@@ -14,13 +14,15 @@ public class BasicArchiveTests
     [Fact]
     public void BasicArchive_IntWritingAndReading()
     {
-        // ReSharper disable once HeuristicUnreachableCode
+        // ReSharper disable HeuristicUnreachableCode
 #pragma warning disable CS0162 // Unreachable code detected
         if (ArchiveObjectType.LastValidObjectType > ArchiveObjectType.ValidBits ||
             ArchiveObjectType.ExtendedTypeFlag > ArchiveObjectType.ValidBits)
         {
             Assert.Fail("Archive object type enum is misconfigured");
         }
+
+        // ReSharper restore HeuristicUnreachableCode
 #pragma warning restore CS0162 // Unreachable code detected
 
         var manager = new DefaultArchiveManager(false);

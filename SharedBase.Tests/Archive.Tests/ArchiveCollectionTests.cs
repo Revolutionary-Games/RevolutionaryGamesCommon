@@ -123,6 +123,8 @@ public class ArchiveCollectionTests
         var customManager = new DefaultArchiveManager(true);
         customManager.RegisterObjectType(ArchiveObjectType.TestObjectType1, typeof(ArchiveObjectTests.TestObject1),
             ArchiveObjectTests.TestObject1.ReadFromArchive);
+        customManager.RegisterObjectType(ArchiveObjectType.TestObjectType1, typeof(ArchiveObjectTests.TestObject1),
+            ArchiveObjectTests.TestObject1.WriteToArchive);
         var memoryStream = new MemoryStream();
         var writer = new SArchiveMemoryWriter(memoryStream, customManager);
         var reader = new SArchiveMemoryReader(memoryStream, customManager);
@@ -153,6 +155,8 @@ public class ArchiveCollectionTests
         var customManager = new DefaultArchiveManager(true);
         customManager.RegisterBoxableValueType(ArchiveObjectType.TestObjectType1,
             typeof(ArchiveObjectTests.TestObject4), ArchiveObjectTests.TestObject4.ConstructBoxedArchiveRead);
+        customManager.RegisterObjectType(ArchiveObjectType.TestObjectType1, typeof(ArchiveObjectTests.TestObject4),
+            ArchiveObjectTests.TestObject4.WriteToArchive);
         var memoryStream = new MemoryStream();
         var writer = new SArchiveMemoryWriter(memoryStream, customManager);
         var reader = new SArchiveMemoryReader(memoryStream, customManager);
@@ -219,6 +223,27 @@ public class ArchiveCollectionTests
 
         var read = reader.ReadObject<List<int>>();
 
+        Assert.NotNull(read);
+        Assert.Equal(original.Count, read.Count);
+        Assert.True(original.SequenceEqual(read));
+    }
+
+    [Fact]
+    public void ArchiveCollection_TupleInEmptyList()
+    {
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, manager);
+        var reader = new SArchiveMemoryReader(memoryStream, manager);
+
+        // Intentionally empty list
+        // ReSharper disable once CollectionNeverUpdated.Local
+        var original = new List<(string Tag, int Value)>();
+
+        writer.WriteObject(original);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var read = reader.ReadObject<List<(string Tag, int Value)>>();
         Assert.NotNull(read);
         Assert.Equal(original.Count, read.Count);
         Assert.True(original.SequenceEqual(read));
@@ -653,7 +678,7 @@ public class ArchiveCollectionTests
         Assert.True(original.SequenceEqual(read));
     }
 
-    // Variant of the above test where the dictionary contains nothing would be really hard to write the code for
+    // TODO: Variant of the above test where the dictionary contains nothing would be really hard to write the code for
 
     [Fact]
     public void ArchiveCollection_NestedDictionaryWithDictionariesAndLists()
@@ -795,6 +820,8 @@ public class ArchiveCollectionTests
         // ReSharper disable once UsageOfDefaultStructEquality
         Assert.True(original[0].SequenceEqual(read[0]));
     }
+
+
 
     // TODO: absolutely brutal test of nested dictionary type with no items making it not possible to determine
     // the type?

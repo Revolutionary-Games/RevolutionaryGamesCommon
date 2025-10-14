@@ -36,6 +36,36 @@ public static class ArchiveBuiltInReaders
         return tuple;
     }
 
+    public static object ReadReferenceTupleKnownType(ISArchiveReader reader, Type typeFromArchive, ushort version)
+    {
+        if (version > SArchiveWriterBase.TUPLE_VERSION)
+            throw new InvalidArchiveVersionException(version, SArchiveWriterBase.TUPLE_VERSION);
+
+        var length = reader.ReadInt8();
+
+        if (length is < 1 or > 7)
+            throw new FormatException($"ReferenceTuple length must be between 1 and 7, tied to use {length}");
+
+        var rawValues = new object?[length];
+        ReadBoxedTupleValuesKnownTypes(reader, rawValues);
+
+        // To pick a constructor specifically, we would need to create a type array of the parameters by reading
+        // the type,
+        // but that's probably worse than just finding a constructor with the correct number of arguments.
+
+        // TODO: caching this constructor?
+        foreach (var constructor in typeFromArchive.GetConstructors())
+        {
+            // TODO: does the GetParameters call allocate memory here?
+            if (constructor.GetParameters().Length == length)
+            {
+                return constructor.Invoke(rawValues);
+            }
+        }
+
+        throw new FormatException($"Tuple constructor not found for {typeFromArchive.FullName}, length: {length}");
+    }
+
     /// <summary>
     ///   Less efficient variant of tuple reading that creates a boxed instance of the tuple (and also boxes the
     ///   arguments)
@@ -63,6 +93,36 @@ public static class ArchiveBuiltInReaders
         var tuple = constructor.Invoke(rawValues);
 
         return tuple;
+    }
+
+    public static object ReadValueTupleBoxedKnownType(ISArchiveReader reader, Type typeFromArchive, ushort version)
+    {
+        if (version > SArchiveWriterBase.TUPLE_VERSION)
+            throw new InvalidArchiveVersionException(version, SArchiveWriterBase.TUPLE_VERSION);
+
+        var length = reader.ReadInt8();
+
+        if (length is < 1 or > 7)
+            throw new FormatException($"ValueTuple length must be between 1 and 7, tied to use {length}");
+
+        var rawValues = new object?[length];
+        ReadBoxedTupleValuesKnownTypes(reader, rawValues);
+
+        // To pick a constructor specifically, we would need to create a type array of the parameters by reading
+        // the type,
+        // but that's probably worse than just finding a constructor with the correct number of arguments.
+
+        // TODO: caching this constructor?
+        foreach (var constructor in typeFromArchive.GetConstructors())
+        {
+            // TODO: does the GetParameters call allocate memory here?
+            if (constructor.GetParameters().Length == length)
+            {
+                return constructor.Invoke(rawValues);
+            }
+        }
+
+        throw new FormatException($"ValueTuple constructor not found for {typeFromArchive.FullName}, length: {length}");
     }
 
     /// <summary>
@@ -128,78 +188,7 @@ public static class ArchiveBuiltInReaders
 
         if (optimizedPrimitive)
         {
-            switch (rawType)
-            {
-                case ArchiveObjectType.Int32:
-                {
-                    var result = new List<int>(length);
-                    for (int i = 0; i < length; ++i)
-                    {
-                        result.Add(reader.ReadInt32());
-                    }
-
-                    return result;
-                }
-
-                case ArchiveObjectType.Byte:
-                {
-                    var result = new List<byte>(length);
-                    for (int i = 0; i < length; ++i)
-                    {
-                        result.Add(reader.ReadInt8());
-                    }
-
-                    return result;
-                }
-
-                case ArchiveObjectType.Int64:
-                {
-                    var result = new List<long>(length);
-                    for (int i = 0; i < length; ++i)
-                    {
-                        result.Add(reader.ReadInt64());
-                    }
-
-                    return result;
-                }
-
-                case ArchiveObjectType.String:
-                {
-                    // We don't know the nullability of the target type, so we need to assume things can be null
-                    var result = new List<string?>(length);
-                    for (int i = 0; i < length; ++i)
-                    {
-                        result.Add(reader.ReadString());
-                    }
-
-                    return result;
-                }
-
-                case ArchiveObjectType.Float:
-                {
-                    var result = new List<float>(length);
-                    for (int i = 0; i < length; ++i)
-                    {
-                        result.Add(reader.ReadFloat());
-                    }
-
-                    return result;
-                }
-
-                case ArchiveObjectType.Bool:
-                {
-                    var result = new List<bool>(length);
-                    for (int i = 0; i < length; ++i)
-                    {
-                        result.Add(reader.ReadBool());
-                    }
-
-                    return result;
-                }
-
-                default:
-                    throw new Exception("Unhandled optimized list primitive read type: " + rawType);
-            }
+            return ReadOptimizedList(reader, rawType, length);
         }
 
         // Less optimised approach
@@ -255,29 +244,35 @@ public static class ArchiveBuiltInReaders
         singleTypeArray[0] = listItemType;
         listType = MakeGenericList(singleTypeArray);
 
-        var list = CreateBaseList(singleTypeArray, listType, length);
+        return CreateAndReadListItems(reader, singleTypeArray, listType, length);
+    }
 
-        for (int i = 0; i < length; ++i)
+    public static object ReadListKnownType(ISArchiveReader reader, Type typeFromArchive, ushort version)
+    {
+        if (version > SArchiveWriterBase.COLLECTIONS_VERSION)
+            throw new InvalidArchiveVersionException(version, SArchiveWriterBase.COLLECTIONS_VERSION);
+
+        var lengthRaw = reader.ReadVariableLengthField32();
+
+        if (lengthRaw > int.MaxValue)
+            throw new FormatException($"List length is too large: {lengthRaw}");
+
+        var length = (int)lengthRaw;
+
+        var rawType = (ArchiveObjectType)reader.ReadUInt32();
+        var optimizedPrimitive = reader.ReadBool();
+
+        // If the list is optimized, we ignore the known type and do an optimized read anyway
+        if (optimizedPrimitive)
         {
-            // We need to assume the list will be able to take null values (as we don't know the actual final target)
-            var item = reader.ReadObject(out var readItemType);
-
-            try
-            {
-                list.Add(item);
-            }
-            catch (Exception e)
-            {
-                throw new FormatException(
-                    $"Cannot add read item to list at index {i}, item is {item?.GetType()} / {readItemType} " +
-                    $"and the list is: {listType}", e);
-            }
+            return ReadOptimizedList(reader, rawType, length);
         }
 
-        if (list.Count != length)
-            throw new Exception("Failed to put the right number of items into a list");
+        // It's probably better to allocate this small list here so that we can call the constructor taking in the list
+        // size as a parameter to optimize the list reallocation
+        var singleTypeArray = new Type[1];
 
-        return list;
+        return CreateAndReadListItems(reader, singleTypeArray, typeFromArchive, length);
     }
 
     public static object ReadArray(ISArchiveReader reader, ushort version)
@@ -510,6 +505,180 @@ public static class ArchiveBuiltInReaders
         var typesArray = new[] { keyType, valueType };
         dictionaryType = MakeGenericDictionary(typesArray);
 
+        return CreateAndReadDictionaryItems(reader, dictionaryType, length);
+    }
+
+    public static object ReadDictionaryKnownType(ISArchiveReader reader, Type typeFromArchive, ushort version)
+    {
+        if (version > SArchiveWriterBase.COLLECTIONS_VERSION)
+            throw new InvalidArchiveVersionException(version, SArchiveWriterBase.COLLECTIONS_VERSION);
+
+        var lengthRaw = reader.ReadVariableLengthField32();
+
+        if (lengthRaw > int.MaxValue)
+            throw new FormatException($"Dictionary length is too large: {lengthRaw}");
+
+        var length = (int)lengthRaw;
+
+        var optimizedPrimitive = reader.ReadBool();
+
+        var rawKeyType = (ArchiveObjectType)reader.ReadUInt32();
+        var rawValueType = (ArchiveObjectType)reader.ReadUInt32();
+
+        if (optimizedPrimitive)
+            throw new FormatException("Cannot read optimized dictionary primitive");
+
+        // TODO: should this determine if the key types match the resolved type?
+        _ = rawKeyType;
+        _ = rawValueType;
+
+        // As we already have the type, we can just create the dictionary after reading the preamble and read
+        // the content
+        return CreateAndReadDictionaryItems(reader, typeFromArchive, length);
+    }
+
+    // TODO: would caching for these help?
+    public static Type GetReferenceTupleBase(int count)
+    {
+        return count switch
+        {
+            1 => typeof(Tuple<>),
+            2 => typeof(Tuple<,>),
+            3 => typeof(Tuple<,,>),
+            4 => typeof(Tuple<,,,>),
+            5 => typeof(Tuple<,,,,>),
+            6 => typeof(Tuple<,,,,,>),
+            7 => typeof(Tuple<,,,,,,>),
+            _ => throw new NotSupportedException(),
+        };
+    }
+
+    public static Type GetValueTupleBase(int count)
+    {
+        return count switch
+        {
+            1 => typeof(ValueTuple<>),
+            2 => typeof(ValueTuple<,>),
+            3 => typeof(ValueTuple<,,>),
+            4 => typeof(ValueTuple<,,,>),
+            5 => typeof(ValueTuple<,,,,>),
+            6 => typeof(ValueTuple<,,,,,>),
+            7 => typeof(ValueTuple<,,,,,,>),
+            _ => throw new NotSupportedException(),
+        };
+    }
+
+    private static object CreateAndReadListItems(ISArchiveReader reader, Type[] singleTypeArray, Type listType,
+        int length)
+    {
+        var list = CreateBaseList(singleTypeArray, listType, length);
+
+        return ReadListItems(reader, listType, length, list);
+    }
+
+    private static object ReadListItems(ISArchiveReader reader, Type listType, int length, IList list)
+    {
+        for (int i = 0; i < length; ++i)
+        {
+            // We need to assume the list will be able to take null values (as we don't know the actual final target)
+            var item = reader.ReadObject(out var readItemType);
+
+            try
+            {
+                list.Add(item);
+            }
+            catch (Exception e)
+            {
+                throw new FormatException(
+                    $"Cannot add read item to list at index {i}, item is {item?.GetType()} / {readItemType} " +
+                    $"and the list is: {listType}", e);
+            }
+        }
+
+        if (list.Count != length)
+            throw new Exception("Failed to put the right number of items into a list");
+
+        return list;
+    }
+
+    private static object ReadOptimizedList(ISArchiveReader reader, ArchiveObjectType rawType, int length)
+    {
+        switch (rawType)
+        {
+            case ArchiveObjectType.Int32:
+            {
+                var result = new List<int>(length);
+                for (int i = 0; i < length; ++i)
+                {
+                    result.Add(reader.ReadInt32());
+                }
+
+                return result;
+            }
+
+            case ArchiveObjectType.Byte:
+            {
+                var result = new List<byte>(length);
+                for (int i = 0; i < length; ++i)
+                {
+                    result.Add(reader.ReadInt8());
+                }
+
+                return result;
+            }
+
+            case ArchiveObjectType.Int64:
+            {
+                var result = new List<long>(length);
+                for (int i = 0; i < length; ++i)
+                {
+                    result.Add(reader.ReadInt64());
+                }
+
+                return result;
+            }
+
+            case ArchiveObjectType.String:
+            {
+                // We don't know the nullability of the target type, so we need to assume things can be null
+                var result = new List<string?>(length);
+                for (int i = 0; i < length; ++i)
+                {
+                    result.Add(reader.ReadString());
+                }
+
+                return result;
+            }
+
+            case ArchiveObjectType.Float:
+            {
+                var result = new List<float>(length);
+                for (int i = 0; i < length; ++i)
+                {
+                    result.Add(reader.ReadFloat());
+                }
+
+                return result;
+            }
+
+            case ArchiveObjectType.Bool:
+            {
+                var result = new List<bool>(length);
+                for (int i = 0; i < length; ++i)
+                {
+                    result.Add(reader.ReadBool());
+                }
+
+                return result;
+            }
+
+            default:
+                throw new Exception("Unhandled optimized list primitive read type: " + rawType);
+        }
+    }
+
+    private static object CreateAndReadDictionaryItems(ISArchiveReader reader, Type dictionaryType, int length)
+    {
         // Apparently we can't optimise based on knowing the pair count in advance, so we just need to read them
         var dictionary = CreateDictionary(dictionaryType);
 
@@ -749,7 +918,7 @@ public static class ArchiveBuiltInReaders
         types = new Type[length];
 
         // Read all the values for the tuple
-        for (var i = 0; i < length; i++)
+        for (var i = 0; i < length; ++i)
         {
             var value = reader.ReadObject(out var type);
             rawValues[i] = value;
@@ -765,6 +934,20 @@ public static class ArchiveBuiltInReaders
             {
                 types[i] = value.GetType();
             }
+        }
+    }
+
+    private static void ReadBoxedTupleValuesKnownTypes(ISArchiveReader reader, object?[] rawValues)
+    {
+        var length = rawValues.Length;
+
+        if (length < 1)
+            throw new ArgumentException("Must have at least one value to read");
+
+        // Read all the values for the tuple
+        for (var i = 0; i < length; ++i)
+        {
+            rawValues[i] = reader.ReadObject(out _);
         }
     }
 
@@ -784,32 +967,12 @@ public static class ArchiveBuiltInReaders
     // TODO: would caching for this help?
     private static Type MakeGenericTuple(Type[] argumentTypes)
     {
-        return argumentTypes.Length switch
-        {
-            1 => typeof(Tuple<>).MakeGenericType(argumentTypes),
-            2 => typeof(Tuple<,>).MakeGenericType(argumentTypes),
-            3 => typeof(Tuple<,,>).MakeGenericType(argumentTypes),
-            4 => typeof(Tuple<,,,>).MakeGenericType(argumentTypes),
-            5 => typeof(Tuple<,,,,>).MakeGenericType(argumentTypes),
-            6 => typeof(Tuple<,,,,,>).MakeGenericType(argumentTypes),
-            7 => typeof(Tuple<,,,,,,>).MakeGenericType(argumentTypes),
-            _ => throw new NotSupportedException(),
-        };
+        return GetReferenceTupleBase(argumentTypes.Length).MakeGenericType(argumentTypes);
     }
 
     private static Type MakeGenericValueTuple(Type[] argumentTypes)
     {
-        return argumentTypes.Length switch
-        {
-            1 => typeof(ValueTuple<>).MakeGenericType(argumentTypes),
-            2 => typeof(ValueTuple<,>).MakeGenericType(argumentTypes),
-            3 => typeof(ValueTuple<,,>).MakeGenericType(argumentTypes),
-            4 => typeof(ValueTuple<,,,>).MakeGenericType(argumentTypes),
-            5 => typeof(ValueTuple<,,,,>).MakeGenericType(argumentTypes),
-            6 => typeof(ValueTuple<,,,,,>).MakeGenericType(argumentTypes),
-            7 => typeof(ValueTuple<,,,,,,>).MakeGenericType(argumentTypes),
-            _ => throw new NotSupportedException(),
-        };
+        return GetValueTupleBase(argumentTypes.Length).MakeGenericType(argumentTypes);
     }
 
     private static Type MakeGenericList(Type[] argumentTypes)

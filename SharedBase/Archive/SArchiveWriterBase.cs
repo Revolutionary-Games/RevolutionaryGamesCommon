@@ -602,9 +602,11 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
 
     public void WriteObject<T1, T2>(in (T1 Value1, T2 Value2) tuple)
     {
-        // TODO: should tuples use extended types?
+        // TODO: can we detect when we could write a tuple without extended types?
+        // (when not embedded in a list or dictionary that is potentially empty)
+        WriteObjectHeader(ArchiveObjectType.ExtendedTuple, false, false, false, true, TUPLE_VERSION);
 
-        WriteObjectHeader(ArchiveObjectType.Tuple, false, false, false, false, TUPLE_VERSION);
+        HandleExtendedTypeWrite(ArchiveObjectType.ExtendedTuple, tuple.GetType());
 
         // Length of the tuple
         Write((byte)2);
@@ -616,7 +618,9 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
 
     public void WriteObject<T1, T2, T3>(in (T1 Value1, T2 Value2, T3 Value3) tuple)
     {
-        WriteObjectHeader(ArchiveObjectType.Tuple, false, false, false, false, TUPLE_VERSION);
+        WriteObjectHeader(ArchiveObjectType.ExtendedTuple, false, false, false, true, TUPLE_VERSION);
+
+        HandleExtendedTypeWrite(ArchiveObjectType.ExtendedTuple, tuple.GetType());
 
         // Length of the tuple
         Write((byte)3);
@@ -629,7 +633,9 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
 
     public void WriteObject<T1, T2, T3, T4>(in (T1 Value1, T2 Value2, T3 Value3, T4 Value4) tuple)
     {
-        WriteObjectHeader(ArchiveObjectType.Tuple, false, false, false, false, TUPLE_VERSION);
+        WriteObjectHeader(ArchiveObjectType.ExtendedTuple, false, false, false, true, TUPLE_VERSION);
+
+        HandleExtendedTypeWrite(ArchiveObjectType.ExtendedTuple, tuple.GetType());
 
         // Length of the tuple
         Write((byte)4);
@@ -645,8 +651,10 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
     public void WriteObject(ITuple tuple, bool valueType)
     {
         // To preserve the tuple type even if it goes through the generic method, we write the header type here
-        WriteObjectHeader(valueType ? ArchiveObjectType.Tuple : ArchiveObjectType.ReferenceTuple, false, false, false,
-            false, TUPLE_VERSION);
+        var type = valueType ? ArchiveObjectType.ExtendedTuple : ArchiveObjectType.ExtendedReferenceTuple;
+        WriteObjectHeader(type, false, false, false, true, TUPLE_VERSION);
+
+        HandleExtendedTypeWrite(type, tuple.GetType());
 
         if (tuple.Length > byte.MaxValue)
             throw new FormatException("Too long tuple type");

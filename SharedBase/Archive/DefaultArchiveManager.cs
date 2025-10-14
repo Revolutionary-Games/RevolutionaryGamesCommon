@@ -15,6 +15,9 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
     private readonly Dictionary<ArchiveObjectType, IArchiveWriteManager.ArchiveObjectDelegate> writeDelegates = new();
     private readonly Dictionary<ArchiveObjectType, IArchiveReadManager.RestoreObjectDelegate> readDelegates = new();
 
+    private readonly Dictionary<ArchiveObjectType, IArchiveReadManager.AdvancedRestoreObjectDelegate>
+        readDelegatesAdvanced = new();
+
     private readonly Dictionary<ArchiveObjectType, IArchiveReadManager.CreateStructInstanceDelegate>
         readBoxedDelegates = new();
 
@@ -130,6 +133,8 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
         // Return common types then
         if (type == typeof(byte))
             return ArchiveObjectType.Byte;
+        if (type == typeof(bool))
+            return ArchiveObjectType.Bool;
         if (type == typeof(short))
             return ArchiveObjectType.Int16;
         if (type == typeof(int))
@@ -170,11 +175,10 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
 
             if (typeof(ITuple).IsAssignableFrom(baseType))
             {
-                // TODO: extended types for tuples?
                 if (baseType.IsValueType)
-                    return ArchiveObjectType.Tuple;
+                    return ArchiveObjectType.ExtendedTuple;
 
-                return ArchiveObjectType.ReferenceTuple;
+                return ArchiveObjectType.ExtendedReferenceTuple;
             }
         }
 
@@ -208,8 +212,17 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
         extendedTypes[0] = baseType.RemoveExtendedFlag();
         elementsWritten += 1;
 
+        var generics = type.GetGenericArguments();
+
+        // Tuples must know the generic argument count beforehand
+        if (baseType is ArchiveObjectType.ExtendedTuple or ArchiveObjectType.ExtendedReferenceTuple)
+        {
+            extendedTypes[1] = (ArchiveObjectType)(uint)generics.Length;
+            elementsWritten += 1;
+        }
+
         // Then write the child element types
-        foreach (var childType in type.GetGenericArguments())
+        foreach (var childType in generics)
         {
             var typeToWrite = GetObjectWriteType(childType);
             extendedTypes[elementsWritten] = typeToWrite;
@@ -220,6 +233,10 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
             {
                 CalculateExtendedObjectType(typeToWrite, childType,
                     extendedTypes.Slice(elementsWritten, extendedTypes.Length - elementsWritten), out var newElements);
+
+                if (newElements < 1)
+                    throw new Exception("Expected recursive call to write something");
+
                 elementsWritten += newElements;
             }
         }
@@ -229,8 +246,8 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
             throw new ArgumentException($"Extended type length too long: {elementsWritten}");
     }
 
-    public Type ResolveExtendedObjectType(ArchiveObjectType baseType, Span<ArchiveObjectType> extendedType,
-        int elementCount)
+    public Type ResolveExtendedObjectType(ArchiveObjectType baseType, ReadOnlySpan<ArchiveObjectType> extendedType,
+        int elementCount, out int consumedItems)
     {
         if (!baseType.IsExtendedType())
             throw new ArgumentException("Base type must be an extended type");
@@ -241,7 +258,8 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
         if (extendedType.Length < elementCount)
             throw new ArgumentException("Span length mismatch");
 
-        var nextType = extendedType[0];
+        consumedItems = 0;
+        var nextType = extendedType[consumedItems++];
 
         var typeToCheckAgainst = nextType;
 
@@ -254,7 +272,21 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
                 $"Extended type mismatch, expected to see: {baseType} but read from archive: {nextType}");
         }
 
-        var type = MapArchiveTypeToType(nextType);
+        Type? type;
+
+        // Tuple's don't have a base generic class, so we need special handling here
+        if (nextType is ArchiveObjectType.ExtendedTuple or ArchiveObjectType.Tuple)
+        {
+            type = ArchiveBuiltInReaders.GetValueTupleBase((int)extendedType[consumedItems++]);
+        }
+        else if (nextType is ArchiveObjectType.ExtendedReferenceTuple or ArchiveObjectType.ReferenceTuple)
+        {
+            type = ArchiveBuiltInReaders.GetReferenceTupleBase((int)extendedType[consumedItems++]);
+        }
+        else
+        {
+            type = MapArchiveTypeToType(nextType);
+        }
 
         if (type == null)
             throw new FormatException($"Unknown extended type base: {nextType}");
@@ -262,21 +294,29 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
         if (!type.IsGenericType)
             throw new Exception($"Extended type base is not a generic type: {type}");
 
-        // var genericBase = type.GetGenericTypeDefinition();
-        var types = new Type[type.GenericTypeArguments.Length];
+        var genericBase = type.GetGenericTypeDefinition();
+        var types = new Type[genericBase.GetGenericArguments().Length];
+
+        if (types.Length < 1)
+            throw new FormatException($"Extended type base has no generic arguments: {type}");
 
         for (int i = 0; i < types.Length; ++i)
         {
-            int elementIndex = i + 1;
-            if (elementIndex >= type.GenericTypeArguments.Length)
+            if (consumedItems >= elementCount)
                 throw new FormatException($"Ran out of extended type elements for {type} at index: {i}");
 
-            var nextElement = extendedType[elementIndex];
+            var nextElement = extendedType[consumedItems++];
 
             if (nextElement.IsExtendedType())
             {
                 types[i] = ResolveExtendedObjectType(nextElement,
-                    extendedType.Slice(elementIndex, extendedType.Length - elementIndex), elementCount - elementIndex);
+                    extendedType.Slice(consumedItems, extendedType.Length - consumedItems),
+                    elementCount - consumedItems, out var read);
+
+                if (read < 1)
+                    throw new Exception("Expected recursive call to resolve something");
+
+                consumedItems += read;
             }
             else
             {
@@ -285,7 +325,10 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
             }
         }
 
-        return type.MakeGenericType(types);
+        if (consumedItems > elementCount)
+            throw new Exception("Resolving extended type read more items than allowed");
+
+        return genericBase.MakeGenericType(types);
     }
 
     public void RegisterObjectType(ArchiveObjectType type, Type nativeType,
@@ -304,6 +347,22 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
             throw new ArgumentException("Type is already registered");
 
         readDelegates[type] = readDelegate;
+    }
+
+    public void RegisterObjectType(ArchiveObjectType type, Type nativeType,
+        IArchiveReadManager.AdvancedRestoreObjectDelegate readDelegate)
+    {
+        // Advanced callback can be registered for the same type as a normal one
+        if (!registeredTypes.TryAdd(type, nativeType))
+        {
+            if (registeredTypes[type] != nativeType)
+            {
+                throw new ArgumentException(
+                    "Registering an advanced reader for a type that is already registered with a different native backing type");
+            }
+        }
+
+        readDelegatesAdvanced[type] = readDelegate;
     }
 
     public void RegisterBoxableValueType(ArchiveObjectType type, Type nativeType,
@@ -335,6 +394,13 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
     public object ReadObject(ISArchiveReader reader, ArchiveObjectType type,
         ReadOnlySpan<ArchiveObjectType> extendedType, ushort version)
     {
+        if (readDelegatesAdvanced.TryGetValue(type, out var advancedReadDelegate))
+        {
+            return advancedReadDelegate(reader,
+                ResolveExtendedObjectType(type, extendedType, extendedType.Length, out _),
+                version);
+        }
+
         if (readDelegates.TryGetValue(type, out var readDelegate))
             return readDelegate(reader, version);
 

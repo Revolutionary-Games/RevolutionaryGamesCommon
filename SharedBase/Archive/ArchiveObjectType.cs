@@ -55,9 +55,9 @@ public enum ArchiveObjectType : uint
     ExtendedList = List | ExtendedTypeFlag,
     ExtendedDictionary = Dictionary | ExtendedTypeFlag,
 
+    // TODO: should arrays use extended types? (it kind of makes sense if it is a more limited type)
     // ExtendedArray = Array | ExtendedTypeFlag,
 
-    // TODO: should tuples use extended types?
-    // ExtendedTuple = Tuple | ExtendedTypeFlag,
-    // ExtendedReferenceTuple = ReferenceTuple | ExtendedTypeFlag,
+    ExtendedTuple = Tuple | ExtendedTypeFlag,
+    ExtendedReferenceTuple = ReferenceTuple | ExtendedTypeFlag,
 }

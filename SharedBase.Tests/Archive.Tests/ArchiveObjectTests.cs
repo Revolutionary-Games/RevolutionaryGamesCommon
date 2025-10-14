@@ -253,6 +253,14 @@ public class ArchiveObjectTests
         public ArchiveObjectType ArchiveObjectType => ArchiveObjectType.TestObjectType1;
         public bool CanBeReferencedInArchive => false;
 
+        public static void WriteToArchive(ISArchiveWriter writer, ArchiveObjectType type, object obj)
+        {
+            if (type != ArchiveObjectType.TestObjectType1)
+                throw new NotSupportedException();
+
+            ((TestObject4)obj).WriteToArchive(writer);
+        }
+
         public static IArchiveReadableVariable ConstructBoxedArchiveRead(ISArchiveReader reader,
             out bool performedCustomRead, ushort version)
         {
