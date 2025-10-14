@@ -236,11 +236,17 @@ public abstract class SArchiveReaderBase : ISArchiveReader
                 $"Extended type length ({length}) is larger than the provided buffer ({extendedStorage.Length})");
         }
 
+        int byteIndex = 0;
+
         // Decode the bytes into the receiver
-        for (int i = 0; i < length; i += 3)
+        for (int i = 0; i < length; ++i)
         {
-            extendedStorage[i] = (ArchiveObjectType)(readBuffer[i] | readBuffer[i + 1] << 8 | readBuffer[i + 2] << 16);
+            extendedStorage[i] = (ArchiveObjectType)(readBuffer[byteIndex++] | readBuffer[byteIndex++] << 8 |
+                readBuffer[byteIndex++] << 16);
         }
+
+        if (byteIndex != readLength)
+            throw new Exception("Read unexpected number of bytes from buffer");
     }
 
     public T? ReadObject<T>()
@@ -421,7 +427,6 @@ public abstract class SArchiveReaderBase : ISArchiveReader
 
                 throw new FormatException($"Cannot read {type} into receiver of type {receiver!.GetType()}");
             case ArchiveObjectType.Tuple:
-                // TODO: tuple with extended types?
                 // This is highly not recommended when tuples are known to be used as this causes boxing
                 try
                 {
