@@ -482,6 +482,63 @@ public abstract class SArchiveReaderBase : ISArchiveReader
         return ArchiveBuiltInReaders.ReadValueTupleBoxed(this, version);
     }
 
+    public void ReadArchiveHeader(out int overallVersion, out string programIdentifier, out string programVersion)
+    {
+        // Either file is very corrupt or someone managed to create an archive on a big endian system with flipped
+        // bytes
+        if (ReadUInt32() != ISArchiveWriter.Magic)
+            throw new FormatException("Invalid magic bytes! This is not a valid archive");
+
+        overallVersion = ReadInt32();
+
+        if (overallVersion <= 0)
+            throw new FormatException("Archive version cannot be less than 1");
+
+        if (overallVersion > ISArchiveWriter.ArchiveHeaderVersion)
+            throw new FormatException($"Archive version ({overallVersion}) is too new for this reader");
+
+        // Read unused flag bytes
+        ReadInt8();
+
+        // Read the expected ending location of the header
+        var expectedHeaderEnd = ReadUInt32();
+
+        // Then the program identifier and version
+        var identifier = ReadString();
+
+        if (string.IsNullOrWhiteSpace(identifier) || identifier.Length > 1024)
+            throw new FormatException("Read invalid program identifier from archive header");
+
+        var version = ReadString();
+
+        if (string.IsNullOrWhiteSpace(version) || version.Length > 1024)
+            throw new FormatException("Read invalid program version from archive header");
+
+        programIdentifier = identifier;
+        programVersion = version;
+
+        // Finally ending bytes of the header
+        ReadInt8();
+        if (ReadInt8() != 42)
+            throw new FormatException("Didn't see expected archive header end");
+
+        // If we had an API for checking the read position, we could check that here
+        // if (GetPosition() != expectedHeaderEnd)
+        _ = expectedHeaderEnd;
+    }
+
+    public void ReadArchiveFooter()
+    {
+        if (ReadInt8() != 42)
+            throw new FormatException("Invalid archive footer (archive is corrupt or reading encountered a bug)");
+
+        if (ReadInt8() != 255)
+            throw new FormatException("Invalid archive footer (archive is corrupt or reading encountered a bug)");
+
+        if (ReadInt8() != 42)
+            throw new FormatException("Invalid archive footer (archive is corrupt or reading encountered a bug)");
+    }
+
     public void ReadObject<T>(ref T obj)
         where T : IArchiveReadableVariable
     {

@@ -419,4 +419,74 @@ public class BasicArchiveTests
         Assert.Throws<ArgumentException>(() =>
             writer.WriteObjectHeader(type, canBeReference, isNull, alreadyReferenced, extendedType, 1));
     }
+
+    [Fact]
+    public void BasicArchive_HeaderWriteAndRead()
+    {
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, sharedManager);
+        var reader = new SArchiveMemoryReader(memoryStream, sharedManager);
+
+        writer.WriteArchiveHeader(ISArchiveWriter.ArchiveHeaderVersion, "test1", "1.2");
+        writer.WriteArchiveFooter();
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+        reader.ReadArchiveHeader(out var version, out var name, out var versionString);
+        reader.ReadArchiveFooter();
+
+        Assert.Equal(ISArchiveWriter.ArchiveHeaderVersion, version);
+        Assert.Equal("test1", name);
+        Assert.Equal("1.2", versionString);
+    }
+
+    [Fact]
+    public void BasicArchive_TryingToReadTooNewHeaderFails()
+    {
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, sharedManager);
+        var reader = new SArchiveMemoryReader(memoryStream, sharedManager);
+
+        writer.WriteArchiveHeader(ISArchiveWriter.ArchiveHeaderVersion + 1, "test1", "1.2");
+        writer.WriteArchiveFooter();
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+        Assert.Throws<FormatException>(() => reader.ReadArchiveHeader(out _, out _, out _));
+    }
+
+    [Fact]
+    public void BasicArchive_CorruptFooterIsDetected()
+    {
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, sharedManager);
+        var reader = new SArchiveMemoryReader(memoryStream, sharedManager);
+
+        writer.WriteArchiveHeader(ISArchiveWriter.ArchiveHeaderVersion, "test1", "1.2");
+        writer.WriteArchiveFooter();
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+        reader.ReadArchiveHeader(out _, out _, out _);
+
+        // Read "accidentally" too much
+        memoryStream.Seek(1, SeekOrigin.Current);
+
+        Assert.Throws<FormatException>(() => reader.ReadArchiveFooter());
+    }
+
+    [Fact]
+    public void BasicArchive_CorruptMagicIsDetected()
+    {
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, sharedManager);
+        var reader = new SArchiveMemoryReader(memoryStream, sharedManager);
+
+        writer.WriteArchiveHeader(ISArchiveWriter.ArchiveHeaderVersion, "test1", "1.2");
+        writer.WriteArchiveFooter();
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        memoryStream.WriteByte(0);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+        Assert.Throws<FormatException>(() => reader.ReadArchiveHeader(out _, out _, out _));
+    }
 }

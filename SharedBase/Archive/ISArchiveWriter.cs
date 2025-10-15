@@ -10,6 +10,15 @@ public interface ISArchiveWriter
 {
     public const int ReasonableMaxExtendedType = 64;
 
+    /// <summary>
+    ///   Overall version of the archive.
+    ///   If this is updated, then archive headers will need much new handling and version difference compensation.
+    ///   So do not change this lightly!
+    /// </summary>
+    public const int ArchiveHeaderVersion = 1;
+
+    public const uint Magic = (byte)'T' | (byte)'a' << 8 | (byte)'r' << 16 | (byte)'c' << 24;
+
     public static readonly Encoding Utf8NoSignature = new UTF8Encoding(false, true);
 
     public void Write(byte value);
@@ -143,6 +152,18 @@ public interface ISArchiveWriter
     ///   Writes the object header and then a null value.
     /// </summary>
     public void WriteNullObject();
+
+    /// <summary>
+    ///   Writes an overall header for an entire archive. Call before writing any objects to a new archive.
+    /// </summary>
+    /// <param name="overallVersion">
+    ///   Overall version of the archive (usually from <see cref="ArchiveHeaderVersion"/>
+    /// </param>
+    /// <param name="programIdentifier">Program identifier to identify archives from different programs</param>
+    /// <param name="programVersion">Free-form program version information</param>
+    public void WriteArchiveHeader(int overallVersion, string programIdentifier, string programVersion);
+
+    public void WriteArchiveFooter();
 
     public long GetPosition();
     public void Seek(long position);

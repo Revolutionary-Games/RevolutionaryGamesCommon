@@ -693,6 +693,52 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
         // Nulls do not have a reference placeholder, even if they can be otherwise references
     }
 
+    public void WriteArchiveHeader(int overallVersion, string programIdentifier, string programVersion)
+    {
+        Write(ISArchiveWriter.Magic);
+
+        Write(overallVersion);
+
+        // Write an extra null byte for future use / flags
+        Write((byte)0);
+
+        // Write a place for header length
+        var location = GetPosition();
+        Write(0U);
+
+        if (string.IsNullOrWhiteSpace(programIdentifier) || programIdentifier.Length > 128)
+            throw new ArgumentException("Program identifier cannot be empty (or very long)");
+
+        if (string.IsNullOrWhiteSpace(programVersion) || programVersion.Length > 128)
+            throw new ArgumentException("Program version cannot be empty (or very long)");
+
+        Write(programIdentifier);
+        Write(programVersion);
+
+        // Write a few "wasted" bytes for easier seeing where the header ends
+        Write((byte)0);
+        Write((byte)42);
+
+        var resumeLocation = GetPosition();
+
+        if (resumeLocation >= uint.MaxValue)
+            throw new FormatException("Archive header is too large (somehow)");
+
+        // Write the actual end of header value
+        Seek(location);
+        Write((uint)resumeLocation);
+
+        Seek(resumeLocation);
+    }
+
+    public void WriteArchiveFooter()
+    {
+        // Write an identifiable pattern at the end of the archive
+        Write((byte)42);
+        Write((byte)255);
+        Write((byte)42);
+    }
+
     public abstract long GetPosition();
     public abstract void Seek(long position);
 

@@ -130,6 +130,16 @@ public interface ISArchiveReader
     public object ReadTupleBoxed(ushort version);
 
     /// <summary>
+    ///   Reads the archive header written by <see cref="ISArchiveWriter.WriteArchiveHeader"/>.
+    /// </summary>
+    public void ReadArchiveHeader(out int overallVersion, out string programIdentifier, out string programVersion);
+
+    /// <summary>
+    ///   Validates that the archive ends with a footer or throws an exception.
+    /// </summary>
+    public void ReadArchiveFooter();
+
+    /// <summary>
     ///   Used to support objects referring to their ancestors.
     ///   Absolutely do not call if the object is not marked as an allowed reference!
     /// </summary>
