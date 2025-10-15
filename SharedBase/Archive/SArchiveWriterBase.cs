@@ -188,6 +188,9 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
         if (type > ArchiveObjectType.ValidBits)
             throw new ArgumentException("Invalid object type (value too high)");
 
+        if (type == ArchiveObjectType.Invalid)
+            throw new ArgumentException("Cannot write the header for invalid object type");
+
         if (version <= 0)
             throw new ArgumentException("Version must be at least 1");
 
