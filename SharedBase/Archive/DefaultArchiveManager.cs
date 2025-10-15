@@ -246,6 +246,16 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
             throw new ArgumentException($"Extended type length too long: {elementsWritten}");
     }
 
+    public void Clear()
+    {
+        objectIdPositions.Clear();
+        objectIds.Clear();
+
+        loadedObjectReferences.Clear();
+
+        nextObjectId = 0;
+    }
+
     public Type ResolveExtendedObjectType(ArchiveObjectType baseType, ReadOnlySpan<ArchiveObjectType> extendedType,
         int elementCount, out int consumedItems)
     {

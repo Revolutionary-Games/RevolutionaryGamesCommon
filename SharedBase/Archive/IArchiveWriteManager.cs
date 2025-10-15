@@ -51,4 +51,9 @@ public interface IArchiveWriteManager
     /// <param name="elementsWritten">Specifies how much data was actually written</param>
     public void CalculateExtendedObjectType(ArchiveObjectType baseType, Type type,
         Span<ArchiveObjectType> extendedTypes, out int elementsWritten);
+
+    /// <summary>
+    ///   Clear state if a write operation needs to be abandoned.
+    /// </summary>
+    public void Clear();
 }
