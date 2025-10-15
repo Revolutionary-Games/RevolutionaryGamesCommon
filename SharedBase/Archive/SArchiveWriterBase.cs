@@ -496,6 +496,8 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
         }
     }
 
+
+
     public void WriteAnyRegisteredValueAsObject<T>(T value)
     {
         if (ReferenceEquals(value, null))
@@ -595,6 +597,15 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
     public void WriteObjectProperties<T>(ref T obj)
         where T : IArchiveUpdatable
     {
+        WriteObjectHeader(obj.ArchiveObjectType, false, false, false, false, obj.CurrentArchiveVersion);
+
+        obj.WritePropertiesToArchive(this);
+    }
+
+    public void WriteObjectProperties<T>(T obj)
+        where T : class, IArchiveUpdatable
+    {
+        // As a class, this theoretically could be a reference, but we don't support that right now
         WriteObjectHeader(obj.ArchiveObjectType, false, false, false, false, obj.CurrentArchiveVersion);
 
         obj.WritePropertiesToArchive(this);

@@ -107,6 +107,12 @@ public interface ISArchiveWriter
         where T : IArchiveUpdatable;
 
     /// <summary>
+    ///   Writes object properties of class-types
+    /// </summary>
+    public void WriteObjectProperties<T>(T obj)
+        where T : class, IArchiveUpdatable;
+
+    /// <summary>
     ///   Tries to write any type of value that is archivable or has a registered writer.
     ///   This is much less preferable to use than any of the more specific APIs available.
     ///   Throws if it cannot be processed.
