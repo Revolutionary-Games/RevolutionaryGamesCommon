@@ -114,13 +114,22 @@ public interface ISArchiveReader
         where T : IArchiveReadableVariable;
 
     /// <summary>
-    ///   Read properties of an object that was saved with <see cref="ISArchiveWriter.WriteObjectProperties{T}"/>
+    ///   Read properties of an object that was saved with WriteObjectProperties
     /// </summary>
     /// <param name="obj">Object to update</param>
     /// <typeparam name="T">Type of the object</typeparam>
-    /// <returns>True if properties were read</returns>
+    /// <returns>
+    ///   True if properties were read. Returns false, for example, when there's a null written to the archive
+    /// </returns>
     public bool ReadObjectProperties<T>(ref T obj)
         where T : IArchiveUpdatable;
+
+    /// <summary>
+    ///   Class-variant of updating just properties
+    /// </summary>
+    /// <returns>True if updated</returns>
+    public bool ReadObjectProperties<T>(T obj)
+        where T : class, IArchiveUpdatable;
 
     public void ReadTuple<T1>(ref ValueTuple<T1> receiver);
     public void ReadTuple<T1, T2>(ref (T1 Item1, T2 Item2) receiver);

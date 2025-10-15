@@ -206,6 +206,30 @@ public class ArchiveObjectTests
         Assert.Equal(testObject, read);
     }
 
+    [Fact]
+    public void ArchiveObject_UpdateClassProperties()
+    {
+        var manager = new DefaultArchiveManager(false);
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, manager);
+        var reader = new SArchiveMemoryReader(memoryStream, manager);
+
+        var testObject = new SimpleUpdatableObject
+        {
+            Value = 12,
+        };
+
+        writer.WriteObjectProperties(testObject);
+
+        testObject.Value = 42;
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        Assert.NotEqual(12, testObject.Value);
+        reader.ReadObjectProperties(testObject);
+        Assert.Equal(12, testObject.Value);
+    }
+
     internal struct TestObject3 : IArchiveUpdatable
     {
         public const ushort SERIALIZATION_VERSION = 1;
@@ -440,6 +464,29 @@ public class ArchiveObjectTests
             };
 
             return instance;
+        }
+    }
+
+    internal class SimpleUpdatableObject : IArchiveUpdatable
+    {
+        public const ushort SERIALIZATION_VERSION = 1;
+
+        public int Value;
+
+        public ushort CurrentArchiveVersion => SERIALIZATION_VERSION;
+        public ArchiveObjectType ArchiveObjectType => ArchiveObjectType.TestObjectType1;
+
+        public void WritePropertiesToArchive(ISArchiveWriter writer)
+        {
+            writer.Write(Value);
+        }
+
+        public void ReadPropertiesFromArchive(ISArchiveReader reader, ushort version)
+        {
+            if (version is > SERIALIZATION_VERSION or <= 0)
+                throw new InvalidArchiveVersionException(version, SERIALIZATION_VERSION);
+
+            Value = reader.ReadInt32();
         }
     }
 }

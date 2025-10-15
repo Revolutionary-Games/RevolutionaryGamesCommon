@@ -637,6 +637,33 @@ public abstract class SArchiveReaderBase : ISArchiveReader
         return true;
     }
 
+    public bool ReadObjectProperties<T>(T obj)
+        where T : class, IArchiveUpdatable
+    {
+        ReadObjectHeader(out var type, out var id, out var isNull, out var references, out var extended,
+            out var version);
+
+        if (isNull)
+            return false;
+
+        if (id > 0 || references)
+            throw new FormatException("Cannot read properties of an object that was written as a reference");
+
+        // TODO: support for derived class reading here?
+        if (obj.ArchiveObjectType != type)
+            throw new FormatException($"Cannot read properties of an object ({obj.ArchiveObjectType}) from {type}");
+
+        if (extended)
+        {
+            throw new FormatException(
+                "Object we are reading properties into has extended type information, this would be totally ignored, " +
+                "instead we throw this exception");
+        }
+
+        obj.ReadPropertiesFromArchive(this, version);
+        return true;
+    }
+
     public Type? MapArchiveTypeToType(ArchiveObjectType type)
     {
         return ReadManager.MapArchiveTypeToType(type);
