@@ -168,7 +168,7 @@ public class ArchiveObjectTests
 
         TestObject4 read = default;
 
-        reader.ReadObject(ref read);
+        reader.ReadObjectOrNull(ref read);
 
         Assert.Equal(testObject, read);
 

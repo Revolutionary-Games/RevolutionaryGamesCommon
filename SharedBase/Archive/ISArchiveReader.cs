@@ -82,16 +82,16 @@ public interface ISArchiveReader
     ///   Type to read. Note that the object is read as normal first and then tries to be cast to the wanted type.
     /// </typeparam>
     /// <returns>Read object or null if there was a null marker instead</returns>
-    public T? ReadObject<T>();
+    public T? ReadObjectOrNull<T>();
 
     /// <summary>
-    ///   Reads a non-null object or throws. See <see cref="ReadObject{T}()"/> for more details.
+    ///   Reads a non-null object or throws. See <see cref="ReadObjectOrNull{T}()"/> for more details.
     /// </summary>
     /// <returns>Read object</returns>
     /// <exception cref="NullArchiveObjectException">If the object is null</exception>
-    public T ReadObjectNotNull<T>()
+    public T ReadObject<T>()
     {
-        return ReadObject<T>() ?? throw new NullArchiveObjectException();
+        return ReadObjectOrNull<T>() ?? throw new NullArchiveObjectException();
     }
 
     /// <summary>
@@ -99,7 +99,12 @@ public interface ISArchiveReader
     /// </summary>
     /// <param name="type">Type of the returned object</param>
     /// <returns>Read object or if the object header specified null, then a null value</returns>
-    public object? ReadObject(out ArchiveObjectType type);
+    public object? ReadObjectOrNull(out ArchiveObjectType type);
+
+    public object ReadObject(out ArchiveObjectType type)
+    {
+        return ReadObjectOrNull(out type) ?? throw new NullArchiveObjectException();
+    }
 
     /// <summary>
     ///   Reads any struct type from the archive.
@@ -120,7 +125,7 @@ public interface ISArchiveReader
     /// </summary>
     /// <param name="obj">Where to place the read object</param>
     /// <typeparam name="T">Type of the object to read</typeparam>
-    public void ReadObject<T>(ref T obj)
+    public void ReadObjectOrNull<T>(ref T obj)
         where T : IArchiveReadableVariable;
 
     /// <summary>

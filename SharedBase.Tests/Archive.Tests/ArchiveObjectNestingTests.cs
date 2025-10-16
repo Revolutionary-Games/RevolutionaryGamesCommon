@@ -32,7 +32,7 @@ public class ArchiveObjectNestingTests
         memoryStream.Seek(0, SeekOrigin.Begin);
 
         manager.OnStartNewRead(reader);
-        var read = reader.ReadObject<TestObject1>();
+        var read = reader.ReadObjectOrNull<TestObject1>();
         manager.OnFinishRead(reader);
 
         Assert.NotNull(read);
@@ -88,7 +88,7 @@ public class ArchiveObjectNestingTests
 
             reader.ReportObjectConstructorDone(instance);
 
-            instance.Value2 = reader.ReadObject<ChildObject>();
+            instance.Value2 = reader.ReadObjectOrNull<ChildObject>();
             instance.Value3 = reader.ReadBool();
 
             return instance;
@@ -161,7 +161,7 @@ public class ArchiveObjectNestingTests
             var instance = new ChildObject(null!, null!, -1);
             reader.ReportObjectConstructorDone(instance);
 
-            instance.Parent = reader.ReadObject<TestObject1>() ?? throw new NullArchiveObjectException();
+            instance.Parent = reader.ReadObjectOrNull<TestObject1>() ?? throw new NullArchiveObjectException();
             instance.Name = reader.ReadString() ?? throw new NullArchiveObjectException();
             instance.Age = reader.ReadInt32();
             return instance;

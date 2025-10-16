@@ -249,7 +249,7 @@ public abstract class SArchiveReaderBase : ISArchiveReader
             throw new Exception("Read unexpected number of bytes from buffer");
     }
 
-    public T? ReadObject<T>()
+    public T? ReadObjectOrNull<T>()
     {
         // TODO: should this verify something more?
         var rawRead = ReadObjectLowLevel(out _);
@@ -262,7 +262,7 @@ public abstract class SArchiveReaderBase : ISArchiveReader
         return (T?)rawRead;
     }
 
-    public object? ReadObject(out ArchiveObjectType type)
+    public object? ReadObjectOrNull(out ArchiveObjectType type)
     {
         return ReadObjectLowLevel(out type);
     }
@@ -539,7 +539,7 @@ public abstract class SArchiveReaderBase : ISArchiveReader
             throw new FormatException("Invalid archive footer (archive is corrupt or reading encountered a bug)");
     }
 
-    public void ReadObject<T>(ref T obj)
+    public void ReadObjectOrNull<T>(ref T obj)
         where T : IArchiveReadableVariable
     {
         ReadObjectHeader(out var type, out var id, out var isNull, out var references, out var extended,

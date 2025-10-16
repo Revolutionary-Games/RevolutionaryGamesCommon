@@ -210,7 +210,7 @@ public static class ArchiveBuiltInReaders
 
             for (int i = 0; i < length; ++i)
             {
-                tempData[i] = reader.ReadObject(out _);
+                tempData[i] = reader.ReadObjectOrNull(out _);
             }
 
             var target = DetermineCommonObjectType(length, tempData);
@@ -384,7 +384,7 @@ public static class ArchiveBuiltInReaders
 
             for (int i = 0; i < length; ++i)
             {
-                tempData[i] = reader.ReadObject(out _);
+                tempData[i] = reader.ReadObjectOrNull(out _);
             }
 
             var target = DetermineCommonObjectType(length, tempData);
@@ -414,7 +414,7 @@ public static class ArchiveBuiltInReaders
         for (int i = 0; i < length; ++i)
         {
             // We need to assume the list will be able to take null values (as we don't know the actual final target)
-            var item = reader.ReadObject(out var readItemType);
+            var item = reader.ReadObjectOrNull(out var readItemType);
 
             try
             {
@@ -470,8 +470,8 @@ public static class ArchiveBuiltInReaders
 
             for (int i = 0; i < length; ++i)
             {
-                keys[i] = reader.ReadObject(out _) ?? throw new FormatException("Null key in dictionary");
-                items[i] = reader.ReadObject(out _);
+                keys[i] = reader.ReadObjectOrNull(out _) ?? throw new FormatException("Null key in dictionary");
+                items[i] = reader.ReadObjectOrNull(out _);
             }
 
             // Determine the common type for the key and value
@@ -581,7 +581,7 @@ public static class ArchiveBuiltInReaders
         for (int i = 0; i < length; ++i)
         {
             // We need to assume the list will be able to take null values (as we don't know the actual final target)
-            var item = reader.ReadObject(out var readItemType);
+            var item = reader.ReadObjectOrNull(out var readItemType);
 
             try
             {
@@ -684,8 +684,8 @@ public static class ArchiveBuiltInReaders
 
         for (int i = 0; i < length; ++i)
         {
-            var key = reader.ReadObject(out var readKeyType) ?? throw new FormatException("Null key in dictionary");
-            var value = reader.ReadObject(out var readValueType);
+            var key = reader.ReadObjectOrNull(out var readKeyType) ?? throw new FormatException("Null key in dictionary");
+            var value = reader.ReadObjectOrNull(out var readValueType);
 
             try
             {
@@ -879,7 +879,7 @@ public static class ArchiveBuiltInReaders
             }
             else
             {
-                var newValue = reader.ReadObject(out var type);
+                var newValue = reader.ReadObjectOrNull(out var type);
 
                 TField? converted;
                 try
@@ -920,7 +920,7 @@ public static class ArchiveBuiltInReaders
         // Read all the values for the tuple
         for (var i = 0; i < length; ++i)
         {
-            var value = reader.ReadObject(out var type);
+            var value = reader.ReadObjectOrNull(out var type);
             rawValues[i] = value;
 
             // If the value is null, we need to know the type, and for that we use the type from reader registration
@@ -947,7 +947,7 @@ public static class ArchiveBuiltInReaders
         // Read all the values for the tuple
         for (var i = 0; i < length; ++i)
         {
-            rawValues[i] = reader.ReadObject(out _);
+            rawValues[i] = reader.ReadObjectOrNull(out _);
         }
     }
 

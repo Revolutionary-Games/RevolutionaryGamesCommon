@@ -32,7 +32,7 @@ public class ArchiveErrorMessageTests
 
         // This should cause an error message that points to the ancestor problem
         manager.OnStartNewRead(reader);
-        var exception = Assert.Throws<AncestorReferenceException>(() => reader.ReadObject<TestObject1>());
+        var exception = Assert.Throws<AncestorReferenceException>(() => reader.ReadObjectOrNull<TestObject1>());
         manager.OnFinishRead(reader);
 
         Assert.Contains(nameof(ArchiveObjectType.TestObjectType1), exception.Message);
@@ -81,7 +81,7 @@ public class ArchiveErrorMessageTests
             // Here's the bug, missing this:
             // reader.ReportObjectConstructorDone(instance);
 
-            instance.Value2 = reader.ReadObject<ChildObject>();
+            instance.Value2 = reader.ReadObjectOrNull<ChildObject>();
             instance.Value3 = reader.ReadBool();
 
             return instance;
@@ -130,7 +130,7 @@ public class ArchiveErrorMessageTests
                 throw new InvalidArchiveVersionException(version, SERIALIZATION_VERSION);
 
             // These are separate lines to make it easier to debug
-            var parent = reader.ReadObject<TestObject1>() ?? throw new NullArchiveObjectException();
+            var parent = reader.ReadObjectOrNull<TestObject1>() ?? throw new NullArchiveObjectException();
             var name = reader.ReadString() ?? throw new NullArchiveObjectException();
             var age = reader.ReadInt32();
 

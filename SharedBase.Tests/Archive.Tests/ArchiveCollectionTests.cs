@@ -47,7 +47,7 @@ public class ArchiveCollectionTests
 
         memoryStream.Seek(0, SeekOrigin.Begin);
 
-        var result = reader.ReadObject<ITuple>();
+        var result = reader.ReadObjectOrNull<ITuple>();
 
         Assert.NotNull(result);
         Assert.Equal(original, result);
@@ -73,7 +73,7 @@ public class ArchiveCollectionTests
         memoryStream.Seek(0, SeekOrigin.Begin);
 
         Assert.Throws<InvalidCastException>(() =>
-            result = ((int, string, bool))reader.ReadObject(out _)!);
+            result = ((int, string, bool))reader.ReadObjectOrNull(out _)!);
     }
 
     [Fact]
@@ -91,7 +91,7 @@ public class ArchiveCollectionTests
 
         var read = Tuple.Create(42, "stuff", true);
 
-        Assert.Throws<InvalidCastException>(() => read = (Tuple<int, string, bool>)reader.ReadObject<ITuple>()!);
+        Assert.Throws<InvalidCastException>(() => read = (Tuple<int, string, bool>)reader.ReadObjectOrNull<ITuple>()!);
 
         _ = read;
     }
@@ -194,14 +194,14 @@ public class ArchiveCollectionTests
 
         memoryStream.Seek(0, SeekOrigin.Begin);
 
-        var read = reader.ReadObject<List<int>>();
+        var read = reader.ReadObjectOrNull<List<int>>();
 
         Assert.NotNull(read);
         Assert.True(original.SequenceEqual(read));
 
         memoryStream.Seek(0, SeekOrigin.Begin);
 
-        var read2 = (List<int>?)reader.ReadObject(out _);
+        var read2 = (List<int>?)reader.ReadObjectOrNull(out _);
         Assert.NotNull(read2);
         Assert.True(original.SequenceEqual(read2));
     }
@@ -221,7 +221,7 @@ public class ArchiveCollectionTests
 
         memoryStream.Seek(0, SeekOrigin.Begin);
 
-        var read = reader.ReadObject<List<int>>();
+        var read = reader.ReadObjectOrNull<List<int>>();
 
         Assert.NotNull(read);
         Assert.Equal(original.Count, read.Count);
@@ -243,7 +243,7 @@ public class ArchiveCollectionTests
 
         memoryStream.Seek(0, SeekOrigin.Begin);
 
-        var read = reader.ReadObject<List<(string Tag, int Value)>>();
+        var read = reader.ReadObjectOrNull<List<(string Tag, int Value)>>();
         Assert.NotNull(read);
         Assert.Equal(original.Count, read.Count);
         Assert.True(original.SequenceEqual(read));
@@ -263,7 +263,7 @@ public class ArchiveCollectionTests
 
         memoryStream.Seek(0, SeekOrigin.Begin);
 
-        var read1 = reader.ReadObject<List<bool>>();
+        var read1 = reader.ReadObjectOrNull<List<bool>>();
 
         Assert.NotNull(read1);
         Assert.True(original1.SequenceEqual(read1));
@@ -275,7 +275,7 @@ public class ArchiveCollectionTests
 
         writer.WriteObject(original2);
         memoryStream.Seek(0, SeekOrigin.Begin);
-        var read2 = reader.ReadObject<List<long>>();
+        var read2 = reader.ReadObjectOrNull<List<long>>();
         Assert.NotNull(read2);
         Assert.True(original2.SequenceEqual(read2));
 
@@ -287,7 +287,7 @@ public class ArchiveCollectionTests
         writer.WriteObject(original3);
 
         memoryStream.Seek(0, SeekOrigin.Begin);
-        var read3 = reader.ReadObject<List<string>>();
+        var read3 = reader.ReadObjectOrNull<List<string>>();
         Assert.NotNull(read3);
         Assert.True(original3.SequenceEqual(read3));
 
@@ -300,7 +300,7 @@ public class ArchiveCollectionTests
         writer.WriteObject(original4);
 
         memoryStream.Seek(0, SeekOrigin.Begin);
-        var read4 = reader.ReadObject<List<float>>();
+        var read4 = reader.ReadObjectOrNull<List<float>>();
         Assert.NotNull(read4);
         Assert.True(original4.SequenceEqual(read4));
     }
@@ -322,7 +322,7 @@ public class ArchiveCollectionTests
 
         memoryStream.Seek(0, SeekOrigin.Begin);
 
-        var read = reader.ReadObject<List<byte>>();
+        var read = reader.ReadObjectOrNull<List<byte>>();
 
         Assert.NotNull(read);
         Assert.True(original.SequenceEqual(read));
@@ -343,7 +343,7 @@ public class ArchiveCollectionTests
 
         memoryStream.Seek(0, SeekOrigin.Begin);
 
-        var read = reader.ReadObject<int[]>();
+        var read = reader.ReadObjectOrNull<int[]>();
 
         Assert.NotNull(read);
         Assert.Equal(original.Length, read.Length);
@@ -351,7 +351,7 @@ public class ArchiveCollectionTests
 
         memoryStream.Seek(0, SeekOrigin.Begin);
 
-        var read2 = (int[]?)reader.ReadObject(out _);
+        var read2 = (int[]?)reader.ReadObjectOrNull(out _);
         Assert.NotNull(read2);
         Assert.True(original.SequenceEqual(read2));
     }
@@ -369,7 +369,7 @@ public class ArchiveCollectionTests
 
         memoryStream.Seek(0, SeekOrigin.Begin);
 
-        var read = reader.ReadObject<ushort[]>();
+        var read = reader.ReadObjectOrNull<ushort[]>();
 
         Assert.NotNull(read);
         Assert.Equal(original.Length, read.Length);
@@ -377,7 +377,7 @@ public class ArchiveCollectionTests
 
         memoryStream.Seek(0, SeekOrigin.Begin);
 
-        var read2 = (ushort[]?)reader.ReadObject(out _);
+        var read2 = (ushort[]?)reader.ReadObjectOrNull(out _);
         Assert.NotNull(read2);
         Assert.True(original.SequenceEqual(read2));
 
@@ -398,7 +398,7 @@ public class ArchiveCollectionTests
 
         memoryStream.Seek(0, SeekOrigin.Begin);
 
-        var read = reader.ReadObject<List<List<int>>>();
+        var read = reader.ReadObjectOrNull<List<List<int>>>();
 
         Assert.NotNull(read);
 
@@ -411,7 +411,7 @@ public class ArchiveCollectionTests
 
         memoryStream.Seek(0, SeekOrigin.Begin);
 
-        var read2 = (List<List<int>>?)reader.ReadObject(out _);
+        var read2 = (List<List<int>>?)reader.ReadObjectOrNull(out _);
         Assert.NotNull(read2);
         Assert.Equal(original.Count, read2.Count);
     }
@@ -443,7 +443,7 @@ public class ArchiveCollectionTests
 
         memoryStream.Seek(0, SeekOrigin.Begin);
 
-        var read = reader.ReadObject<List<ArchiveObjectTests.TestObject1>>();
+        var read = reader.ReadObjectOrNull<List<ArchiveObjectTests.TestObject1>>();
 
         Assert.NotNull(read);
         Assert.True(original.SequenceEqual(read));
@@ -469,7 +469,7 @@ public class ArchiveCollectionTests
 
         memoryStream.Seek(0, SeekOrigin.Begin);
 
-        var read = reader.ReadObject<Dictionary<string, int>>();
+        var read = reader.ReadObjectOrNull<Dictionary<string, int>>();
 
         Assert.NotNull(read);
         Assert.Equal(original.Count, read.Count);
@@ -494,7 +494,7 @@ public class ArchiveCollectionTests
 
         memoryStream.Seek(0, SeekOrigin.Begin);
 
-        var read = reader.ReadObject<Dictionary<string, int>>();
+        var read = reader.ReadObjectOrNull<Dictionary<string, int>>();
 
         Assert.NotNull(read);
         Assert.Equal(original.Count, read.Count);
@@ -534,7 +534,7 @@ public class ArchiveCollectionTests
 
         memoryStream.Seek(0, SeekOrigin.Begin);
 
-        var read = reader.ReadObject<Dictionary<ArchiveObjectTests.TestObject1, string>>();
+        var read = reader.ReadObjectOrNull<Dictionary<ArchiveObjectTests.TestObject1, string>>();
 
         Assert.NotNull(read);
         Assert.Equal(original.Count, read.Count);
@@ -574,7 +574,7 @@ public class ArchiveCollectionTests
 
         memoryStream.Seek(0, SeekOrigin.Begin);
 
-        var read = reader.ReadObject<Dictionary<string, ArchiveObjectTests.TestObject1>>();
+        var read = reader.ReadObjectOrNull<Dictionary<string, ArchiveObjectTests.TestObject1>>();
 
         Assert.NotNull(read);
         Assert.Equal(original.Count, read.Count);
@@ -631,7 +631,7 @@ public class ArchiveCollectionTests
 
         memoryStream.Seek(0, SeekOrigin.Begin);
 
-        var read = reader.ReadObject<Dictionary<ArchiveObjectTests.TestObject1, ArchiveObjectTests.TestObject5>>();
+        var read = reader.ReadObjectOrNull<Dictionary<ArchiveObjectTests.TestObject1, ArchiveObjectTests.TestObject5>>();
 
         Assert.NotNull(read);
         Assert.Equal(original.Count, read.Count);
@@ -667,7 +667,7 @@ public class ArchiveCollectionTests
 
         memoryStream.Seek(0, SeekOrigin.Begin);
 
-        var read = reader.ReadObject<Dictionary<(string Tag, int Value, bool Indicator), string>>();
+        var read = reader.ReadObjectOrNull<Dictionary<(string Tag, int Value, bool Indicator), string>>();
 
         Assert.NotNull(read);
         Assert.Equal(original.Count, read.Count);
@@ -693,7 +693,7 @@ public class ArchiveCollectionTests
 
         memoryStream.Seek(0, SeekOrigin.Begin);
 
-        var read = reader.ReadObject<Dictionary<(string Tag, int Value, bool Indicator), string>>();
+        var read = reader.ReadObjectOrNull<Dictionary<(string Tag, int Value, bool Indicator), string>>();
 
         Assert.NotNull(read);
         Assert.Equal(original.Count, read.Count);
@@ -728,7 +728,7 @@ public class ArchiveCollectionTests
 
         memoryStream.Seek(0, SeekOrigin.Begin);
 
-        var read = reader.ReadObject<Dictionary<string, Dictionary<string, List<int>>>>();
+        var read = reader.ReadObjectOrNull<Dictionary<string, Dictionary<string, List<int>>>>();
 
         Assert.NotNull(read);
         Assert.Equal(original.Count, read.Count);
@@ -802,7 +802,7 @@ public class ArchiveCollectionTests
         memoryStream.Seek(0, SeekOrigin.Begin);
 
         var read = reader
-            .ReadObject<Dictionary<ArchiveObjectTests.TestObject1,
+            .ReadObjectOrNull<Dictionary<ArchiveObjectTests.TestObject1,
                 Dictionary<ArchiveObjectTests.TestObject5, List<int>>>>();
 
         Assert.NotNull(read);
@@ -843,7 +843,7 @@ public class ArchiveCollectionTests
         memoryStream.Seek(0, SeekOrigin.Begin);
 
         var read = reader
-            .ReadObject<Dictionary<ArchiveObjectTests.TestObject1,
+            .ReadObjectOrNull<Dictionary<ArchiveObjectTests.TestObject1,
                 Dictionary<ArchiveObjectTests.TestObject5, List<int>>>>();
 
         Assert.NotNull(read);
@@ -855,7 +855,7 @@ public class ArchiveCollectionTests
 
         memoryStream.Seek(0, SeekOrigin.Begin);
 
-        var read2 = reader.ReadObject(out var type);
+        var read2 = reader.ReadObjectOrNull(out var type);
         Assert.Equal(ArchiveObjectType.ExtendedDictionary, type);
         Assert.IsType(original.GetType(), read2);
     }
@@ -879,7 +879,7 @@ public class ArchiveCollectionTests
 
         memoryStream.Seek(0, SeekOrigin.Begin);
 
-        var read = reader.ReadObject<List<Dictionary<string, int>>>();
+        var read = reader.ReadObjectOrNull<List<Dictionary<string, int>>>();
 
         Assert.NotNull(read);
         Assert.Equal(original.Count, read.Count);
@@ -903,7 +903,7 @@ public class ArchiveCollectionTests
 
         memoryStream.Seek(0, SeekOrigin.Begin);
 
-        var read = reader.ReadObject<List<Dictionary<string, int>>>();
+        var read = reader.ReadObjectOrNull<List<Dictionary<string, int>>>();
 
         Assert.NotNull(read);
         Assert.Equal(original.Count, read.Count);
@@ -926,7 +926,7 @@ public class ArchiveCollectionTests
 
         memoryStream.Seek(0, SeekOrigin.Begin);
 
-        var read = reader.ReadObject<List<int>>();
+        var read = reader.ReadObjectOrNull<List<int>>();
 
         Assert.NotNull(read);
         Assert.Equal(original.Count, read.Count);
@@ -948,7 +948,7 @@ public class ArchiveCollectionTests
 
         memoryStream.Seek(0, SeekOrigin.Begin);
 
-        var read = reader.ReadObject<List<string>>();
+        var read = reader.ReadObjectOrNull<List<string>>();
 
         Assert.NotNull(read);
         Assert.Equal(original.Count, read.Count);
@@ -1000,7 +1000,7 @@ public class ArchiveCollectionTests
 
         memoryStream.Seek(0, SeekOrigin.Begin);
 
-        var read = reader.ReadObject<List<ArchiveObjectTests.TestObject5>>();
+        var read = reader.ReadObjectOrNull<List<ArchiveObjectTests.TestObject5>>();
 
         Assert.NotNull(read);
         Assert.Equal(original.Count, read.Count);
