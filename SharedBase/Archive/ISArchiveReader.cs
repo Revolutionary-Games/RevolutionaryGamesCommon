@@ -85,6 +85,16 @@ public interface ISArchiveReader
     public T? ReadObject<T>();
 
     /// <summary>
+    ///   Reads a non-null object or throws. See <see cref="ReadObject{T}()"/> for more details.
+    /// </summary>
+    /// <returns>Read object</returns>
+    /// <exception cref="NullArchiveObjectException">If the object is null</exception>
+    public T ReadObjectNotNull<T>()
+    {
+        return ReadObject<T>() ?? throw new NullArchiveObjectException();
+    }
+
+    /// <summary>
     ///   Pure raw read of any kind of object.
     /// </summary>
     /// <param name="type">Type of the returned object</param>

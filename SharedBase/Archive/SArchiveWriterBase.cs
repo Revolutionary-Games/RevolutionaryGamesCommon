@@ -499,8 +499,6 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
         }
     }
 
-
-
     public void WriteAnyRegisteredValueAsObject<T>(T value)
     {
         if (ReferenceEquals(value, null))
