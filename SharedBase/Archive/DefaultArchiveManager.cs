@@ -190,7 +190,7 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
         if (type.IsGenericType)
             return true;
 
-        // TODO: should tuples use extended types?
+        // TODO: should tuples use extended types? (they already do but is this check needed in some case?)
         /*if (typeof(ITuple).IsAssignableFrom(type))
             return true;*/
 

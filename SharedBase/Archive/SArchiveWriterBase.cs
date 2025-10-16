@@ -362,6 +362,57 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
         }
     }
 
+    public void WriteGenericCollection(ICollection anyCollection)
+    {
+        bool extended = WriteManager.ObjectChildTypeRequiresExtendedType(anyCollection.GetType());
+        var type = extended ? ArchiveObjectType.ExtendedList : ArchiveObjectType.List;
+
+        WriteObjectHeader(type, false, false, false, extended, COLLECTIONS_VERSION);
+
+        if (extended)
+            HandleExtendedTypeWrite(type, anyCollection.GetType());
+
+        WriteVariableLengthField32((uint)anyCollection.Count);
+
+        // This variant can't really use any optimisation as ICollection<T> doesn't inherit from ICollection
+
+        Write((uint)WriteManager.GetObjectWriteType(anyCollection.GetType().GetGenericArguments()[0]));
+        Write((byte)0);
+
+        // Allocates an enumerator, but we can't avoid that as we use such a general interface
+        foreach (var item in anyCollection)
+        {
+            WriteAnyRegisteredValueAsObject(item);
+        }
+    }
+
+    public void WriteGenericCollection<T>(ICollection<T> anyCollection)
+    {
+        // As there's the generic argument type T, we can assume the list is always extended
+        bool extended = true;
+        var type = extended ? ArchiveObjectType.ExtendedList : ArchiveObjectType.List;
+
+        WriteObjectHeader(type, false, false, false, extended, COLLECTIONS_VERSION);
+
+        if (extended)
+            HandleExtendedTypeWrite(type, anyCollection.GetType());
+
+        WriteVariableLengthField32((uint)anyCollection.Count);
+
+        // Optimisation for some primitive types
+        if (WriteOptimizedCollectionIfPossible(anyCollection))
+            return;
+
+        Write((uint)WriteManager.GetObjectWriteType(typeof(T)));
+        Write((byte)0);
+
+        // Allocates an enumerator, but we can't avoid that as we use such a general interface
+        foreach (var item in anyCollection)
+        {
+            WriteAnyRegisteredValueAsObject(item);
+        }
+    }
+
     public void WriteObject<T>(T[] array)
     {
         // Automatic byte array optimisation
@@ -891,6 +942,66 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
             for (int i = 0; i < floatArray.Length; ++i)
             {
                 Write(floatArray[i]);
+            }
+        }
+        else
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private bool WriteOptimizedCollectionIfPossible<T>(ICollection<T> anyCollection)
+    {
+        if (anyCollection is ICollection<int> intCollection)
+        {
+            Write((uint)ArchiveObjectType.Int32);
+            Write((byte)1);
+
+            foreach (var item in intCollection)
+            {
+                Write(item);
+            }
+        }
+        else if (anyCollection is ICollection<float> floatCollection)
+        {
+            Write((uint)ArchiveObjectType.Float);
+            Write((byte)1);
+
+            foreach (var item in floatCollection)
+            {
+                Write(item);
+            }
+        }
+        else if (anyCollection is ICollection<string> stringCollection)
+        {
+            Write((uint)ArchiveObjectType.String);
+            Write((byte)1);
+
+            foreach (var item in stringCollection)
+            {
+                Write(item);
+            }
+        }
+        else if (anyCollection is ICollection<byte> byteCollection)
+        {
+            Write((uint)ArchiveObjectType.Byte);
+            Write((byte)1);
+
+            foreach (var item in byteCollection)
+            {
+                Write(item);
+            }
+        }
+        else if (anyCollection is ICollection<long> longCollection)
+        {
+            Write((uint)ArchiveObjectType.Int64);
+            Write((byte)1);
+
+            foreach (var item in longCollection)
+            {
+                Write(item);
             }
         }
         else

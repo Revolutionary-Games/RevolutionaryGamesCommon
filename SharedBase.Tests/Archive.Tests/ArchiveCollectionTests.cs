@@ -912,4 +912,107 @@ public class ArchiveCollectionTests
         // ReSharper disable once UsageOfDefaultStructEquality
         Assert.True(original.SequenceEqual(read));
     }
+
+    [Fact]
+    public void ArchiveCollection_HashSetSimple()
+    {
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, manager);
+        var reader = new SArchiveMemoryReader(memoryStream, manager);
+
+        var original = new HashSet<int> { 1, 2, 3, 4, 5, 15 };
+
+        writer.WriteGenericCollection(original);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var read = reader.ReadObject<List<int>>();
+
+        Assert.NotNull(read);
+        Assert.Equal(original.Count, read.Count);
+
+        Assert.True(original.SetEquals(read));
+    }
+
+    [Fact]
+    public void ArchiveCollection_HashSetString()
+    {
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, manager);
+        var reader = new SArchiveMemoryReader(memoryStream, manager);
+
+        var original = new HashSet<string>
+            { "thing", "other", "thing2", "other stuff", "some final string that is a bit longer" };
+
+        writer.WriteGenericCollection(original);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var read = reader.ReadObject<List<string>>();
+
+        Assert.NotNull(read);
+        Assert.Equal(original.Count, read.Count);
+
+        Assert.True(original.SetEquals(read));
+    }
+
+    [Fact]
+    public void ArchiveCollection_HashSetObject()
+    {
+        var customManager = new DefaultArchiveManager(true);
+        customManager.RegisterObjectType(ArchiveObjectType.TestObjectType2, typeof(ArchiveObjectTests.TestObject5),
+            ArchiveObjectTests.TestObject5.WriteToArchive);
+        customManager.RegisterBoxableValueType(ArchiveObjectType.TestObjectType2,
+            typeof(ArchiveObjectTests.TestObject5),
+            ArchiveObjectTests.TestObject5.ConstructBoxedArchiveRead);
+
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, customManager);
+        var reader = new SArchiveMemoryReader(memoryStream, customManager);
+
+        var thing1 = new ArchiveObjectTests.TestObject5
+        {
+            Value1 = 1,
+            Value2 = 2,
+            Value3 = "third",
+            Value4 = true,
+        };
+
+        var thing2 = new ArchiveObjectTests.TestObject5
+        {
+            Value1 = 2,
+            Value2 = 0,
+            Value3 = string.Empty,
+            Value4 = false,
+        };
+
+        var notInSet = new ArchiveObjectTests.TestObject5
+        {
+            Value1 = 3,
+            Value2 = 1,
+            Value3 = "third",
+            Value4 = true,
+        };
+
+        var original = new HashSet<ArchiveObjectTests.TestObject5> { thing1, thing2 };
+
+        writer.WriteGenericCollection(original);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var read = reader.ReadObject<List<ArchiveObjectTests.TestObject5>>();
+
+        Assert.NotNull(read);
+        Assert.Equal(original.Count, read.Count);
+
+        Assert.True(original.SetEquals(read));
+
+        var asSet = read.ToHashSet();
+
+        Assert.True(original.SetEquals(asSet));
+
+        Assert.Contains(thing1, asSet);
+        Assert.Contains(thing2, asSet);
+        Assert.DoesNotContain(notInSet, asSet);
+    }
 }

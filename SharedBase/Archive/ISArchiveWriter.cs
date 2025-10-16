@@ -152,6 +152,14 @@ public interface ISArchiveWriter
     /// </summary>
     public void WriteUnknownList(IList list);
 
+    /// <summary>
+    ///   Writes any kind of list-like as a list to this archive. When reading must be read as a List.
+    /// </summary>
+    /// <param name="anyCollection">Any type of thing that acts as a collection</param>
+    public void WriteGenericCollection(ICollection anyCollection);
+
+    public void WriteGenericCollection<T>(ICollection<T> anyCollection);
+
     public void WriteObject<TKey, TValue>(IReadOnlyDictionary<TKey, TValue> dictionary);
 
     /// <summary>
