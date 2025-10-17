@@ -92,6 +92,21 @@ public interface ISArchiveWriter
     public void WriteObject(IArchivable obj);
 
     /// <summary>
+    ///   Writes a potentially null object
+    /// </summary>
+    public void WriteObjectOrNull(IArchivable? obj)
+    {
+        if (obj == null)
+        {
+            WriteNullObject();
+        }
+        else
+        {
+            WriteObject(obj);
+        }
+    }
+
+    /// <summary>
     ///   Writing variant that doesn't box value types like structs and cannot be a reference inside the
     ///   archive, but otherwise works the same as the above WriteObject.
     /// </summary>
@@ -142,6 +157,18 @@ public interface ISArchiveWriter
     ///   Writes most kinds of lists
     /// </summary>
     public void WriteObject<T>(IList<T> list);
+
+    public void WriteObjectOrNull<T>(IList<T>? list)
+    {
+        if (list == null)
+        {
+            WriteNullObject();
+        }
+        else
+        {
+            WriteObject(list);
+        }
+    }
 
     public void WriteObject<T>(T[] array);
 
