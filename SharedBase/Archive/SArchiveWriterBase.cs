@@ -3,6 +3,7 @@ namespace SharedBase.Archive;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -13,6 +14,7 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
 {
     public const ushort TUPLE_VERSION = 1;
     public const ushort COLLECTIONS_VERSION = 1;
+    public const ushort DELEGATE_VERSION = 1;
 
     private const int BUFFER_SIZE = 1024;
 
@@ -754,6 +756,46 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
         WriteObjectHeader(ArchiveObjectType.Null, false, true, false, false, 1);
 
         // Nulls do not have a reference placeholder, even if they can be otherwise references
+    }
+
+    public void WriteDelegate(Delegate delegateInstance)
+    {
+        if (delegateInstance.Method.DeclaringType == null)
+            throw new ArgumentException("Delegate target must have a declaring type");
+
+        WriteObjectHeader(ArchiveObjectType.Delegate, false, false, false, false, DELEGATE_VERSION);
+
+        if (delegateInstance.Method.IsStatic != ReferenceEquals(null, delegateInstance.Target))
+            throw new ArgumentException("Delegate must not specify an object when target is static");
+
+        Write(delegateInstance.Method.IsStatic ? (byte)1 : (byte)0);
+
+        // This is checked on deserialize for safety but in debug mode this will help with misconfigured usages
+#if DEBUG
+
+        if (delegateInstance.Method.GetCustomAttribute<ArchiveAllowedMethodAttribute>() == null)
+            throw new ArgumentException("Delegate method must be marked with ArchiveAllowedMethodAttribute");
+#endif
+
+        if (delegateInstance.Target == null)
+        {
+            WriteNullObject();
+        }
+        else if (delegateInstance.Target is IArchivable archivable)
+        {
+            WriteObject(archivable);
+        }
+        else
+        {
+            // We could extend what is supported here, but as long as nothing actually requires it, this is fine
+            throw new ArgumentException("For now delegate targets must be IArchivable");
+        }
+
+        Write(delegateInstance.Method.Name);
+
+        // For now, we don't support specialising delegates based on parameters
+
+        Write((uint)WriteManager.GetObjectWriteType(delegateInstance.Method.DeclaringType));
     }
 
     public void WriteArchiveHeader(int overallVersion, string programIdentifier, string programVersion)

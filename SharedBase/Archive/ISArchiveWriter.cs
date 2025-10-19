@@ -195,6 +195,11 @@ public interface ISArchiveWriter
     public void WriteNullObject();
 
     /// <summary>
+    ///   Writes a delegate. Note that the target method must have <see cref="ArchiveAllowedMethodAttribute"/>
+    /// </summary>
+    public void WriteDelegate(Delegate delegateInstance);
+
+    /// <summary>
     ///   Writes an overall header for an entire archive. Call before writing any objects to a new archive.
     /// </summary>
     /// <param name="overallVersion">

@@ -30,6 +30,7 @@ public enum ArchiveObjectType : uint
     List,
     Array,
     Dictionary,
+    Delegate,
 
     // Only used in testing
     TestObjectType1 = 4094,

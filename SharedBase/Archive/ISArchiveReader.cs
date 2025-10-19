@@ -154,6 +154,14 @@ public interface ISArchiveReader
     public object ReadTupleBoxed(ushort version);
 
     /// <summary>
+    ///   Reads a delegate of a known type from the archive.
+    /// </summary>
+    /// <typeparam name="T">Type of *delegate* to read</typeparam>
+    /// <returns>The delegate or null if a null object was written</returns>
+    public T? ReadDelegate<T>()
+        where T : Delegate;
+
+    /// <summary>
     ///   Reads the archive header written by <see cref="ISArchiveWriter.WriteArchiveHeader"/>.
     /// </summary>
     public void ReadArchiveHeader(out int overallVersion, out string programIdentifier, out string programVersion);

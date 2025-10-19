@@ -3,6 +3,7 @@ namespace SharedBase.Archive;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 /// <summary>
@@ -662,6 +663,67 @@ public abstract class SArchiveReaderBase : ISArchiveReader
 
         obj.ReadPropertiesFromArchive(this, version);
         return true;
+    }
+
+    public T? ReadDelegate<T>()
+        where T : Delegate
+    {
+        ReadObjectHeader(out var type, out _, out var isNull, out var references, out var extended,
+            out var version);
+
+        if (isNull)
+            return null;
+
+        if (type != ArchiveObjectType.Delegate)
+            throw new FormatException($"Expected a delegate at this point in archive, but got: {type}");
+
+        if (references || extended)
+        {
+            throw new FormatException(
+                "Cannot read delegate that was written as a reference or has extended type information");
+        }
+
+        if (version is > SArchiveWriterBase.DELEGATE_VERSION or <= 0)
+            throw new InvalidArchiveVersionException(version, SArchiveWriterBase.DELEGATE_VERSION);
+
+        var isStatic = ReadInt8() != 0;
+
+        var target = ReadObjectOrNull(out _);
+
+        if (target == null != isStatic)
+            throw new FormatException("Delegate is not static and target is null (or vice-versa) misconfiguration");
+
+        var methodName = ReadString();
+        if (string.IsNullOrWhiteSpace(methodName))
+            throw new FormatException("Delegate method name is empty");
+
+        var classTypeRaw = (ArchiveObjectType)ReadUInt32();
+
+        var classType = MapArchiveTypeToType(classTypeRaw);
+
+        if (classType == null)
+        {
+            throw new FormatException(
+                $"Cannot map archive type {classTypeRaw} to a type for a delegate (target method: {methodName})");
+        }
+
+        var flags = BindingFlags.Public | BindingFlags.NonPublic;
+
+        if (isStatic)
+        {
+            flags |= BindingFlags.Static;
+        }
+        else
+        {
+            flags |= BindingFlags.Instance;
+        }
+
+        var method = classType.GetMethod(methodName, flags);
+
+        if (method == null)
+            throw new FormatException($"Cannot find method {methodName} on type {classType} (for delegate)");
+
+        return (T)Delegate.CreateDelegate(typeof(T), target, method);
     }
 
     public Type? MapArchiveTypeToType(ArchiveObjectType type)
