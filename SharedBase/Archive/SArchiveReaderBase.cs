@@ -723,6 +723,16 @@ public abstract class SArchiveReaderBase : ISArchiveReader
         if (method == null)
             throw new FormatException($"Cannot find method {methodName} on type {classType} (for delegate)");
 
+        if (method.IsStatic != isStatic)
+            throw new FormatException("Found a mismatching static type method");
+
+        // Safety check to ensure archives cannot create methods to random stuff
+        if (method.GetCustomAttribute<ArchiveAllowedMethodAttribute>() == null)
+        {
+            throw new FormatException(
+                $"Method {methodName} on type {classType} is not marked with ArchiveAllowedMethodAttribute");
+        }
+
         return (T)Delegate.CreateDelegate(typeof(T), target, method);
     }
 

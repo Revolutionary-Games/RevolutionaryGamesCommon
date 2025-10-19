@@ -760,6 +760,11 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
 
     public void WriteDelegate(Delegate delegateInstance)
     {
+        WriteDelegate(delegateInstance, false);
+    }
+
+    public void WriteDelegate(Delegate delegateInstance, bool skipSafetyChecks)
+    {
         if (delegateInstance.Method.DeclaringType == null)
             throw new ArgumentException("Delegate target must have a declaring type");
 
@@ -770,10 +775,10 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
 
         Write(delegateInstance.Method.IsStatic ? (byte)1 : (byte)0);
 
-        // This is checked on deserialize for safety but in debug mode this will help with misconfigured usages
+        // This is checked on deserializing for safety, but in debug mode this will help with misconfigured usages
 #if DEBUG
 
-        if (delegateInstance.Method.GetCustomAttribute<ArchiveAllowedMethodAttribute>() == null)
+        if (!skipSafetyChecks && delegateInstance.Method.GetCustomAttribute<ArchiveAllowedMethodAttribute>() == null)
             throw new ArgumentException("Delegate method must be marked with ArchiveAllowedMethodAttribute");
 #endif
 
@@ -783,6 +788,13 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
         }
         else if (delegateInstance.Target is IArchivable archivable)
         {
+            if (!archivable.CanBeReferencedInArchive)
+            {
+                throw new ArgumentException(
+                    "Delegate target must be referenceable to be used as delegate target (otherwise delegate would " +
+                    "not refer to a proper object on deserialization)");
+            }
+
             WriteObject(archivable);
         }
         else

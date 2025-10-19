@@ -35,6 +35,29 @@ public class ArchiveCallbackTests
     }
 
     [Fact]
+    public void ArchiveCallback_DelegateIsNotCreatedForAnyMethod()
+    {
+        var customManager = new DefaultArchiveManager(true);
+        customManager.RegisterObjectType(ArchiveObjectType.TestObjectType1, typeof(CallableTestClass),
+            CallableTestClass.WriteToArchive);
+        customManager.RegisterObjectType(ArchiveObjectType.TestObjectType1, typeof(CallableTestClass),
+            CallableTestClass.ReadFromArchive);
+
+        var instance = new CallableTestClass(5155);
+        CallableTestClass.TestDelegate testDelegate = instance.NotAllowedMethod;
+
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, customManager);
+        var reader = new SArchiveMemoryReader(memoryStream, customManager);
+
+        writer.WriteDelegate(testDelegate, true);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        Assert.Throws<FormatException>(() => reader.ReadDelegate<CallableTestClass.TestDelegate>());
+    }
+
+    [Fact]
     public void ArchiveCallback_DelegateTargetIsKept()
     {
         var customManager = new DefaultArchiveManager(true);
@@ -94,9 +117,77 @@ public class ArchiveCallbackTests
         Assert.Equal(instance.ReturnedValue, readObject.ReturnedValue);
     }
 
-    // test that deserialized object in delegate is shared
+    [Fact]
+    public void ArchiveCallback_DelegateIsNotCreatedForNonCallableMethod()
+    {
+        var customManager = new DefaultArchiveManager(true);
+        customManager.RegisterObjectType(ArchiveObjectType.TestObjectType1, typeof(NonCallableTestClass),
+            NonCallableTestClass.WriteToArchive);
+        customManager.RegisterObjectType(ArchiveObjectType.TestObjectType1, typeof(NonCallableTestClass),
+            NonCallableTestClass.ReadFromArchive);
 
-    // test for the two incorrectly configured classes
+        var instance = new NonCallableTestClass();
+        CallableTestClass.TestDelegate testDelegate = instance.CallThatMethod;
+
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, customManager);
+        var reader = new SArchiveMemoryReader(memoryStream, customManager);
+
+        Assert.ThrowsAny<Exception>(() =>
+        {
+            writer.WriteDelegate(testDelegate);
+
+            memoryStream.Seek(0, SeekOrigin.Begin);
+
+            Assert.Throws<FormatException>(() => reader.ReadDelegate<CallableTestClass.TestDelegate>());
+        });
+    }
+
+    [Fact]
+    public void ArchiveCallback_MisconfiguredClassThrows()
+    {
+        var customManager = new DefaultArchiveManager(true);
+        customManager.RegisterObjectType(ArchiveObjectType.TestObjectType1, typeof(MisconfiguredClass),
+            MisconfiguredClass.WriteToArchive);
+        customManager.RegisterObjectType(ArchiveObjectType.TestObjectType1, typeof(MisconfiguredClass),
+            MisconfiguredClass.ReadFromArchive);
+
+        var instance = new MisconfiguredClass();
+        CallableTestClass.TestDelegate testDelegate = instance.CallThatMethod;
+
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, customManager);
+
+        Assert.Throws<ArgumentException>(() => { writer.WriteDelegate(testDelegate); });
+    }
+
+    [Fact]
+    public void ArchiveCallback_CallingStaticMethodWorks()
+    {
+        var customManager = new DefaultArchiveManager(true);
+
+        // These are needed for type registration
+        customManager.RegisterObjectType(ArchiveObjectType.TestObjectType1, typeof(CallableTestClass),
+            CallableTestClass.WriteToArchive);
+        customManager.RegisterObjectType(ArchiveObjectType.TestObjectType1, typeof(CallableTestClass),
+            CallableTestClass.ReadFromArchive);
+
+        CallableTestClass.TestDelegate testDelegate = CallableTestClass.GetStaticValue;
+
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, customManager);
+        var reader = new SArchiveMemoryReader(memoryStream, customManager);
+
+        writer.WriteDelegate(testDelegate);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var read = reader.ReadDelegate<CallableTestClass.TestDelegate>();
+
+        Assert.NotNull(read);
+
+        Assert.Equal(CallableTestClass.GetStaticValue(), read());
+    }
 
     public class CallableTestClass(int value) : IArchivable
     {
@@ -109,6 +200,12 @@ public class ArchiveCallbackTests
         public ushort CurrentArchiveVersion => SERIALIZATION_VERSION;
         public ArchiveObjectType ArchiveObjectType => ArchiveObjectType.TestObjectType1;
         public bool CanBeReferencedInArchive => true;
+
+        [ArchiveAllowedMethod]
+        public static int GetStaticValue()
+        {
+            return 123;
+        }
 
         public static void WriteToArchive(ISArchiveWriter writer, ArchiveObjectType type, object obj)
         {
@@ -135,6 +232,11 @@ public class ArchiveCallbackTests
         public int CallThatMethod()
         {
             return ReturnedValue;
+        }
+
+        public int NotAllowedMethod()
+        {
+            return -1;
         }
     }
 
