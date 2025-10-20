@@ -10,6 +10,8 @@ using System.Runtime.CompilerServices;
 /// </summary>
 public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
 {
+    public const int ENUM_VERSION = 1;
+
     // Registered custom types
     // TODO: do we need these write delegates?
     private readonly Dictionary<ArchiveObjectType, IArchiveWriteManager.ArchiveObjectDelegate> writeDelegates = new();
@@ -23,6 +25,8 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
 
     private readonly Dictionary<ArchiveObjectType, Type> registeredTypes = new();
     private readonly Dictionary<Type, ArchiveObjectType> registeredWriterTypes = new();
+
+    private readonly Dictionary<ArchiveObjectType, ArchiveEnumType> enumTypes = new();
 
     // Object reference handling
     private readonly Dictionary<object, long> objectIdPositions = new();
@@ -256,6 +260,56 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
         nextObjectId = 0;
     }
 
+    public bool WriteCustomEnumIfPossible<T>(ISArchiveWriter writer, T value)
+    {
+        if (ReferenceEquals(value, null))
+            throw new ArgumentException("An enum value cannot be null");
+
+        if (!registeredWriterTypes.TryGetValue(typeof(T), out var type))
+            return false;
+
+        if (!enumTypes.TryGetValue(type, out var enumType))
+            return false;
+
+        // It is a registered enum type, so we can write it out
+        writer.WriteObjectHeader(type, false, false, false, false, ENUM_VERSION);
+        writer.Write((byte)enumType);
+
+        switch (enumType)
+        {
+            case ArchiveEnumType.Int32:
+                writer.Write((int)(object)value);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
+
+        return true;
+    }
+
+    public Enum ReadBoxedEnum(ISArchiveReader reader, ArchiveObjectType type, ArchiveEnumType enumType, ushort version)
+    {
+        if (version is > ENUM_VERSION or <= 0)
+            throw new InvalidArchiveVersionException(version, ENUM_VERSION);
+
+        if (!registeredTypes.TryGetValue(type, out var nativeType) || !nativeType.IsEnum)
+            throw new ArgumentException($"Type is not a registered enum: {type}");
+
+        var readType = reader.ReadInt8();
+
+        if (enumType != (ArchiveEnumType)readType)
+            throw new FormatException($"Enum type mismatch: expected {enumType}, got {readType}");
+
+        switch (enumType)
+        {
+            case ArchiveEnumType.Int32:
+                var intValue = reader.ReadInt32();
+                return (Enum)Enum.ToObject(nativeType, intValue);
+            default:
+                throw new FormatException($"Unimplemented enum read type: {enumType}");
+        }
+    }
+
     public Type ResolveExtendedObjectType(ArchiveObjectType baseType, ReadOnlySpan<ArchiveObjectType> extendedType,
         int elementCount, out int consumedItems)
     {
@@ -344,7 +398,7 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
     public void RegisterObjectType(ArchiveObjectType type, Type nativeType,
         IArchiveWriteManager.ArchiveObjectDelegate writeDelegate)
     {
-        if (!registeredWriterTypes.TryAdd(nativeType, type))
+        if (!registeredWriterTypes.TryAdd(nativeType, type) || enumTypes.ContainsKey(type))
             throw new ArgumentException("Type is already registered");
 
         writeDelegates[type] = writeDelegate;
@@ -353,7 +407,7 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
     public void RegisterObjectType(ArchiveObjectType type, Type nativeType,
         IArchiveReadManager.RestoreObjectDelegate readDelegate)
     {
-        if (!registeredTypes.TryAdd(type, nativeType))
+        if (!registeredTypes.TryAdd(type, nativeType) || enumTypes.ContainsKey(type))
             throw new ArgumentException("Type is already registered");
 
         readDelegates[type] = readDelegate;
@@ -378,10 +432,21 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
     public void RegisterBoxableValueType(ArchiveObjectType type, Type nativeType,
         IArchiveReadManager.CreateStructInstanceDelegate createInstanceDelegate)
     {
-        if (!registeredTypes.TryAdd(type, nativeType))
+        if (!registeredTypes.TryAdd(type, nativeType) || enumTypes.ContainsKey(type))
             throw new ArgumentException("Type is already registered");
 
         readBoxedDelegates[type] = createInstanceDelegate;
+    }
+
+    public void RegisterEnumType(ArchiveObjectType type, ArchiveEnumType enumType, Type nativeType)
+    {
+        if (writeDelegates.ContainsKey(type) || readDelegates.ContainsKey(type) || registeredTypes.ContainsKey(type))
+            throw new ArgumentException("Can't register conflicting enum type with another read / write type");
+
+        enumTypes[type] = enumType;
+
+        registeredTypes.Add(type, nativeType);
+        registeredWriterTypes.Add(nativeType, type);
     }
 
     public void OnStartNewRead(ISArchiveReader reader)
@@ -425,6 +490,11 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
             }
 
             return instance;
+        }
+
+        if (enumTypes.TryGetValue(type, out var enumType))
+        {
+            return ReadBoxedEnum(reader, type, enumType, version);
         }
 
         throw new FormatException($"Unsupported object type for reading: {type}");

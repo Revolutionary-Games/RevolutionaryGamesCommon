@@ -27,6 +27,14 @@ public interface IArchiveWriteManager
     public void RegisterObjectType(ArchiveObjectType type, Type nativeType, ArchiveObjectDelegate writeDelegate);
 
     /// <summary>
+    ///   Registers a custom enum type.
+    /// </summary>
+    /// <param name="type">Type in the archive</param>
+    /// <param name="enumType">Size of the necessary data for the enum</param>
+    /// <param name="nativeType">The native C# side type of the enum (<c>typeof(T)</c>)</param>
+    public void RegisterEnumType(ArchiveObjectType type, ArchiveEnumType enumType, Type nativeType);
+
+    /// <summary>
     ///   Returns true if the object is already referenced.
     /// </summary>
     /// <returns>True if referenced already by <see cref="MarkStartOfReferenceObject"/></returns>
@@ -40,6 +48,8 @@ public interface IArchiveWriteManager
     public ArchiveObjectType GetObjectWriteType(Type type);
 
     public bool ObjectChildTypeRequiresExtendedType(Type type);
+
+    public bool WriteCustomEnumIfPossible<T>(ISArchiveWriter writer, T value);
 
     /// <summary>
     ///   Calculates the extended type data for a given type. Note that the calculated data can include special values

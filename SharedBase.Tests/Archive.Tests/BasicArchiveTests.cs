@@ -1,7 +1,9 @@
 namespace SharedBase.Tests.Archive.Tests;
 
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using SharedBase.Archive;
@@ -10,6 +12,13 @@ using Xunit;
 public class BasicArchiveTests
 {
     private readonly DefaultArchiveManager sharedManager = new(false);
+
+    private enum TestEnum
+    {
+        Value1 = 12,
+        Value2,
+        Value3,
+    }
 
     [Fact]
     public void BasicArchive_IntWritingAndReading()
@@ -488,5 +497,40 @@ public class BasicArchiveTests
 
         memoryStream.Seek(0, SeekOrigin.Begin);
         Assert.Throws<FormatException>(() => reader.ReadArchiveHeader(out _, out _, out _));
+    }
+
+    [Fact]
+    public void BasicArchive_CustomEnumRegistering()
+    {
+        var manager = new DefaultArchiveManager(true);
+        manager.RegisterEnumType(ArchiveObjectType.TestObjectType1, ArchiveEnumType.Int32, typeof(TestEnum));
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, manager);
+        var reader = new SArchiveMemoryReader(memoryStream, manager);
+
+        var value1 = TestEnum.Value1;
+        var value2 = TestEnum.Value2;
+
+        var instance = new Dictionary<TestEnum, int>
+        {
+            { value1, 1 },
+            { value2, 2 },
+        };
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+        writer.WriteObject(instance);
+        writer.WriteAnyRegisteredValueAsObject(value2);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var read = reader.ReadObjectOrNull<Dictionary<TestEnum, int>>();
+
+        Assert.NotNull(read);
+
+        // We just want to know equality and speed doesn't matter
+        // ReSharper disable once UsageOfDefaultStructEquality
+        Assert.True(instance.SequenceEqual(read));
+
+        Assert.Equal(value2, reader.ReadObjectOrNull<TestEnum>());
     }
 }

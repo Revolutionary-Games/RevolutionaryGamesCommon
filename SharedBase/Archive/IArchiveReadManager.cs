@@ -74,6 +74,8 @@ public interface IArchiveReadManager
     public void RegisterBoxableValueType(ArchiveObjectType type, Type nativeType,
         CreateStructInstanceDelegate createInstanceDelegate);
 
+    public void RegisterEnumType(ArchiveObjectType type, ArchiveEnumType enumType, Type nativeType);
+
     public void OnStartNewRead(ISArchiveReader reader);
     public void OnFinishRead(ISArchiveReader reader);
 
