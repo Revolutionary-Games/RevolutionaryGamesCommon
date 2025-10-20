@@ -668,6 +668,11 @@ public abstract class SArchiveReaderBase : ISArchiveReader
     public T? ReadDelegate<T>()
         where T : Delegate
     {
+        return (T?)ReadDelegate(typeof(T));
+    }
+
+    public Delegate? ReadDelegate(Type delegateType)
+    {
         ReadObjectHeader(out var type, out _, out var isNull, out var references, out var extended,
             out var version);
 
@@ -733,7 +738,7 @@ public abstract class SArchiveReaderBase : ISArchiveReader
                 $"Method {methodName} on type {classType} is not marked with ArchiveAllowedMethodAttribute");
         }
 
-        return (T)Delegate.CreateDelegate(typeof(T), target, method);
+        return Delegate.CreateDelegate(delegateType, target, method);
     }
 
     public Type? MapArchiveTypeToType(ArchiveObjectType type)

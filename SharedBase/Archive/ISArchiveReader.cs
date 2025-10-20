@@ -162,6 +162,12 @@ public interface ISArchiveReader
         where T : Delegate;
 
     /// <summary>
+    ///   Reads a delegate of an unknown compile-time type from the archive.
+    /// </summary>
+    /// <returns>The delegate or null</returns>
+    public Delegate? ReadDelegate(Type delegateType);
+
+    /// <summary>
     ///   Reads the archive header written by <see cref="ISArchiveWriter.WriteArchiveHeader"/>.
     /// </summary>
     public void ReadArchiveHeader(out int overallVersion, out string programIdentifier, out string programVersion);
