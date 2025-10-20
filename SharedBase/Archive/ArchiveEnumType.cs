@@ -6,4 +6,5 @@ namespace SharedBase.Archive;
 public enum ArchiveEnumType
 {
     Int32,
+    UInt16,
 }

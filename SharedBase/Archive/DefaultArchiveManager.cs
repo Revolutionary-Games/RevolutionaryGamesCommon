@@ -280,6 +280,9 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
             case ArchiveEnumType.Int32:
                 writer.Write((int)(object)value);
                 break;
+            case ArchiveEnumType.UInt16:
+                writer.Write((ushort)(object)value);
+                break;
             default:
                 throw new ArgumentOutOfRangeException();
         }
@@ -305,6 +308,9 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
             case ArchiveEnumType.Int32:
                 var intValue = reader.ReadInt32();
                 return (Enum)Enum.ToObject(nativeType, intValue);
+            case ArchiveEnumType.UInt16:
+                var uintValue = reader.ReadUInt16();
+                return (Enum)Enum.ToObject(nativeType, uintValue);
             default:
                 throw new FormatException($"Unimplemented enum read type: {enumType}");
         }
