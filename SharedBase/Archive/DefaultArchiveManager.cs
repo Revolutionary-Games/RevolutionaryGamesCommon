@@ -13,7 +13,6 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
     public const int ENUM_VERSION = 1;
 
     // Registered custom types
-    // TODO: do we need these write delegates?
     private readonly Dictionary<ArchiveObjectType, IArchiveWriteManager.ArchiveObjectDelegate> writeDelegates = new();
     private readonly Dictionary<ArchiveObjectType, IArchiveReadManager.RestoreObjectDelegate> readDelegates = new();
 
@@ -126,41 +125,87 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
         return objectIdPositions.ContainsKey(obj);
     }
 
-    public ArchiveObjectType GetObjectWriteType(Type type)
+    public bool TryGetObjectWriteType(Type type, out ArchiveObjectType archiveType)
     {
         // Check custom mapping first
-        if (registeredWriterTypes.TryGetValue(type, out var value))
-            return value;
+        if (registeredWriterTypes.TryGetValue(type, out archiveType))
+            return true;
 
         // TODO: should this automatically support types that implement IArchiveWritableVariable?
 
         // Return common types then
         if (type == typeof(byte))
-            return ArchiveObjectType.Byte;
+        {
+            archiveType = ArchiveObjectType.Byte;
+            return true;
+        }
+
         if (type == typeof(bool))
-            return ArchiveObjectType.Bool;
+        {
+            archiveType = ArchiveObjectType.Bool;
+            return true;
+        }
+
         if (type == typeof(short))
-            return ArchiveObjectType.Int16;
+        {
+            archiveType = ArchiveObjectType.Int16;
+            return true;
+        }
+
         if (type == typeof(int))
-            return ArchiveObjectType.Int32;
+        {
+            archiveType = ArchiveObjectType.Int32;
+            return true;
+        }
+
         if (type == typeof(long))
-            return ArchiveObjectType.Int64;
+        {
+            archiveType = ArchiveObjectType.Int64;
+            return true;
+        }
+
         if (type == typeof(ushort))
-            return ArchiveObjectType.UInt16;
+        {
+            archiveType = ArchiveObjectType.UInt16;
+            return true;
+        }
+
         if (type == typeof(uint))
-            return ArchiveObjectType.UInt32;
+        {
+            archiveType = ArchiveObjectType.UInt32;
+            return true;
+        }
+
         if (type == typeof(ulong))
-            return ArchiveObjectType.UInt64;
+        {
+            archiveType = ArchiveObjectType.UInt64;
+            return true;
+        }
+
         if (type == typeof(float))
-            return ArchiveObjectType.Float;
+        {
+            archiveType = ArchiveObjectType.Float;
+            return true;
+        }
+
         if (type == typeof(double))
-            return ArchiveObjectType.Double;
+        {
+            archiveType = ArchiveObjectType.Double;
+            return true;
+        }
+
         if (type == typeof(string))
-            return ArchiveObjectType.String;
+        {
+            archiveType = ArchiveObjectType.String;
+            return true;
+        }
 
         // Some generic containers want to contain just a pure object
         if (type == typeof(object))
-            return ArchiveObjectType.Object;
+        {
+            archiveType = ArchiveObjectType.Object;
+            return true;
+        }
 
         if (type.IsGenericType)
         {
@@ -168,27 +213,44 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
 
             if (baseType == typeof(List<>))
             {
-                return ArchiveObjectType.ExtendedList;
+                archiveType = ArchiveObjectType.ExtendedList;
+                return true;
             }
 
             if (baseType == typeof(Dictionary<,>))
             {
-                return ArchiveObjectType.ExtendedDictionary;
+                archiveType = ArchiveObjectType.ExtendedDictionary;
+                return true;
             }
 
             if (typeof(IList<>).IsAssignableFrom(baseType))
             {
-                return ArchiveObjectType.ExtendedList;
+                archiveType = ArchiveObjectType.ExtendedList;
+                return true;
             }
 
             if (typeof(ITuple).IsAssignableFrom(baseType))
             {
                 if (baseType.IsValueType)
-                    return ArchiveObjectType.ExtendedTuple;
+                {
+                    archiveType = ArchiveObjectType.ExtendedTuple;
+                }
+                else
+                {
+                    archiveType = ArchiveObjectType.ExtendedReferenceTuple;
+                }
 
-                return ArchiveObjectType.ExtendedReferenceTuple;
+                return true;
             }
         }
+
+        return false;
+    }
+
+    public ArchiveObjectType GetObjectWriteType(Type type)
+    {
+        if (TryGetObjectWriteType(type, out var archiveType))
+            return archiveType;
 
         throw new ArgumentException($"Type is not registered for archive writing: {type}");
     }
@@ -292,6 +354,24 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
         }
 
         return true;
+    }
+
+    public bool WriteIfRegisteredObjectType<T>(ISArchiveWriter writer, T value)
+    {
+        if (ReferenceEquals(value, null))
+            throw new ArgumentException("An object value may not be null here");
+
+        if (!TryGetObjectWriteType(typeof(T), out var type))
+            return false;
+
+        if (writeDelegates.TryGetValue(type, out var writeDelegate))
+        {
+            // TODO: would there be a way for struct types to avoid boxing here?
+            writeDelegate(writer, type, value);
+            return true;
+        }
+
+        return false;
     }
 
     public Enum ReadBoxedEnum(ISArchiveReader reader, ArchiveObjectType type, ArchiveEnumType enumType, ushort version)

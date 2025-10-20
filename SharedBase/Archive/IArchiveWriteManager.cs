@@ -47,9 +47,17 @@ public interface IArchiveWriteManager
     /// <returns>Type to use in the archive</returns>
     public ArchiveObjectType GetObjectWriteType(Type type);
 
+    public bool TryGetObjectWriteType(Type type, out ArchiveObjectType archiveType);
+
     public bool ObjectChildTypeRequiresExtendedType(Type type);
 
     public bool WriteCustomEnumIfPossible<T>(ISArchiveWriter writer, T value);
+
+    /// <summary>
+    ///   If a writer is registered for the given type, then it will be used to write the value.
+    /// </summary>
+    /// <returns>True if written</returns>
+    public bool WriteIfRegisteredObjectType<T>(ISArchiveWriter writer, T value);
 
     /// <summary>
     ///   Calculates the extended type data for a given type. Note that the calculated data can include special values

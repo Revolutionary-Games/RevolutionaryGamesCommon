@@ -651,6 +651,9 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
                 return;
         }
 
+        if (WriteManager.WriteIfRegisteredObjectType<T>(this, value))
+            return;
+
         throw new FormatException($"No known conversion for type {typeof(T).FullName} into an archive");
     }
 
