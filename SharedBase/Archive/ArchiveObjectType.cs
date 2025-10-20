@@ -32,6 +32,11 @@ public enum ArchiveObjectType : uint
     Dictionary,
     Delegate,
 
+    /// <summary>
+    ///   Used for storing generic containers that want to contain anything
+    /// </summary>
+    Object,
+
     // Only used in testing
     TestObjectType1 = 4094,
     TestObjectType2 = 4095,

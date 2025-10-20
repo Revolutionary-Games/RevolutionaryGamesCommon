@@ -158,6 +158,10 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
         if (type == typeof(string))
             return ArchiveObjectType.String;
 
+        // Some generic containers want to contain just a pure object
+        if (type == typeof(object))
+            return ArchiveObjectType.Object;
+
         if (type.IsGenericType)
         {
             var baseType = type.GetGenericTypeDefinition();
