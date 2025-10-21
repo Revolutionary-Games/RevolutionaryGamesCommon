@@ -116,6 +116,18 @@ public interface ISArchiveWriter
         where T : struct, IArchivable;
 
     /// <summary>
+    ///   Helper for writing structs. (but makes one copy of the struct for writing)
+    /// </summary>
+    /// <param name="obj">Object to write to this archive that is a struct</param>
+    /// <typeparam name="T">Type of the struct</typeparam>
+    public void WriteObject<T>(T obj)
+        where T : struct, IArchivable
+    {
+        var temp = obj;
+        WriteObject(ref temp);
+    }
+
+    /// <summary>
     ///   Writes the properties of an object rather than the entire object itself.
     /// </summary>
     /// <param name="obj">Object that can write its properties</param>

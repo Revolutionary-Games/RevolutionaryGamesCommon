@@ -212,7 +212,7 @@ public class ArchiveCallbackTests
             if (type != ArchiveObjectType.TestObjectType1)
                 throw new NotSupportedException();
 
-            ((CallableTestClass)obj).WriteToArchive(writer);
+            writer.WriteObject((CallableTestClass)obj);
         }
 
         public static CallableTestClass ReadFromArchive(ISArchiveReader reader, ushort version)
@@ -253,7 +253,7 @@ public class ArchiveCallbackTests
             if (type != ArchiveObjectType.TestObjectType1)
                 throw new NotSupportedException();
 
-            ((NonCallableTestClass)obj).WriteToArchive(writer);
+            writer.WriteObject((NonCallableTestClass)obj);
         }
 
         public static NonCallableTestClass ReadFromArchive(ISArchiveReader reader, ushort version)
@@ -287,7 +287,7 @@ public class ArchiveCallbackTests
             if (type != ArchiveObjectType.TestObjectType1)
                 throw new NotSupportedException();
 
-            ((MisconfiguredClass)obj).WriteToArchive(writer);
+            writer.WriteObject((MisconfiguredClass)obj);
         }
 
         public static MisconfiguredClass ReadFromArchive(ISArchiveReader reader, ushort version)

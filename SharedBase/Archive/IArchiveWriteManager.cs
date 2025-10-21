@@ -24,6 +24,27 @@ public interface IArchiveWriteManager
     /// </returns>
     public bool MarkStartOfReferenceObject(ISArchiveWriter writer, object obj);
 
+    /// <summary>
+    ///   Register a new custom type for writing in nested situations. Note that the callback must write an object
+    ///   header first!
+    /// </summary>
+    /// <remarks>
+    ///   <para>
+    ///     The recommended definition for the write method is as follows:
+    ///     <c>
+    ///       public static void WriteToArchive(ISArchiveWriter writer, ArchiveObjectType type, object obj)
+    ///       {
+    ///           if (type != (ArchiveObjectType)ThriveArchiveObjectType.ReproductionOrganelleData)
+    ///               throw new NotSupportedException();
+    ///
+    ///           writer.WriteObject((ReproductionOrganelleData)obj);
+    ///       }
+    ///     </c>
+    ///   </para>
+    /// </remarks>
+    /// <param name="type">Archive type</param>
+    /// <param name="nativeType">C# type to register</param>
+    /// <param name="writeDelegate">The delegate that is called to do the actual writing</param>
     public void RegisterObjectType(ArchiveObjectType type, Type nativeType, ArchiveObjectDelegate writeDelegate);
 
     /// <summary>

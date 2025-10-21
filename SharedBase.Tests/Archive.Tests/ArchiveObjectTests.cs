@@ -282,7 +282,7 @@ public class ArchiveObjectTests
             if (type != ArchiveObjectType.TestObjectType1)
                 throw new NotSupportedException();
 
-            ((TestObject4)obj).WriteToArchive(writer);
+            writer.WriteObject((TestObject4)obj);
         }
 
         public static IArchiveReadableVariable ConstructBoxedArchiveRead(ISArchiveReader reader,
@@ -338,7 +338,7 @@ public class ArchiveObjectTests
             if (type != ArchiveObjectType.TestObjectType2)
                 throw new NotSupportedException();
 
-            ((TestObject5)obj).WriteToArchive(writer);
+            writer.WriteObject((TestObject5)obj);
         }
 
         public void WriteToArchive(ISArchiveWriter writer)
@@ -394,7 +394,7 @@ public class ArchiveObjectTests
             if (type != ArchiveObjectType.TestObjectType1)
                 throw new NotSupportedException();
 
-            ((TestObject1)obj).WriteToArchive(writer);
+            writer.WriteObject((TestObject1)obj);
         }
 
         public static TestObject1 ReadFromArchive(ISArchiveReader reader, ushort version)
