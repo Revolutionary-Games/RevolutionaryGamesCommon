@@ -335,6 +335,27 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
         }
     }
 
+    public void WriteObject<T>(ISet<T> set)
+    {
+        // Need to match the generic set write in ArchiveBuiltInWriters
+        bool extended = WriteManager.ObjectChildTypeRequiresExtendedType(typeof(T));
+        var type = extended ? ArchiveObjectType.ExtendedSet : ArchiveObjectType.Set;
+        WriteObjectHeader(type, false, false, false, extended, COLLECTIONS_VERSION);
+
+        if (extended)
+            HandleExtendedTypeWrite(type, set.GetType());
+
+        WriteVariableLengthField32((uint)set.Count);
+
+        // No optimised sets for now
+        Write((uint)WriteManager.GetObjectWriteType(typeof(T)));
+        Write((byte)0);
+
+        // Causes an enumerator, but we'd need to have a bunch of extra overloads to avoid that
+        foreach (var item in set)
+            WriteAnyRegisteredValueAsObject(item);
+    }
+
     public void WriteUnknownList(IList list)
     {
         bool extended = WriteManager.ObjectChildTypeRequiresExtendedType(list.GetType());

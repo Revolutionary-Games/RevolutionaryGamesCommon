@@ -30,6 +30,8 @@ public enum ArchiveObjectType : uint
     List,
     Array,
     Dictionary,
+    Set,
+
     Delegate,
 
     /// <summary>
@@ -66,4 +68,6 @@ public enum ArchiveObjectType : uint
 
     ExtendedTuple = Tuple | ExtendedTypeFlag,
     ExtendedReferenceTuple = ReferenceTuple | ExtendedTypeFlag,
+
+    ExtendedSet = Set | ExtendedTypeFlag,
 }

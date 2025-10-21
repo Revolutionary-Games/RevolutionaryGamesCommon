@@ -631,7 +631,8 @@ public class ArchiveCollectionTests
 
         memoryStream.Seek(0, SeekOrigin.Begin);
 
-        var read = reader.ReadObjectOrNull<Dictionary<ArchiveObjectTests.TestObject1, ArchiveObjectTests.TestObject5>>();
+        var read = reader
+            .ReadObjectOrNull<Dictionary<ArchiveObjectTests.TestObject1, ArchiveObjectTests.TestObject5>>();
 
         Assert.NotNull(read);
         Assert.Equal(original.Count, read.Count);
@@ -935,7 +936,7 @@ public class ArchiveCollectionTests
     }
 
     [Fact]
-    public void ArchiveCollection_HashSetString()
+    public void ArchiveCollection_GenericCollectionWrite()
     {
         var memoryStream = new MemoryStream();
         var writer = new SArchiveMemoryWriter(memoryStream, manager);
@@ -954,6 +955,68 @@ public class ArchiveCollectionTests
         Assert.Equal(original.Count, read.Count);
 
         Assert.True(original.SetEquals(read));
+    }
+
+    [Fact]
+    public void ArchiveCollection_HashSetString()
+    {
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, manager);
+        var reader = new SArchiveMemoryReader(memoryStream, manager);
+
+        var original = new HashSet<string>
+            { "thing", "other", "thing2", "other stuff", "some final string that is a bit longer" };
+
+        writer.WriteObject(original);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var read = reader.ReadObjectOrNull<HashSet<string>>();
+
+        Assert.NotNull(read);
+        Assert.Equal(original.Count, read.Count);
+
+        Assert.True(original.SetEquals(read));
+    }
+
+    [Fact]
+    public void ArchiveCollection_DictionaryOfHashSets()
+    {
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, manager);
+        var reader = new SArchiveMemoryReader(memoryStream, manager);
+
+        var original = new Dictionary<int, HashSet<string>>
+        {
+            {
+                1,
+                ["thing", "other", "thing2", "other stuff", "some final string that is a bit longer"]
+            },
+            {
+                200,
+                ["and stuff"]
+            },
+            {
+                221,
+                []
+            },
+        };
+
+        writer.WriteObject(original);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var read = reader.ReadObjectOrNull<Dictionary<int, HashSet<string>>>();
+
+        Assert.NotNull(read);
+        Assert.Equal(original.Count, read.Count);
+        Assert.Contains(1, read);
+        Assert.Contains(200, read);
+        Assert.Contains(221, read);
+
+        Assert.True(original[1].SetEquals(read[1]));
+        Assert.True(original[200].SetEquals(read[200]));
+        Assert.True(original[221].SetEquals(read[221]));
     }
 
     [Fact]

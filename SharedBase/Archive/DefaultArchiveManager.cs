@@ -41,7 +41,10 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
     public DefaultArchiveManager(bool registerDefault = true)
     {
         if (registerDefault)
+        {
             IArchiveReadManager.RegisterDefaultObjectReaders(this);
+            IArchiveReadManager.RegisterDefaultObjectWriters(this);
+        }
     }
 
     public void OnStartNewWrite(ISArchiveWriter writer)
@@ -226,6 +229,14 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
             if (typeof(IList<>).IsAssignableFrom(baseType))
             {
                 archiveType = ArchiveObjectType.ExtendedList;
+                return true;
+            }
+
+            // ISet check fails here, we would need to use typeof(ISet<>).MakeGenericType(type.GetGenericArguments())
+            // to make it work, but that seems very wasteful. So this instead is special-cased for HashSet.
+            if (typeof(ISet<>).IsAssignableFrom(baseType) || typeof(HashSet<>).IsAssignableFrom(baseType))
+            {
+                archiveType = ArchiveObjectType.ExtendedSet;
                 return true;
             }
 

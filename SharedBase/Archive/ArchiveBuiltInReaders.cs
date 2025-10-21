@@ -431,6 +431,108 @@ public static class ArchiveBuiltInReaders
         return array;
     }
 
+    public static object ReadSet(ISArchiveReader reader, ushort version)
+    {
+        // Set reading is also very similar to list reading
+
+        if (version > SArchiveWriterBase.COLLECTIONS_VERSION)
+            throw new InvalidArchiveVersionException(version, SArchiveWriterBase.COLLECTIONS_VERSION);
+
+        var lengthRaw = reader.ReadVariableLengthField32();
+
+        if (lengthRaw > int.MaxValue)
+            throw new FormatException($"Set length is too large: {lengthRaw}");
+
+        var length = (int)lengthRaw;
+
+        var rawType = (ArchiveObjectType)reader.ReadUInt32();
+        var optimizedPrimitive = reader.ReadBool();
+
+        if (optimizedPrimitive)
+            throw new FormatException("Cannot read optimized sets");
+
+        var singleTypeArray = new Type[1];
+
+        var setItemType = reader.MapArchiveTypeToType(rawType) ??
+            throw new FormatException("Unregistered type for set items: " + rawType);
+
+        Type setType;
+
+        // If the set item type contains generic parameters, we need to resolve those somehow here
+        if (setItemType.IsGenericType)
+        {
+            // We need to figure out what the actual type is.
+            // This is really inefficient, but we'll try to read the items first and then figure out the type to use
+            var tempData = new object?[length];
+
+            for (int i = 0; i < length; ++i)
+            {
+                tempData[i] = reader.ReadObjectOrNull(out _);
+            }
+
+            var target = DetermineCommonObjectType(length, tempData);
+
+            singleTypeArray[0] = target;
+            setType = MakeGenericSet(singleTypeArray);
+
+            var set2 = CreateBaseSet(setType);
+
+            var addMethod = GetSetAddMethod(setType);
+
+            var addMethodData = new object?[1];
+
+            // Copy the data we already read
+            for (int i = 0; i < length; ++i)
+            {
+                try
+                {
+                    addMethodData[0] = tempData[i];
+                    addMethod.Invoke(set2, addMethodData);
+                }
+                catch (Exception e)
+                {
+                    throw new FormatException(
+                        $"Cannot copy item to set at index {i}, item is {tempData[i]?.GetType()} " +
+                        $"and the set is: {setType}", e);
+                }
+            }
+
+            if (GetGenericSetCount(set2, setType) != length)
+                throw new Exception("Failed to put the right number of items into a set");
+
+            return set2;
+        }
+
+        singleTypeArray[0] = setItemType;
+        setType = MakeGenericSet(singleTypeArray);
+
+        return CreateAndReadSetItems(reader, setType, length);
+    }
+
+    public static object ReadSetKnownType(ISArchiveReader reader, Type typeFromArchive, ushort version)
+    {
+        if (version > SArchiveWriterBase.COLLECTIONS_VERSION)
+            throw new InvalidArchiveVersionException(version, SArchiveWriterBase.COLLECTIONS_VERSION);
+
+        var lengthRaw = reader.ReadVariableLengthField32();
+
+        if (lengthRaw > int.MaxValue)
+            throw new FormatException($"Set length is too large: {lengthRaw}");
+
+        var length = (int)lengthRaw;
+
+        var rawType = (ArchiveObjectType)reader.ReadUInt32();
+        var optimizedPrimitive = reader.ReadBool();
+
+        if (optimizedPrimitive)
+            throw new FormatException("Cannot read optimized sets");
+
+        // TODO: checking if rawType matches typeFromArchive?
+        _ = rawType;
+
+        return CreateAndReadSetItems(reader, typeFromArchive, length);
+    }
+
     public static object ReadDictionary(ISArchiveReader reader, ushort version)
     {
         if (version > SArchiveWriterBase.COLLECTIONS_VERSION)
@@ -601,6 +703,46 @@ public static class ArchiveBuiltInReaders
         return list;
     }
 
+    private static object CreateAndReadSetItems(ISArchiveReader reader, Type setType, int length)
+    {
+        var set = CreateBaseSet(setType);
+
+        return ReadSetItems(reader, setType, length, set);
+    }
+
+    private static object ReadSetItems(ISArchiveReader reader, Type setType, int length, object set)
+    {
+        if (length < 1)
+            return set;
+
+        var addMethod = GetSetAddMethod(setType);
+
+        var addMethodData = new object?[1];
+
+        for (int i = 0; i < length; ++i)
+        {
+            // We need to assume the set will be able to take null values (as we don't know the actual final target)
+            var item = reader.ReadObjectOrNull(out var readItemType);
+
+            try
+            {
+                addMethodData[0] = item;
+                addMethod.Invoke(set, addMethodData);
+            }
+            catch (Exception e)
+            {
+                throw new FormatException(
+                    $"Cannot add read item to set at index {i}, item is {item?.GetType()} / {readItemType} " +
+                    $"and the set is: {setType}", e);
+            }
+        }
+
+        if (GetGenericSetCount(set, setType) != length)
+            throw new Exception("Failed to put the right number of items into a set");
+
+        return set;
+    }
+
     private static object ReadOptimizedList(ISArchiveReader reader, ArchiveObjectType rawType, int length)
     {
         switch (rawType)
@@ -684,7 +826,8 @@ public static class ArchiveBuiltInReaders
 
         for (int i = 0; i < length; ++i)
         {
-            var key = reader.ReadObjectOrNull(out var readKeyType) ?? throw new FormatException("Null key in dictionary");
+            var key = reader.ReadObjectOrNull(out var readKeyType) ??
+                throw new FormatException("Null key in dictionary");
             var value = reader.ReadObjectOrNull(out var readValueType);
 
             try
@@ -718,6 +861,9 @@ public static class ArchiveBuiltInReaders
 
     private static Type DetermineCommonObjectType(int length, object?[] tempData)
     {
+        if (length < 1)
+            throw new ArgumentException("Cannot determine common type for empty list");
+
         bool didSomething = false;
         Type? target = null;
         bool done = false;
@@ -802,6 +948,16 @@ public static class ArchiveBuiltInReaders
         singleObjectArray[0] = length;
         var list = (IList)constructor.Invoke(singleObjectArray);
         return list;
+    }
+
+    // There's no common set base class so we have to return object
+    private static object CreateBaseSet(Type setType)
+    {
+        // TODO: caching for the constructor?
+        var constructor = setType.GetConstructor([]) ??
+            throw new FormatException($"Set constructor not found for {setType}");
+
+        return constructor.Invoke([]);
     }
 
     private static Array InstantiateArray(Type type, int length)
@@ -951,6 +1107,18 @@ public static class ArchiveBuiltInReaders
         }
     }
 
+    // TODO: can these reflection calls for set be optimized (these are needed as there's no base set interface)?
+    private static MethodInfo GetSetAddMethod(Type setType)
+    {
+        return setType.GetMethod("Add") ?? throw new Exception($"Can't find Add method on type {setType}");
+    }
+
+    private static int GetGenericSetCount(object setObject, Type type)
+    {
+        return (int)(type.GetProperty("Count")?.GetValue(setObject) ??
+            throw new Exception($"No Count property on type: {type}"));
+    }
+
     private static bool IsMarkedAsNullable(FieldInfo fieldInfo)
     {
         lock (FieldNullabilityCache)
@@ -978,6 +1146,11 @@ public static class ArchiveBuiltInReaders
     private static Type MakeGenericList(Type[] argumentTypes)
     {
         return typeof(List<>).MakeGenericType(argumentTypes);
+    }
+
+    private static Type MakeGenericSet(Type[] argumentTypes)
+    {
+        return typeof(HashSet<>).MakeGenericType(argumentTypes);
     }
 
     private static Type MakeArrayType(Type elementType, int rank = 1)

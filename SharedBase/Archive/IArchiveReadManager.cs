@@ -34,6 +34,12 @@ public interface IArchiveReadManager
         manager.RegisterObjectType(ArchiveObjectType.ExtendedList, typeof(List<>),
             ArchiveBuiltInReaders.ReadListKnownType);
 
+        // Set reader
+        manager.RegisterObjectType(ArchiveObjectType.Set, typeof(HashSet<>),
+            ArchiveBuiltInReaders.ReadSet);
+        manager.RegisterObjectType(ArchiveObjectType.ExtendedSet, typeof(HashSet<>),
+            ArchiveBuiltInReaders.ReadSetKnownType);
+
         // Array reader
         manager.RegisterObjectType(ArchiveObjectType.Array, typeof(Array),
             ArchiveBuiltInReaders.ReadArray);
@@ -43,8 +49,12 @@ public interface IArchiveReadManager
             ArchiveBuiltInReaders.ReadDictionary);
         manager.RegisterObjectType(ArchiveObjectType.ExtendedDictionary, typeof(Dictionary<,>),
             ArchiveBuiltInReaders.ReadDictionaryKnownType);
+    }
 
-        // TODO extended list and dictionary variants that
+    static void RegisterDefaultObjectWriters(DefaultArchiveManager manager)
+    {
+        manager.RegisterObjectType(ArchiveObjectType.ExtendedSet, typeof(HashSet<>),
+            ArchiveBuiltInWriters.WriteUnknownSet);
     }
 
     /// <summary>

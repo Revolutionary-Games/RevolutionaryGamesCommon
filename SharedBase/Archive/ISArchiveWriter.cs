@@ -21,6 +21,8 @@ public interface ISArchiveWriter
 
     public static readonly Encoding Utf8NoSignature = new UTF8Encoding(false, true);
 
+    public IArchiveWriteManager WriteManager { get; }
+
     public void Write(byte value);
 
     public void Write(bool value)
@@ -170,6 +172,20 @@ public interface ISArchiveWriter
         }
     }
 
+    public void WriteObject<T>(ISet<T> set);
+
+    public void WriteObjectOrNull<T>(ISet<T>? set)
+    {
+        if (set == null)
+        {
+            WriteNullObject();
+        }
+        else
+        {
+            WriteObject(set);
+        }
+    }
+
     public void WriteObject<T>(T[] array);
 
     /// <summary>
@@ -198,6 +214,13 @@ public interface ISArchiveWriter
     ///   Writes a delegate. Note that the target method must have <see cref="ArchiveAllowedMethodAttribute"/>
     /// </summary>
     public void WriteDelegate(Delegate delegateInstance);
+
+    /// <summary>
+    ///   Writes an extended type. Must be written after an object header with the extended flag set.
+    /// </summary>
+    /// <param name="baseType">Base type of the object</param>
+    /// <param name="type">The actual type of the object used to generate the extended data</param>
+    public void HandleExtendedTypeWrite(ArchiveObjectType baseType, Type type);
 
     /// <summary>
     ///   Writes an overall header for an entire archive. Call before writing any objects to a new archive.
