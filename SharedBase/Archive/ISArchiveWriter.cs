@@ -227,6 +227,18 @@ public interface ISArchiveWriter
     /// </summary>
     public void WriteDelegate(Delegate delegateInstance);
 
+    public void WriteDelegateOrNull(Delegate? delegateInstance)
+    {
+        if (delegateInstance == null)
+        {
+            WriteNullObject();
+        }
+        else
+        {
+            WriteDelegate(delegateInstance);
+        }
+    }
+
     /// <summary>
     ///   Writes an extended type. Must be written after an object header with the extended flag set.
     /// </summary>
