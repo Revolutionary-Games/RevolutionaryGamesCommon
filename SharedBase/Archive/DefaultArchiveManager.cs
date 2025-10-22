@@ -47,7 +47,7 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
         }
     }
 
-    public void OnStartNewWrite(ISArchiveWriter writer)
+    public virtual void OnStartNewWrite(ISArchiveWriter writer)
     {
         nextObjectId = 1;
 
@@ -58,7 +58,7 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
         }
     }
 
-    public void OnFinishWrite(ISArchiveWriter writer)
+    public virtual void OnFinishWrite(ISArchiveWriter writer)
     {
         // Write actual IDs of used objects
         foreach (var (obj, id) in objectIds)

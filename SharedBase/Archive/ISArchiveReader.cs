@@ -7,6 +7,8 @@ public interface ISArchiveReader
     // This probably doesn't need async at this point as these are always used from background threads or when the
     // blocking is kind of necessary anyway
 
+    public IArchiveReadManager ReadManager { get; }
+
     public byte ReadInt8();
 
     public bool ReadBool()
