@@ -15,6 +15,18 @@ public class SArchiveMemoryReader : SArchiveReaderBase, IDisposable
     public SArchiveMemoryReader(MemoryStream stream, IArchiveReadManager readManager, bool closeStream = true) :
         base(readManager)
     {
+        // Ensure the buffer is visible
+        try
+        {
+            stream.GetBuffer();
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // To solve this a specific MemoryStream constructor needs to be used that sets the internal buffer as
+            // accessible to the world
+            throw new ArgumentException("Stream must have accessible internal buffer for efficiency");
+        }
+
         this.stream = stream;
         this.closeStream = closeStream;
     }
