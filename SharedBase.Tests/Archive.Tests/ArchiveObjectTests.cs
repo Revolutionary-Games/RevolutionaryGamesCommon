@@ -397,7 +397,7 @@ public class ArchiveObjectTests
             writer.WriteObject((TestObject1)obj);
         }
 
-        public static TestObject1 ReadFromArchive(ISArchiveReader reader, ushort version)
+        public static TestObject1 ReadFromArchive(ISArchiveReader reader, ushort version, int referenceId)
         {
             if (version is > SERIALIZATION_VERSION or <= 0)
                 throw new InvalidArchiveVersionException(version, SERIALIZATION_VERSION);
@@ -450,7 +450,7 @@ public class ArchiveObjectTests
         public override bool CanBeReferencedInArchive => true;
 
         // ReSharper disable once ArrangeModifiersOrder
-        public static new TestObject2 ReadFromArchive(ISArchiveReader reader, ushort version)
+        public static new TestObject2 ReadFromArchive(ISArchiveReader reader, ushort version, int referenceId)
         {
             if (version is > SERIALIZATION_VERSION or <= 0)
                 throw new InvalidArchiveVersionException(version, SERIALIZATION_VERSION);

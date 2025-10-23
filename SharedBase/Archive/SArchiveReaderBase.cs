@@ -443,7 +443,8 @@ public abstract class SArchiveReaderBase : ISArchiveReader
         // Try a manager read for custom registered structs
         try
         {
-            receiver = (T)ReadManager.ReadObject(this, type, extendedStorage.Slice(0, usedExtendedStorage), version);
+            receiver = (T)ReadManager.ReadObject(this, type, extendedStorage.Slice(0, usedExtendedStorage), version,
+                id);
         }
         catch (InvalidCastException e)
         {
@@ -595,10 +596,11 @@ public abstract class SArchiveReaderBase : ISArchiveReader
             }
         }
 
-        ReadManager.ReadObjectToVariable(ref obj, this, type, version);
+        ReadManager.ReadObjectToVariable(ref obj, this, type, version, id);
 
         if (id > 0)
         {
+            // TODO: does it make sense to potentially try to remember value types?
             // Need to remember the object
             if (!ReadManager.RememberObject(obj, id))
                 throw new FormatException($"Multiple objects with same ID: {id}");
@@ -904,7 +906,7 @@ public abstract class SArchiveReaderBase : ISArchiveReader
             try
             {
                 read = ReadManager.ReadObject(this, archiveObjectType, extendedStorage.Slice(0, usedExtendedStorage),
-                    version);
+                    version, id);
             }
             catch (Exception)
             {
@@ -945,12 +947,31 @@ public abstract class SArchiveReaderBase : ISArchiveReader
         return read;
     }
 
-    public void ReportObjectConstructorDone(object currentlyDeserializingObject)
+    public void ReportObjectConstructorDone(object currentlyDeserializingObject, int referenceId)
     {
+        // If the object was not referenced, then we don't need to register it
+        if (referenceId <= 0)
+        {
+#if DEBUG
+            if (processingObjectIds is { Count: > 0 } && processingObjectIds.Peek() <= 0)
+                throw new Exception("Object was not referenced, but is on the processing stack somehow");
+#endif
+            return;
+        }
+
         // Current object reports its constructor is done
         if (processingObjectIds is { Count: > 0 })
         {
             var id = processingObjectIds.Pop();
+
+            if (id != referenceId)
+            {
+                throw new FormatException(
+                    $"Object with ID {id} is not the one that is currently being constructed, likely a bug in " +
+                    $"ancestor reference configuration for: {currentlyDeserializingObject.GetType()} " +
+                    $"or a containing object");
+            }
+
             if (!ReadManager.RememberObject(currentlyDeserializingObject, id))
                 throw new FormatException($"Multiple objects with same ID: {id} (direct report)");
         }

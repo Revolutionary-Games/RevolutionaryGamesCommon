@@ -215,7 +215,7 @@ public class ArchiveCallbackTests
             writer.WriteObject((CallableTestClass)obj);
         }
 
-        public static CallableTestClass ReadFromArchive(ISArchiveReader reader, ushort version)
+        public static CallableTestClass ReadFromArchive(ISArchiveReader reader, ushort version, int referenceId)
         {
             if (version is > SERIALIZATION_VERSION or <= 0)
                 throw new InvalidArchiveVersionException(version, SERIALIZATION_VERSION);
@@ -256,7 +256,7 @@ public class ArchiveCallbackTests
             writer.WriteObject((NonCallableTestClass)obj);
         }
 
-        public static NonCallableTestClass ReadFromArchive(ISArchiveReader reader, ushort version)
+        public static NonCallableTestClass ReadFromArchive(ISArchiveReader reader, ushort version, int referenceId)
         {
             if (version is > SERIALIZATION_VERSION or <= 0)
                 throw new InvalidArchiveVersionException(version, SERIALIZATION_VERSION);
@@ -290,7 +290,7 @@ public class ArchiveCallbackTests
             writer.WriteObject((MisconfiguredClass)obj);
         }
 
-        public static MisconfiguredClass ReadFromArchive(ISArchiveReader reader, ushort version)
+        public static object ReadFromArchive(ISArchiveReader reader, ushort version, int referenceId)
         {
             if (version is > SERIALIZATION_VERSION or <= 0)
                 throw new InvalidArchiveVersionException(version, SERIALIZATION_VERSION);

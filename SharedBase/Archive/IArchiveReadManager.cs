@@ -10,13 +10,13 @@ using System.Runtime.CompilerServices;
 /// </summary>
 public interface IArchiveReadManager
 {
-    public delegate object RestoreObjectDelegate(ISArchiveReader reader, ushort version);
+    public delegate object RestoreObjectDelegate(ISArchiveReader reader, ushort version, int referenceId);
 
-    public delegate object AdvancedRestoreObjectDelegate(ISArchiveReader reader, Type typeFromArchive, ushort version);
+    public delegate object AdvancedRestoreObjectDelegate(ISArchiveReader reader, Type typeFromArchive, ushort version,
+        int referenceId);
 
     public delegate IArchiveReadableVariable CreateStructInstanceDelegate(ISArchiveReader reader,
-        out bool performedCustomRead,
-        ushort version);
+        out bool performedCustomRead, ushort version);
 
     public static void RegisterDefaultObjectReaders(IArchiveReadManager manager)
     {
@@ -104,11 +104,15 @@ public interface IArchiveReadManager
     /// <param name="type">Type of the object. Must have been previously registered.</param>
     /// <param name="extendedType">Extended type specification (empty if not used)</param>
     /// <param name="version">Version of the object from the header info</param>
+    /// <param name="referenceId">
+    ///   If the object was referenced, this is its ID for constructor run reporting. Otherwise, 0 or negative.
+    /// </param>
     /// <returns>The read object (throws on failure)</returns>
     public object ReadObject(ISArchiveReader reader, ArchiveObjectType type,
-        ReadOnlySpan<ArchiveObjectType> extendedType, ushort version);
+        ReadOnlySpan<ArchiveObjectType> extendedType, ushort version, int referenceId);
 
-    public void ReadObjectToVariable<T>(ref T receiver, ISArchiveReader reader, ArchiveObjectType type, ushort version)
+    public void ReadObjectToVariable<T>(ref T receiver, ISArchiveReader reader, ArchiveObjectType type, ushort version,
+        int referenceId)
         where T : IArchiveReadableVariable;
 
     /// <summary>

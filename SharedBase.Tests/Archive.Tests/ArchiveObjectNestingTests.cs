@@ -79,14 +79,14 @@ public class ArchiveObjectNestingTests
 
         public bool CanBeReferencedInArchive => true;
 
-        public static TestObject1 ReadFromArchive(ISArchiveReader reader, ushort version)
+        public static TestObject1 ReadFromArchive(ISArchiveReader reader, ushort version, int referenceId)
         {
             if (version is > SERIALIZATION_VERSION or <= 0)
                 throw new InvalidArchiveVersionException(version, SERIALIZATION_VERSION);
 
             var instance = new TestObject1(reader.ReadInt32());
 
-            reader.ReportObjectConstructorDone(instance);
+            reader.ReportObjectConstructorDone(instance, referenceId);
 
             instance.Value2 = reader.ReadObjectOrNull<ChildObject>();
             instance.Value3 = reader.ReadBool();
@@ -153,13 +153,13 @@ public class ArchiveObjectNestingTests
 
         public bool CanBeReferencedInArchive => true;
 
-        public static ChildObject ReadFromArchive(ISArchiveReader reader, ushort version)
+        public static ChildObject ReadFromArchive(ISArchiveReader reader, ushort version, int referenceId)
         {
             if (version is > SERIALIZATION_VERSION or <= 0)
                 throw new InvalidArchiveVersionException(version, SERIALIZATION_VERSION);
 
             var instance = new ChildObject(null!, null!, -1);
-            reader.ReportObjectConstructorDone(instance);
+            reader.ReportObjectConstructorDone(instance, referenceId);
 
             instance.Parent = reader.ReadObjectOrNull<TestObject1>() ?? throw new NullArchiveObjectException();
             instance.Name = reader.ReadString() ?? throw new NullArchiveObjectException();

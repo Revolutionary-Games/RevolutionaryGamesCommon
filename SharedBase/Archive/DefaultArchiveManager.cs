@@ -107,7 +107,7 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
                 throw new InvalidOperationException("Cannot write object and its reference out of order");
 #endif
 
-            // But write the ID that will be used instead of this object
+            // Write the ID that will be used instead of this object
             writer.Write(id);
 
             return true;
@@ -568,17 +568,17 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
     }
 
     public object ReadObject(ISArchiveReader reader, ArchiveObjectType type,
-        ReadOnlySpan<ArchiveObjectType> extendedType, ushort version)
+        ReadOnlySpan<ArchiveObjectType> extendedType, ushort version, int referenceId)
     {
         if (readDelegatesAdvanced.TryGetValue(type, out var advancedReadDelegate))
         {
             return advancedReadDelegate(reader,
                 ResolveExtendedObjectType(type, extendedType, extendedType.Length, out _),
-                version);
+                version, referenceId);
         }
 
         if (readDelegates.TryGetValue(type, out var readDelegate))
-            return readDelegate(reader, version);
+            return readDelegate(reader, version, referenceId);
 
         if (readBoxedDelegates.TryGetValue(type, out var readBoxedDelegate))
         {
@@ -601,7 +601,8 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
         throw new FormatException($"Unsupported object type for reading: {type}");
     }
 
-    public void ReadObjectToVariable<T>(ref T receiver, ISArchiveReader reader, ArchiveObjectType type, ushort version)
+    public void ReadObjectToVariable<T>(ref T receiver, ISArchiveReader reader, ArchiveObjectType type, ushort version,
+        int referenceId)
         where T : IArchiveReadableVariable
     {
         // TODO: support derived types
@@ -613,6 +614,9 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
 
     public bool RememberObject(object obj, int id)
     {
+        if (id <= 0)
+            throw new ArgumentException("Cannot remember an invalid ID");
+
         return loadedObjectReferences.TryAdd(id, obj);
     }
 

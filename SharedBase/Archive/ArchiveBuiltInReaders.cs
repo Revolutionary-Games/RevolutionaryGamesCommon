@@ -11,7 +11,7 @@ public static class ArchiveBuiltInReaders
 {
     private static readonly Dictionary<FieldInfo, bool> FieldNullabilityCache = new();
 
-    public static object ReadReferenceTuple(ISArchiveReader reader, ushort version)
+    public static object ReadReferenceTuple(ISArchiveReader reader, ushort version, int referenceId)
     {
         if (version > SArchiveWriterBase.TUPLE_VERSION)
             throw new InvalidArchiveVersionException(version, SArchiveWriterBase.TUPLE_VERSION);
@@ -36,7 +36,8 @@ public static class ArchiveBuiltInReaders
         return tuple;
     }
 
-    public static object ReadReferenceTupleKnownType(ISArchiveReader reader, Type typeFromArchive, ushort version)
+    public static object ReadReferenceTupleKnownType(ISArchiveReader reader, Type typeFromArchive, ushort version,
+        int referenceId)
     {
         if (version > SArchiveWriterBase.TUPLE_VERSION)
             throw new InvalidArchiveVersionException(version, SArchiveWriterBase.TUPLE_VERSION);
@@ -95,7 +96,8 @@ public static class ArchiveBuiltInReaders
         return tuple;
     }
 
-    public static object ReadValueTupleBoxedKnownType(ISArchiveReader reader, Type typeFromArchive, ushort version)
+    public static object ReadValueTupleBoxedKnownType(ISArchiveReader reader, Type typeFromArchive, ushort version,
+        int referenceId)
     {
         if (version > SArchiveWriterBase.TUPLE_VERSION)
             throw new InvalidArchiveVersionException(version, SArchiveWriterBase.TUPLE_VERSION);
@@ -168,7 +170,7 @@ public static class ArchiveBuiltInReaders
         ReadTupleValue(ref receiver.Item4, reader, 3, receiverType);
     }
 
-    public static object ReadList(ISArchiveReader reader, ushort version)
+    public static object ReadList(ISArchiveReader reader, ushort version, int referenceId)
     {
         // Note that this is very similar to the array, but at key points different, still it seems quite hard to
         // combine these two methods into one generic base, so these are separate
@@ -247,7 +249,8 @@ public static class ArchiveBuiltInReaders
         return CreateAndReadListItems(reader, singleTypeArray, listType, length);
     }
 
-    public static object ReadListKnownType(ISArchiveReader reader, Type typeFromArchive, ushort version)
+    public static object ReadListKnownType(ISArchiveReader reader, Type typeFromArchive, ushort version,
+        int referenceId)
     {
         if (version > SArchiveWriterBase.COLLECTIONS_VERSION)
             throw new InvalidArchiveVersionException(version, SArchiveWriterBase.COLLECTIONS_VERSION);
@@ -275,7 +278,7 @@ public static class ArchiveBuiltInReaders
         return CreateAndReadListItems(reader, singleTypeArray, typeFromArchive, length);
     }
 
-    public static object ReadArray(ISArchiveReader reader, ushort version)
+    public static object ReadArray(ISArchiveReader reader, ushort version, int referenceId)
     {
         // Note that this is very similar to the list, but at key points different, still it seems quite hard to
         // combine these two methods into one generic base, so these are separate
@@ -431,7 +434,7 @@ public static class ArchiveBuiltInReaders
         return array;
     }
 
-    public static object ReadSet(ISArchiveReader reader, ushort version)
+    public static object ReadSet(ISArchiveReader reader, ushort version, int referenceId)
     {
         // Set reading is also very similar to list reading
 
@@ -509,7 +512,7 @@ public static class ArchiveBuiltInReaders
         return CreateAndReadSetItems(reader, setType, length);
     }
 
-    public static object ReadSetKnownType(ISArchiveReader reader, Type typeFromArchive, ushort version)
+    public static object ReadSetKnownType(ISArchiveReader reader, Type typeFromArchive, ushort version, int referenceId)
     {
         if (version > SArchiveWriterBase.COLLECTIONS_VERSION)
             throw new InvalidArchiveVersionException(version, SArchiveWriterBase.COLLECTIONS_VERSION);
@@ -533,7 +536,7 @@ public static class ArchiveBuiltInReaders
         return CreateAndReadSetItems(reader, typeFromArchive, length);
     }
 
-    public static object ReadDictionary(ISArchiveReader reader, ushort version)
+    public static object ReadDictionary(ISArchiveReader reader, ushort version, int referenceId)
     {
         if (version > SArchiveWriterBase.COLLECTIONS_VERSION)
             throw new InvalidArchiveVersionException(version, SArchiveWriterBase.COLLECTIONS_VERSION);
@@ -610,7 +613,8 @@ public static class ArchiveBuiltInReaders
         return CreateAndReadDictionaryItems(reader, dictionaryType, length);
     }
 
-    public static object ReadDictionaryKnownType(ISArchiveReader reader, Type typeFromArchive, ushort version)
+    public static object ReadDictionaryKnownType(ISArchiveReader reader, Type typeFromArchive, ushort version,
+        int referenceId)
     {
         if (version > SArchiveWriterBase.COLLECTIONS_VERSION)
             throw new InvalidArchiveVersionException(version, SArchiveWriterBase.COLLECTIONS_VERSION);

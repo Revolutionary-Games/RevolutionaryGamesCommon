@@ -183,7 +183,7 @@ public interface ISArchiveReader
     ///   Used to support objects referring to their ancestors.
     ///   Absolutely do not call if the object is not marked as an allowed reference!
     /// </summary>
-    public void ReportObjectConstructorDone(object currentlyDeserializingObject);
+    public void ReportObjectConstructorDone(object currentlyDeserializingObject, int referenceId);
 
     public Type? MapArchiveTypeToType(ArchiveObjectType type);
 }
