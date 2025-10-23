@@ -624,6 +624,8 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
         // Return common types
         switch (type)
         {
+            case ArchiveObjectType.Object:
+                return typeof(object);
             case ArchiveObjectType.Byte:
                 return typeof(byte);
             case ArchiveObjectType.Bool:
