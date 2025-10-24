@@ -375,6 +375,7 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
         if (!TryGetObjectWriteType(typeof(T), out var type))
             return false;
 
+        // As we do not write a header, the writing delegate is responsible for that and handling reference objects
         if (writeDelegates.TryGetValue(type, out var writeDelegate))
         {
             // TODO: would there be a way for struct types to avoid boxing here?

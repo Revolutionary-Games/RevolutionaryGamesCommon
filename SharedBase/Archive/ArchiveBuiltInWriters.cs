@@ -44,6 +44,7 @@ public static class ArchiveBuiltInWriters
             type = ArchiveObjectType.Set;
         }
 
+        // Object header must be the first thing written by this custom writer
         writer.WriteObjectHeader(type, false, false, false, extended, SArchiveWriterBase.COLLECTIONS_VERSION);
 
         if (extended)
