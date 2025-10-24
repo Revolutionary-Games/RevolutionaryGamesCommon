@@ -63,9 +63,9 @@ public interface ISArchiveWriter
     /// <param name="canBeReference">True if the object uses archive object references</param>
     /// <param name="isNull">True if the object instance is null (this prevents full version writing)</param>
     /// <param name="usesExistingReference">
-    ///     If true and <see cref="canBeReference"/> then marks that there should be a valid object reference back to
-    ///     an earlier object after this header.
-    ///     This is used for programming error detection when things are misconfigured.
+    ///   If true and <see cref="canBeReference"/> then marks that there should be a valid object reference back to
+    ///   an earlier object after this header.
+    ///   This is used for programming error detection when things are misconfigured.
     /// </param>
     /// <param name="extendedType">
     ///   Must be set to true when <see cref="type"/> is an extended type. The caller must then immediately afterwards
@@ -80,8 +80,8 @@ public interface ISArchiveWriter
     /// </summary>
     /// <param name="baseType">Base type, which is not used for anything except double-checking</param>
     /// <param name="extendedTypes">
-    ///     The extended types of the object,
-    ///     as calculated by <see cref="IArchiveWriteManager.CalculateExtendedObjectType"/>
+    ///   The extended types of the object,
+    ///   as calculated by <see cref="IArchiveWriteManager.CalculateExtendedObjectType"/>
     /// </param>
     /// <param name="count">How many elements are valid in <see cref="extendedTypes"/></param>
     public void WriteExtendedObjectType(ArchiveObjectType baseType, Span<ArchiveObjectType> extendedTypes, int count);

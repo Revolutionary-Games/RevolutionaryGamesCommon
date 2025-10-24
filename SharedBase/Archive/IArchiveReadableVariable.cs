@@ -6,9 +6,10 @@ namespace SharedBase.Archive;
 public interface IArchiveReadableVariable : IArchivable
 {
     /// <summary>
-    ///   Called to deserialize a "new" instance of this type from an archive. The current instance should be replaced with the new one.
+    ///   Called to deserialize a "new" instance of this type from an archive.
+    ///   The current instance should be replaced with the new one.
     /// </summary>
     /// <param name="reader">Reader to read from</param>
-    /// <param name="version">Version specified in the archive data, should be checked to match supported</param>
+    /// <param name="version">Version specified in the archive data should be checked to match supported</param>
     public void ReadFromArchive(ISArchiveReader reader, ushort version);
 }

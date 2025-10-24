@@ -36,7 +36,6 @@ public interface IArchiveWriteManager
     ///       {
     ///           if (type != (ArchiveObjectType)ThriveArchiveObjectType.ReproductionOrganelleData)
     ///               throw new NotSupportedException();
-    ///
     ///           writer.WriteObject((ReproductionOrganelleData)obj);
     ///       }
     ///     </c>

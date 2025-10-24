@@ -524,7 +524,8 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
             if (registeredTypes[type] != nativeType)
             {
                 throw new ArgumentException(
-                    "Registering an advanced reader for a type that is already registered with a different native backing type");
+                    "Registering an advanced reader for a type that is already registered with a " +
+                    "different native backing type");
             }
         }
 

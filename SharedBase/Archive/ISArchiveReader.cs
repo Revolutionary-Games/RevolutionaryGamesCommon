@@ -70,8 +70,8 @@ public interface ISArchiveReader
     /// </summary>
     /// <param name="baseType">Base type from the header (maybe used for custom operations in the future)</param>
     /// <param name="extendedStorage">
-    ///     Where the data is placed, this needs to be enough storage for any reasonable extended type (
-    ///     <see cref="ISArchiveWriter.ReasonableMaxExtendedType"/>)
+    ///   Where the data is placed, this needs to be enough storage for any reasonable extended type (
+    ///   <see cref="ISArchiveWriter.ReasonableMaxExtendedType"/>)
     /// </param>
     /// <param name="readElements">Returns how many elements were actually used</param>
     public void ReadExtendedObjectType(ArchiveObjectType baseType, Span<ArchiveObjectType> extendedStorage,
