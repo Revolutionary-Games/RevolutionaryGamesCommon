@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -21,11 +22,13 @@ public class RewriteTool : CodeCheck
 {
     public const string NoModifierPlacementType = "no modifier";
 
+    private const string StartFileEnumerateFolder = "./";
+
     /// <summary>
     ///   Basic order of class members, see <see cref="Rewriter.MemberOrderComparer"/> for the full implementation
     ///   of the rules
     /// </summary>
-    public static readonly IReadOnlyCollection<string> ModifiersOrder =
+    private static readonly IReadOnlyCollection<string> ModifiersOrder =
     [
         "public",
         NoModifierPlacementType,
@@ -41,7 +44,7 @@ public class RewriteTool : CodeCheck
     /// <summary>
     ///   This specifies the order of these types of members that can be contained in a class
     /// </summary>
-    public static readonly IReadOnlyCollection<SyntaxKind> SyntaxTypeOrder =
+    private static readonly IReadOnlyCollection<SyntaxKind> SyntaxTypeOrder =
     [
         SyntaxKind.FieldDeclaration,
         SyntaxKind.ConstructorDeclaration,
@@ -65,7 +68,7 @@ public class RewriteTool : CodeCheck
     ///   Orders some methods specifically based on their names. Lower values are first.
     ///   0 is default when nothing matches.
     /// </summary>
-    public static readonly IReadOnlyCollection<(Regex Regex, int Order)> OrderOfMethodNames =
+    private static readonly IReadOnlyCollection<(Regex Regex, int Order)> OrderOfMethodNames =
     [
         (new Regex("^_Ready"), -100),
         (new Regex("^ResolveNodeReferences"), -99),
@@ -86,7 +89,35 @@ public class RewriteTool : CodeCheck
         (new Regex("^ToString"), 100),
     ];
 
-    private const string StartFileEnumerateFolder = "./";
+    // Special ruleset to allow grouping static read callbacks with write methods next to each other
+    private static readonly IReadOnlyCollection<(Regex Regex, int Order)> OrderOfMethodNamesWithStaticArchive =
+    [
+        (new Regex("^WriteToArchive"), -102),
+        (new Regex("^ReadFromArchive"), -102),
+        (new Regex("^_Ready"), -100),
+        (new Regex("^ResolveNodeReferences"), -99),
+        (new Regex("^ResolveDerivedTypeNodeReferences"), -98),
+        (new Regex("^_EnterTree"), -95),
+        (new Regex("^_ExitTree"), -94),
+        (new Regex("^Init"), -93),
+        (new Regex("^_(Physics)?Process"), -7),
+        (new Regex("^_Notification"), -3),
+        (new Regex("^_Draw"), -2),
+        (new Regex("^_.*"), -1),
+
+        (new Regex("^Equals?"), 40),
+        (new Regex("^Clone.*"), 50),
+        (new Regex("^Dispose"), 90),
+        (new Regex("^Get(Visual)?HashCode"), 95),
+        (new Regex("(Description|Detail)String$"), 99),
+        (new Regex("^ToString"), 100),
+    ];
+
+    private static readonly Regex StaticWriteMethodRegex =
+        new(@"\sstatic\s.*(WriteToArchive\(|ReadFromArchive\()", RegexOptions.Compiled);
+
+    private static readonly Regex NonStaticWriteMethodRegex =
+        new(@"\s(WriteToArchive\(|ReadFromArchive\()", RegexOptions.Compiled);
 
     public override async Task Run(CodeCheckRun runData, CancellationToken cancellationToken)
     {
@@ -158,10 +189,14 @@ public class RewriteTool : CodeCheck
         private readonly SourceText sourceText;
         private bool inInterface;
 
+        private bool usesArchiveMethods;
+
         public Rewriter(CodeCheckRun runData, SourceText sourceText)
         {
             this.runData = runData;
             this.sourceText = sourceText;
+
+            usesArchiveMethods = DetectStaticArchive(sourceText);
         }
 
         public override SyntaxNode? VisitInterfaceDeclaration(InterfaceDeclarationSyntax node)
@@ -226,7 +261,7 @@ public class RewriteTool : CodeCheck
         {
             // Because the SyntaxList builder modifies the node identities, we need to create this temporary list
             // to be able to compare if the order changed or not
-            var newOrder = node.Members.Order(new MemberOrderComparer()).ToList();
+            var newOrder = node.Members.Order(new MemberOrderComparer(usesArchiveMethods)).ToList();
 
             // Skip any further processing if the order is the same
             if (newOrder.SequenceEqual(node.Members))
@@ -325,6 +360,33 @@ public class RewriteTool : CodeCheck
             }
         }
 
+        private static bool DetectStaticArchive(SourceText source)
+        {
+            bool hasStaticWriteMethods = false;
+            bool hasNonStaticWriteMethods = false;
+
+            // TODO: find a more efficient way to get the text?
+            foreach (var line in source.Lines)
+            {
+                if (StaticWriteMethodRegex.IsMatch(line.ToString()))
+                {
+                    hasStaticWriteMethods = true;
+
+                    if (hasStaticWriteMethods && hasNonStaticWriteMethods)
+                        return true;
+                }
+                else if (NonStaticWriteMethodRegex.IsMatch(line.ToString()))
+                {
+                    hasNonStaticWriteMethods = true;
+
+                    if (hasStaticWriteMethods && hasNonStaticWriteMethods)
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
         private string GetLocation(TextSpan span)
         {
             return $"Line {sourceText.Lines.GetLinePosition(span.Start).Line + 1}";
@@ -356,6 +418,13 @@ public class RewriteTool : CodeCheck
 
         private class MemberOrderComparer : IComparer<MemberDeclarationSyntax>
         {
+            private readonly bool hasStaticWriteMethods;
+
+            public MemberOrderComparer(bool hasStaticWriteMethods)
+            {
+                this.hasStaticWriteMethods = hasStaticWriteMethods;
+            }
+
             public int Compare(MemberDeclarationSyntax? x, MemberDeclarationSyntax? y)
             {
                 if (x == null || y == null)
@@ -442,8 +511,10 @@ public class RewriteTool : CodeCheck
                     var xName = xMethod.Identifier.ToString();
                     var yName = yMethod.Identifier.ToString();
 
-                    int xPriority = OrderOfMethodNames.FirstOrDefault(t => t.Regex.IsMatch(xName), (null!, 0)).Order;
-                    int yPriority = OrderOfMethodNames.FirstOrDefault(t => t.Regex.IsMatch(yName), (null!, 0)).Order;
+                    int xPriority = GetActiveNames(xStatic).FirstOrDefault(t => t.Regex.IsMatch(xName), (null!, 0))
+                        .Order;
+                    int yPriority = GetActiveNames(yStatic).FirstOrDefault(t => t.Regex.IsMatch(yName), (null!, 0))
+                        .Order;
 
                     if (xPriority < yPriority)
                         return -1;
@@ -454,6 +525,17 @@ public class RewriteTool : CodeCheck
 
                 // Everything we check for is equal
                 return 0;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            private IReadOnlyCollection<(Regex Regex, int Order)> GetActiveNames(bool currentIsStatic)
+            {
+                // To allow free ordering of the static methods around the more forced other category, this check is
+                // like this to enable the extra weight rules
+                if (hasStaticWriteMethods && !currentIsStatic)
+                    return OrderOfMethodNamesWithStaticArchive;
+
+                return OrderOfMethodNames;
             }
         }
     }
