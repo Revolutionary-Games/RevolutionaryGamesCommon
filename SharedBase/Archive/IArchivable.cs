@@ -11,6 +11,7 @@ public interface IArchivable
     ///   Deserializing objects should, if at all possible, handle older versions.
     /// </summary>
     public ushort CurrentArchiveVersion { get; }
+
     public ArchiveObjectType ArchiveObjectType { get; }
 
     /// <summary>
