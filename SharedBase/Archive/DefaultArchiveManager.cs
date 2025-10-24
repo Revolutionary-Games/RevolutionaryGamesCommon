@@ -558,7 +558,7 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
         loadedObjectReferences.Clear();
     }
 
-    public void OnFinishRead(ISArchiveReader reader)
+    public virtual void OnFinishRead(ISArchiveReader reader)
     {
         loadedObjectReferences.Clear();
     }
