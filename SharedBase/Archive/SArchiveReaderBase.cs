@@ -940,8 +940,8 @@ public abstract class SArchiveReaderBase : ISArchiveReader
                         $"Another object has stolen the ID {id}, this is likely a bug in ancestor " +
                         $"reference configuration for: {read.GetType()}");
                 }
-#endif
             }
+#endif
         }
 
         return read;
