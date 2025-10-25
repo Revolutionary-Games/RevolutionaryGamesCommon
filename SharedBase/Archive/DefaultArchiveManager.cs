@@ -253,6 +253,10 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
 
                 return true;
             }
+
+            // If the base type is registered, return that
+            if (registeredWriterTypes.TryGetValue(baseType, out archiveType))
+                return true;
         }
 
         return false;
