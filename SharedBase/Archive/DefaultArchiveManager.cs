@@ -346,7 +346,9 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
         if (ReferenceEquals(value, null))
             throw new ArgumentException("An enum value cannot be null");
 
-        if (!registeredWriterTypes.TryGetValue(typeof(T), out var type))
+        // For some reason when passed actual enum values here, T can end up being Object, so we use GetType instead
+        // if (!registeredWriterTypes.TryGetValue(typeof(T), out var type))
+        if (!registeredWriterTypes.TryGetValue(value.GetType(), out var type))
             return false;
 
         if (!enumTypes.TryGetValue(type, out var enumType))
