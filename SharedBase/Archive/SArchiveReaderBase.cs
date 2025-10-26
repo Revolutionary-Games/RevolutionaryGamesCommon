@@ -5,12 +5,15 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 /// <summary>
 ///   Abstract base with common methods for archive readers
 /// </summary>
 public abstract class SArchiveReaderBase : ISArchiveReader
 {
+    protected StringBuilder? multiPartReader;
+
     private const int BUFFER_SIZE = 1024;
 
     private byte[]? scratch;
@@ -96,39 +99,92 @@ public abstract class SArchiveReaderBase : ISArchiveReader
 
     public virtual string? ReadString()
     {
-        // First the length of the string
-        var length = ReadVariableLengthField32();
+        // Read header
+        var length = ReadStringHeader(out var isNull, out var multipleChunks);
 
-        // Check null marker first
-        if (length == 0)
+        if (isNull)
             return null;
 
-        length >>= 1;
-
-        if (length == 0)
+        if (length < 1)
             return string.Empty;
 
-        var lengthAsInt = (int)length;
-
-        if (lengthAsInt <= BUFFER_SIZE)
+        if (!multipleChunks && length <= BUFFER_SIZE)
         {
             scratch ??= new byte[BUFFER_SIZE];
 
-            ReadBytes(scratch.AsSpan(0, lengthAsInt));
-            return ISArchiveWriter.Utf8NoSignature.GetString(scratch, 0, lengthAsInt);
+            ReadBytes(scratch.AsSpan(0, length));
+            return ISArchiveWriter.Utf8NoSignature.GetString(scratch, 0, length);
         }
 
         var pool = ArrayPool<byte>.Shared;
-        byte[] buffer = pool.Rent(lengthAsInt);
-        try
+
+        if (!multipleChunks)
         {
-            ReadBytes(buffer.AsSpan(0, lengthAsInt));
-            return ISArchiveWriter.Utf8NoSignature.GetString(buffer, 0, lengthAsInt);
+            if (length > BUFFER_SIZE * 8)
+                throw new FormatException($"String length in one buffer would be too much: {length}");
+
+            var buffer = pool.Rent(length);
+            try
+            {
+                ReadBytes(buffer.AsSpan(0, length));
+                return ISArchiveWriter.Utf8NoSignature.GetString(buffer, 0, length);
+            }
+            finally
+            {
+                pool.Return(buffer);
+            }
         }
-        finally
+
+        // Multiple chunks
+        multiPartReader ??= new StringBuilder();
+
+        int count = 0;
+        while (true)
         {
-            pool.Return(buffer);
+            var chunkLength = ReadUInt16();
+
+            // Check for the end of the string
+            if (chunkLength == 0)
+                break;
+
+            ++count;
+            if (count > 1000)
+                throw new FormatException("String is too many parts to read");
+
+            if (chunkLength <= BUFFER_SIZE)
+            {
+                scratch ??= new byte[BUFFER_SIZE];
+
+                ReadBytes(scratch.AsSpan(0, chunkLength));
+                multiPartReader.Append(ISArchiveWriter.Utf8NoSignature.GetString(scratch, 0, chunkLength));
+            }
+            else
+            {
+                byte[] buffer = pool.Rent(chunkLength);
+                try
+                {
+                    ReadBytes(buffer.AsSpan(0, chunkLength));
+                    multiPartReader.Append(ISArchiveWriter.Utf8NoSignature.GetString(buffer, 0, chunkLength));
+                }
+                finally
+                {
+                    pool.Return(buffer);
+                }
+            }
         }
+
+        var result = multiPartReader.ToString();
+        multiPartReader.Clear();
+        return result;
+    }
+
+    public int ReadStringHeader(out bool isNull, out bool multipleChunks)
+    {
+        var raw = ReadInt8();
+
+        isNull = (raw & 0x1) == 0;
+        multipleChunks = (raw & 0x2) != 0;
+        return raw >> 2;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

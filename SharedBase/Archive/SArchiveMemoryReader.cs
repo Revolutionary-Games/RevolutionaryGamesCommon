@@ -2,6 +2,7 @@
 
 using System;
 using System.IO;
+using System.Text;
 
 /// <summary>
 ///   Memory-buffer-based archive for reading. This is separate from <see cref="SArchiveReadStream"/> as this has
@@ -44,31 +45,57 @@ public class SArchiveMemoryReader : SArchiveReaderBase, IDisposable
 
     public override string? ReadString()
     {
-        var lengthRaw = ReadVariableLengthField32();
+        var length = ReadStringHeader(out var isNull, out var multipleChunks);
 
-        if (lengthRaw == 0)
+        if (isNull)
             return null;
 
-        lengthRaw >>= 1;
-
-        if (lengthRaw == 0)
+        if (length < 1)
             return string.Empty;
 
-        int length = (int)lengthRaw;
+        int count = 0;
+        while (true)
+        {
+            if (multipleChunks)
+            {
+                length = ReadUInt16();
 
-        var position = stream.Position;
+                if (length < 1)
+                    break;
+            }
 
-        if (position + length > stream.Length)
-            throw new FormatException("Too long string (not enough data)");
+            var position = stream.Position;
+            if (position + length > stream.Length)
+                throw new FormatException("Too long string (not enough data)");
 
-        if (position > int.MaxValue)
-            throw new InvalidOperationException("String starts too far into an archive");
+            if (position > int.MaxValue)
+                throw new InvalidOperationException("String starts too far into an archive");
 
-        ReadOnlySpan<byte> span = stream.GetBuffer().AsSpan((int)position, length);
+            if (length > 2 << 16)
+                throw new FormatException($"String length in one buffer would be too much: {length}");
 
-        stream.Position += length;
+            ReadOnlySpan<byte> span = stream.GetBuffer().AsSpan((int)position, length);
+            stream.Position += length;
 
-        return ISArchiveWriter.Utf8NoSignature.GetString(span);
+            if (!multipleChunks)
+            {
+                return ISArchiveWriter.Utf8NoSignature.GetString(span);
+            }
+
+            multiPartReader ??= new StringBuilder();
+            multiPartReader.Append(ISArchiveWriter.Utf8NoSignature.GetString(span));
+
+            ++count;
+            if (count > 1000)
+                throw new FormatException("Too many string chunks");
+        }
+
+        if (multiPartReader == null)
+            return string.Empty;
+
+        var result = multiPartReader.ToString();
+        multiPartReader.Clear();
+        return result;
     }
 
     public void Dispose()

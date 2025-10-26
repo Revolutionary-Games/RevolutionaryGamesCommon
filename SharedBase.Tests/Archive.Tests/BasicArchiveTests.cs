@@ -180,7 +180,7 @@ public class BasicArchiveTests
     [InlineData(null, 1)]
     [InlineData("Hello World!", 13)]
     [InlineData("This is a much longer string.", 30)]
-    [InlineData("This is a much longer string. That even has \0null embedded in it, take that!", 78)]
+    [InlineData("This is a much longer string. That even has \0null embedded in it, take that!", 81)]
     public void BasicArchive_StringWritingAndReading(string? testData, int expectedLength)
     {
         var memoryStream = new MemoryStream(expectedLength * 2);
@@ -194,6 +194,12 @@ public class BasicArchiveTests
 
         Assert.Equal(testData, read);
         Assert.Equal(expectedLength, memoryStream.Length);
+
+        if (testData != null)
+        {
+            Assert.NotNull(read);
+            Assert.Equal(testData.Length, read.Length);
+        }
     }
 
     [Fact]
@@ -310,7 +316,7 @@ public class BasicArchiveTests
     [InlineData("", 1)]
     [InlineData(null, 1)]
     [InlineData("Hello World!", 13)]
-    [InlineData("This is a much longer string. That even has \0null embedded in it, take that!", 78)]
+    [InlineData("This is a much longer string. That even has \0null embedded in it, take that!", 81)]
     public void BasicArchive_MemoryAndStreamVariantWorkTogether(string? testData, int expectedLength)
     {
         var memoryStream = new MemoryStream(expectedLength * 2);
@@ -532,5 +538,99 @@ public class BasicArchiveTests
         Assert.True(instance.SequenceEqual(read));
 
         Assert.Equal(value2, reader.ReadObjectOrNull<TestEnum>());
+    }
+
+    [Theory]
+    [InlineData("This is a test string with pöytä in it")]
+    [InlineData("Задача организации, в особенности же новая модель организационной")]
+    public void BasicArchive_OtherLanguageStrings(string inputString)
+    {
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, sharedManager);
+        var reader = new SArchiveMemoryReader(memoryStream, sharedManager);
+
+        writer.Write(inputString);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+        var read = reader.ReadString();
+
+        Assert.Equal(inputString, read);
+    }
+
+    [Fact]
+    public void BasicArchive_ReallyLongStringsWork()
+    {
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, sharedManager);
+        var reader = new SArchiveMemoryReader(memoryStream, sharedManager);
+
+        var test = new StringBuilder();
+
+        for (int i = 0; i < 1024; ++i)
+        {
+            test.Append('a');
+        }
+
+        for (int i = 0; i < 5; ++i)
+        {
+            test.Append('a');
+
+            memoryStream.Seek(0, SeekOrigin.Begin);
+            var testValue = test.ToString();
+            writer.Write(testValue);
+
+            memoryStream.Seek(0, SeekOrigin.Begin);
+            var read = reader.ReadString();
+
+            Assert.Equal(testValue, read);
+        }
+
+        for (int i = 0; i < 425; ++i)
+        {
+            test.Append('д');
+        }
+
+        for (int i = 0; i < 105; ++i)
+        {
+            test.Append('д');
+
+            memoryStream.Seek(0, SeekOrigin.Begin);
+            var testValue = test.ToString();
+            writer.Write(testValue);
+
+            memoryStream.Seek(0, SeekOrigin.Begin);
+            var read = reader.ReadString();
+
+            Assert.Equal(testValue, read);
+        }
+    }
+
+    [Fact]
+    public void BasicArchive_BaseReaderClassWorks()
+    {
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, sharedManager);
+        var reader = new SArchiveReadStream(memoryStream, sharedManager);
+
+        var test = new StringBuilder();
+
+        for (int i = 0; i < 980; ++i)
+        {
+            test.Append('a');
+        }
+
+        for (int i = 0; i < 120; ++i)
+        {
+            test.Append('a');
+
+            memoryStream.Seek(0, SeekOrigin.Begin);
+            var testValue = test.ToString();
+            writer.Write(testValue);
+
+            memoryStream.Seek(0, SeekOrigin.Begin);
+            var read = reader.ReadString();
+
+            Assert.Equal(testValue, read);
+        }
     }
 }

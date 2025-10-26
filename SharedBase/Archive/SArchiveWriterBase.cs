@@ -16,6 +16,11 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
     public const ushort COLLECTIONS_VERSION = 1;
     public const ushort DELEGATE_VERSION = 1;
 
+    /// <summary>
+    ///   Max length of strings that we have short string optimization for
+    /// </summary>
+    public const int SHORT_STRING_LENGTH = 63;
+
     private const int BUFFER_SIZE = 1024;
 
     private Encoder? textEncoder;
@@ -111,49 +116,173 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
     {
         if (value == null)
         {
-            WriteVariableLengthField32(0);
+            WriteStringHeader(true, 0, false);
             return;
         }
 
+        // With the new header this is not absolutely required, but we shouldn't allow totally memory-consuming strings
         if ((ulong)value.Length > uint.MaxValue >> 1)
             throw new ArgumentException("String is too long");
 
-        var converted = (uint)value.Length;
-
-        // The first bit is reserved for marking null strings. So for non-null it must be 1.
-        converted = (converted << 1) | 0x1;
-
-        WriteVariableLengthField32(converted);
-
         if (value.Length < 1)
+        {
+            WriteStringHeader(false, 0, false);
             return;
+        }
+
+        // TODO: this method is not re-entrant or multithreading safe, do we need that?
+
+        bool multipleChunks = false;
+
+        // As in Thrive most strings are less than 63 characters long, we optimise the string header to just 8 bits
+        // The tradeoff here is that if a string is longer than that, then we cause 3 extra bytes to be used
+        int firstChunkLength = Math.Min(value.Length, BUFFER_SIZE);
+
+        // But if the string is longer than that, we need to use the multiple chunks flag
+        if (firstChunkLength > SHORT_STRING_LENGTH)
+            multipleChunks = true;
+
+        var headerLocation = GetPosition();
+
+        int attempts = 0;
 
         textEncoder ??= ISArchiveWriter.Utf8NoSignature.GetEncoder();
         var encoder = textEncoder;
-
         scratch ??= new byte[BUFFER_SIZE];
         Span<byte> buffer = scratch;
-
         ReadOnlySpan<char> chars = value.AsSpan();
 
-        // Encode the string in parts to avoid allocating a large buffer
-        int charIndex = 0;
-        while (charIndex < chars.Length)
+        while (true)
         {
-            encoder.Convert(chars.Slice(charIndex), buffer,
-                false, out int charsUsed, out int bytesUsed, out _);
+            if (attempts > 0)
+                Seek(headerLocation);
 
-            Write(buffer[..bytesUsed]);
+            ++attempts;
+            if (attempts > 5)
+                throw new Exception("String encoding is needing too many retries");
 
-            charIndex += charsUsed;
+            WriteStringHeader(false, firstChunkLength, multipleChunks);
+
+            bool retry = false;
+
+            // Encode the string in parts to avoid allocating a large buffer
+            int charIndex = 0;
+            while (charIndex < chars.Length)
+            {
+                if (charIndex > 0 && !multipleChunks)
+                {
+                    // We need multiple chunks, but aren't doing that, so we need to restart writing as multiple chunks
+                    multipleChunks = true;
+                    firstChunkLength = BUFFER_SIZE;
+                    retry = true;
+                    encoder.Reset();
+                    break;
+                }
+
+                encoder.Convert(chars.Slice(charIndex), buffer,
+                    false, out int charsUsed, out int bytesUsed, out _);
+
+                // if we are encoding as multiple chunks, write a header here
+                if (multipleChunks)
+                    Write((ushort)bytesUsed);
+
+                Write(buffer[..bytesUsed]);
+
+                if (charIndex == 0 && !multipleChunks)
+                {
+                    // Check that the initial chunk size was correct, if not need to restart (due to multibyte chars)
+                    // In multiple chunks mode the initial chunk length is ignored so it doesn't need to be fixed
+                    if (bytesUsed != firstChunkLength)
+                    {
+                        if (bytesUsed < firstChunkLength)
+                            throw new Exception("Somehow encoding string used less bytes than ascii would have");
+
+                        firstChunkLength = bytesUsed;
+                        retry = true;
+                        encoder.Reset();
+                        break;
+                    }
+                }
+
+                charIndex += charsUsed;
+            }
+
+            if (retry)
+                continue;
+
+            // Flush any remaining data
+            encoder.Convert(ReadOnlySpan<char>.Empty, buffer,
+                true, out _, out int finalBytes, out _);
+
+            if (finalBytes > 0)
+            {
+                if (!multipleChunks)
+                {
+                    // We need to restart writing as multiple chunks as we can't otherwise flush
+                    multipleChunks = true;
+                    firstChunkLength = BUFFER_SIZE;
+                    encoder.Reset();
+                    continue;
+                }
+
+                // Multiple chunks header
+                Write((ushort)finalBytes);
+
+                Write(buffer[..finalBytes]);
+            }
+
+            // Write that the next chunk is null (if we switched to multiple chunks mode)
+            if (multipleChunks)
+                Write((ushort)0);
+
+            break;
+        }
+    }
+
+    public void WriteStringHeader(bool isNull, int length, bool multipleChunks)
+    {
+        if (isNull)
+        {
+            // Just write 0 to indicate null
+            Write((byte)0);
+            return;
         }
 
-        // Flush any remaining data
-        encoder.Convert(ReadOnlySpan<char>.Empty, buffer,
-            true, out _, out int finalBytes, out _);
+#if DEBUG
+#pragma warning disable CS0162 // Unreachable code detected
+        if (BUFFER_SIZE > 0x3FFF)
+            throw new InvalidOperationException("String chunk length is configured too high");
+#pragma warning restore CS0162 // Unreachable code detected
+#endif
 
-        if (finalBytes > 0)
-            Write(buffer[..finalBytes]);
+        if (length < 1)
+        {
+            if (multipleChunks)
+                throw new ArgumentException("Multiple chunks flag is set but length is 0");
+
+            // Indicate not zero, but everything else is zero
+            Write((byte)1);
+            return;
+        }
+
+        // String header is: null bit, multiple chunks bit, and then the first chunk length as 6 bits
+        // No longer null at this point, so null bit is always 1
+        byte data = (byte)(multipleChunks ? 3 : 1);
+
+        if (multipleChunks)
+        {
+            // The first chunk length is ignored, but we write the max buffer size here
+            data |= SHORT_STRING_LENGTH << 2;
+        }
+        else
+        {
+            if (length > 63)
+                throw new ArgumentException("String length is too long to fit in single byte header");
+
+            data |= (byte)(length << 2);
+        }
+
+        Write(data);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -37,6 +37,8 @@ public interface ISArchiveReader
     /// <returns>String or null</returns>
     public string? ReadString();
 
+    public int ReadStringHeader(out bool isNull, out bool multipleChunks);
+
     public byte[] ReadBytes(int length);
 
     /// <summary>
