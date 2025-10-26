@@ -633,4 +633,31 @@ public class BasicArchiveTests
             Assert.Equal(testValue, read);
         }
     }
+
+    [Fact]
+    public void BasicArchive_AllPossibleShortStringLengthsWork()
+    {
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, sharedManager);
+        var reader = new SArchiveMemoryReader(memoryStream, sharedManager);
+
+        var test = new StringBuilder();
+
+        for (int i = 0; i < 96; ++i)
+        {
+            test.Append('a');
+
+            bool isLonger = test.Length > SArchiveWriterBase.SHORT_STRING_LENGTH;
+
+            memoryStream.Seek(0, SeekOrigin.Begin);
+            var testValue = test.ToString();
+            writer.Write(testValue);
+
+            memoryStream.Seek(0, SeekOrigin.Begin);
+            var read = reader.ReadString();
+
+            Assert.Equal(testValue, read);
+            Assert.Equal(testValue.Length + (isLonger ? 5 : 1), memoryStream.Position);
+        }
+    }
 }
