@@ -342,8 +342,7 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
     {
         if (!IsReferencedAlready(targetObject))
         {
-            throw new FormatException(
-                $"Special reference to object is needed before the object is written " +
+            throw new FormatException($"Special reference to object is needed before the object is written " +
                 $"(the object must be written first): {targetObject}");
         }
 
