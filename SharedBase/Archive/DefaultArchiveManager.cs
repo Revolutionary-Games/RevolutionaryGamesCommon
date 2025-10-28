@@ -27,6 +27,8 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
 
     private readonly Dictionary<ArchiveObjectType, ArchiveEnumType> enumTypes = new();
 
+    private readonly Dictionary<Type, ArchiveObjectType> reverseTypeMapping = new();
+
     // Object reference handling
     private readonly Dictionary<object, long> objectIdPositions = new();
     private readonly Dictionary<object, int> objectIds = new();
@@ -259,6 +261,10 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
                 return true;
         }
 
+        // Limited registration type mapping (if something is only a limited type)
+        if (reverseTypeMapping.TryGetValue(type, out archiveType))
+            return true;
+
         return false;
     }
 
@@ -329,6 +335,21 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
         // Check we didn't write accidentally too much
         if (elementsWritten > ISArchiveWriter.ReasonableMaxExtendedType)
             throw new ArgumentException($"Extended type length too long: {elementsWritten}");
+    }
+
+    public void WriteSpecialReference(SArchiveWriterBase writer, object targetObject, ArchiveObjectType type,
+        ushort version)
+    {
+        if (!IsReferencedAlready(targetObject))
+        {
+            throw new FormatException(
+                $"Special reference to object is needed before the object is written (the object must be written first): {targetObject}");
+        }
+
+        writer.WriteObjectHeader(type, true, false, true, false, version);
+
+        // This existing method does the right thing as we checked the reference already exists
+        MarkStartOfReferenceObject(writer, targetObject);
     }
 
     public void Clear()
@@ -506,6 +527,9 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
     public void RegisterObjectType(ArchiveObjectType type, Type nativeType,
         IArchiveWriteManager.ArchiveObjectDelegate writeDelegate)
     {
+        if (reverseTypeMapping.ContainsKey(nativeType))
+            throw new ArgumentException("Type is already registered");
+
         if (!registeredWriterTypes.TryAdd(nativeType, type) || enumTypes.ContainsKey(type))
             throw new ArgumentException("Type is already registered");
 
@@ -515,6 +539,9 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
     public void RegisterObjectType(ArchiveObjectType type, Type nativeType,
         IArchiveReadManager.RestoreObjectDelegate readDelegate)
     {
+        if (reverseTypeMapping.ContainsKey(nativeType))
+            throw new ArgumentException("Type is already registered");
+
         if (!registeredTypes.TryAdd(type, nativeType) || enumTypes.ContainsKey(type))
             throw new ArgumentException("Type is already registered");
 
@@ -524,6 +551,9 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
     public void RegisterObjectType(ArchiveObjectType type, Type nativeType,
         IArchiveReadManager.AdvancedRestoreObjectDelegate readDelegate)
     {
+        if (reverseTypeMapping.ContainsKey(nativeType))
+            throw new ArgumentException("Type is already registered");
+
         // Advanced callback can be registered for the same type as a normal one
         if (!registeredTypes.TryAdd(type, nativeType))
         {
@@ -536,6 +566,17 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
         }
 
         readDelegatesAdvanced[type] = readDelegate;
+    }
+
+    public void RegisterLimitedObjectType(ArchiveObjectType type, Type nativeType)
+    {
+        if (!registeredTypes.TryAdd(type, nativeType) || enumTypes.ContainsKey(type))
+        {
+            throw new ArgumentException("Type is already registered");
+        }
+
+        if (!reverseTypeMapping.TryAdd(nativeType, type))
+            throw new ArgumentException("Type is already registered");
     }
 
     public void RegisterBoxableValueType(ArchiveObjectType type, Type nativeType,

@@ -189,6 +189,65 @@ public class ArchiveCallbackTests
         Assert.Equal(CallableTestClass.GetStaticValue(), read());
     }
 
+    [Fact]
+    public void ArchiveCallback_ArchiveUpdatableObjectsCanHaveCallbacks()
+    {
+        var customManager = new DefaultArchiveManager(false);
+
+        // These are needed for type registration
+        customManager.RegisterObjectType(ArchiveObjectType.TestObjectType2,
+            typeof(PropertyReadableReceiver.ChildWithCallBacks),
+            PropertyReadableReceiver.ChildWithCallBacks.WriteToArchive);
+        customManager.RegisterObjectType(ArchiveObjectType.TestObjectType2,
+            typeof(PropertyReadableReceiver.ChildWithCallBacks),
+            PropertyReadableReceiver.ChildWithCallBacks.ReadFromArchive);
+
+        customManager.RegisterLimitedObjectType(ArchiveObjectType.TestObjectType1, typeof(PropertyReadableReceiver));
+
+        var original = new PropertyReadableReceiver("text stuff")
+        {
+            OurValue = 1113,
+        };
+
+        Assert.NotNull(original.Child);
+        original.Child.Value = 53;
+
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, customManager);
+        var reader = new SArchiveMemoryReader(memoryStream, customManager);
+
+        customManager.OnStartNewWrite(writer);
+        writer.WriteObjectProperties(original);
+        customManager.OnFinishWrite(writer);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var readData = new PropertyReadableReceiver("stuff");
+
+        Assert.NotEqual(original.Stuff, readData.Stuff);
+
+        customManager.OnStartNewRead(reader);
+        reader.ReadObjectProperties(readData);
+        customManager.OnFinishRead(reader);
+
+        Assert.Equal(original.OurValue, readData.OurValue);
+        Assert.Equal(original.Stuff, readData.Stuff);
+        Assert.NotNull(readData.Child);
+        Assert.Equal(original.Child.Value, readData.Child.Value);
+
+        Assert.Equal(original.Child.Call(), readData.Child.Call());
+
+        Assert.Equal(original.Child.OnStuff(342453), readData.Child.OnStuff(342453));
+
+        Assert.Same(readData, readData.Child.OnStuff.Target);
+
+        var old = readData.Child.Call();
+
+        readData.OurValue *= 2;
+
+        Assert.NotEqual(old, readData.Child.Call());
+    }
+
     public class CallableTestClass(int value) : IArchivable
     {
         public const ushort SERIALIZATION_VERSION = 1;
@@ -306,6 +365,98 @@ public class ArchiveCallbackTests
         public int CallThatMethod()
         {
             return -2;
+        }
+    }
+
+    public class PropertyReadableReceiver : IArchiveUpdatable
+    {
+        public const ushort SERIALIZATION_VERSION_OUTER = 1;
+
+        public int OurValue;
+        public string Stuff;
+
+        public ChildWithCallBacks? Child;
+
+        public PropertyReadableReceiver(string stuff)
+        {
+            Stuff = stuff;
+            Child = new ChildWithCallBacks(DoStuff);
+        }
+
+        public delegate int OnStuffHappened(int value);
+
+        public ushort CurrentArchiveVersion => SERIALIZATION_VERSION_OUTER;
+        public ArchiveObjectType ArchiveObjectType => ArchiveObjectType.TestObjectType1;
+
+        public bool CanBeSpecialReference => true;
+
+        [ArchiveAllowedMethod]
+        public int DoStuff(int value)
+        {
+            return value * OurValue;
+        }
+
+        public void WritePropertiesToArchive(ISArchiveWriter writer)
+        {
+            writer.Write(OurValue);
+            writer.Write(Stuff);
+            writer.WriteObjectOrNull(Child);
+        }
+
+        public void ReadPropertiesFromArchive(ISArchiveReader reader, ushort version)
+        {
+            OurValue = reader.ReadInt32();
+            Stuff = reader.ReadString() ?? throw new NullArchiveObjectException();
+            Child = reader.ReadObjectOrNull<ChildWithCallBacks>();
+        }
+
+        public class ChildWithCallBacks : IArchivable
+        {
+            public const ushort SERIALIZATION_VERSION_INNER = 1;
+
+            public OnStuffHappened OnStuff;
+            public int Value;
+
+            public ChildWithCallBacks(OnStuffHappened onStuff)
+            {
+                OnStuff = onStuff;
+                Value = 1;
+            }
+
+            public ushort CurrentArchiveVersion => SERIALIZATION_VERSION_INNER;
+            public ArchiveObjectType ArchiveObjectType => ArchiveObjectType.TestObjectType2;
+            public bool CanBeReferencedInArchive => false;
+
+            public static void WriteToArchive(ISArchiveWriter writer, ArchiveObjectType type, object obj)
+            {
+                if (type != ArchiveObjectType.TestObjectType2)
+                    throw new NotSupportedException();
+
+                writer.WriteObject((ChildWithCallBacks)obj);
+            }
+
+            public static ChildWithCallBacks ReadFromArchive(ISArchiveReader reader, ushort version, int referenceId)
+            {
+                if (version is > SERIALIZATION_VERSION_INNER or <= 0)
+                    throw new InvalidArchiveVersionException(version, SERIALIZATION_VERSION_INNER);
+
+                return new ChildWithCallBacks(reader.ReadDelegate<OnStuffHappened>() ??
+                    throw new NullArchiveObjectException())
+                {
+                    Value = reader.ReadInt32(),
+                };
+            }
+
+            public void WriteToArchive(ISArchiveWriter writer)
+            {
+                writer.WriteDelegate(OnStuff);
+                writer.Write(Value);
+            }
+
+            public int Call()
+            {
+                return OnStuff(Value);
+            }
         }
     }
 }

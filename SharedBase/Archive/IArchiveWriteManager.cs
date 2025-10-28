@@ -55,6 +55,14 @@ public interface IArchiveWriteManager
     public void RegisterEnumType(ArchiveObjectType type, ArchiveEnumType enumType, Type nativeType);
 
     /// <summary>
+    ///   Registers a type limitedly. Used, for example, to make <see cref="IArchiveUpdatable"/> be able to be a
+    ///   delegate target.
+    /// </summary>
+    /// <param name="type">Type in the archive</param>
+    /// <param name="nativeType">The native C# side type</param>
+    public void RegisterLimitedObjectType(ArchiveObjectType type, Type nativeType);
+
+    /// <summary>
     ///   Returns true if the object is already referenced.
     /// </summary>
     /// <returns>True if referenced already by <see cref="MarkStartOfReferenceObject"/></returns>
@@ -89,6 +97,12 @@ public interface IArchiveWriteManager
     /// <param name="elementsWritten">Specifies how much data was actually written</param>
     public void CalculateExtendedObjectType(ArchiveObjectType baseType, Type type,
         Span<ArchiveObjectType> extendedTypes, out int elementsWritten);
+
+    /// <summary>
+    ///   Writes an object header referring to a special object that MUST BE WRITTEN ALREADY.
+    /// </summary>
+    public void WriteSpecialReference(SArchiveWriterBase writer, object targetObject, ArchiveObjectType type,
+        ushort version);
 
     /// <summary>
     ///   Clear state if a write operation needs to be abandoned.

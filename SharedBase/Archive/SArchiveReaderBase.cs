@@ -677,7 +677,7 @@ public abstract class SArchiveReaderBase : ISArchiveReader
         }
 
         if (id > 0 || references)
-            throw new FormatException("Cannot read properties of an object that was written as a reference");
+            throw new FormatException("Cannot read properties of a value object that was written as a reference");
 
         // TODO: support for derived class reading here?
         if (obj.ArchiveObjectType != type)
@@ -705,12 +705,27 @@ public abstract class SArchiveReaderBase : ISArchiveReader
         if (isNull)
             return false;
 
-        if (id > 0 || references)
-            throw new FormatException("Cannot read properties of an object that was written as a reference");
-
         // TODO: support for derived class reading here?
         if (obj.ArchiveObjectType != type)
             throw new FormatException($"Cannot read properties of an object ({obj.ArchiveObjectType}) from {type}");
+
+        if (id > 0 || references)
+        {
+            if (obj.CanBeSpecialReference && !references)
+            {
+                // Register the reference for reading
+                if (!ReadManager.RememberObject(obj, id))
+                {
+                    throw new FormatException("Multiple (updatable) objects with same ID: " + id);
+                }
+            }
+            else
+            {
+                throw new FormatException(
+                    "Cannot read properties of an object that was written as a reference " +
+                    "(and doesn't support being a special reference)");
+            }
+        }
 
         if (extended)
         {

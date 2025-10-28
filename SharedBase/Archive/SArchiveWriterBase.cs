@@ -426,6 +426,9 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
     {
         bool extended = obj.ArchiveObjectType.IsExtendedType();
 
+        if (obj.CanBeReferencedInArchive)
+            throw new ArgumentException("Cannot write a reference object as a struct");
+
         WriteObjectHeader(obj.ArchiveObjectType, false, false, false, extended, obj.CurrentArchiveVersion);
 
         if (extended)
@@ -466,7 +469,7 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
 
     public void WriteObject<T>(ISet<T> set)
     {
-        // Need to match the generic set write in ArchiveBuiltInWriters
+        // Need to match the generic set writing in ArchiveBuiltInWriters
         bool extended = WriteManager.ObjectChildTypeRequiresExtendedType(typeof(T));
         var type = extended ? ArchiveObjectType.ExtendedSet : ArchiveObjectType.Set;
         WriteObjectHeader(type, false, false, false, extended, COLLECTIONS_VERSION);
@@ -810,6 +813,9 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
     public void WriteObjectProperties<T>(ref T obj)
         where T : IArchiveUpdatable
     {
+        if (obj.CanBeSpecialReference)
+            throw new NotSupportedException("Value type object properties cannot be a special reference target");
+
         WriteObjectHeader(obj.ArchiveObjectType, false, false, false, false, obj.CurrentArchiveVersion);
 
         obj.WritePropertiesToArchive(this);
@@ -818,8 +824,22 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
     public void WriteObjectProperties<T>(T obj)
         where T : class, IArchiveUpdatable
     {
+        bool wantsReferenceSupport = obj.CanBeSpecialReference;
+
         // As a class, this theoretically could be a reference, but we don't support that right now
-        WriteObjectHeader(obj.ArchiveObjectType, false, false, false, false, obj.CurrentArchiveVersion);
+        WriteObjectHeader(obj.ArchiveObjectType, wantsReferenceSupport, false, false, false, obj.CurrentArchiveVersion);
+
+        if (wantsReferenceSupport)
+        {
+            if (WriteManager.IsReferencedAlready(obj))
+                throw new FormatException("Cannot write object properties twice for a special referenceable object");
+
+            if (WriteManager.MarkStartOfReferenceObject(this, obj))
+            {
+                throw new Exception(
+                    "Somehow object properties was referenced already, which shouldn't be possible here");
+            }
+        }
 
         obj.WritePropertiesToArchive(this);
     }
@@ -955,6 +975,17 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
             }
 
             WriteObject(archivable);
+        }
+        else if (delegateInstance.Target is IArchiveUpdatable archiveUpdatable)
+        {
+            if (!archiveUpdatable.CanBeSpecialReference)
+            {
+                throw new ArgumentException(
+                    "Delegate target is IArchiveUpdatable but it is not marked as valid special reference target");
+            }
+
+            WriteManager.WriteSpecialReference(this, delegateInstance.Target, archiveUpdatable.ArchiveObjectType,
+                archiveUpdatable.CurrentArchiveVersion);
         }
         else
         {
