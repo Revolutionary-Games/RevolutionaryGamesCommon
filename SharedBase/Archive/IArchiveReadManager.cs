@@ -71,6 +71,23 @@ public interface IArchiveReadManager
     public void RegisterObjectType(ArchiveObjectType type, Type nativeType, AdvancedRestoreObjectDelegate readDelegate);
 
     /// <summary>
+    ///   Registers a base type to the archive type system.
+    ///   May be needed if there are no valid serializers to register for the base type, but derived types need for
+    ///   full type resolution. Should be registered after other types so that this doesn't cause accidental conflicts.
+    /// </summary>
+    /// <param name="extendedType">The extended type (must be an extended type)</param>
+    /// <param name="baseType">The base type related to the extended type</param>
+    /// <param name="nativeType">Native type of the base</param>
+    public void RegisterExtendedBase(ArchiveObjectType extendedType, ArchiveObjectType baseType, Type nativeType);
+
+    /// <summary>
+    ///   Register a base class not registered for direct reading.
+    /// </summary>
+    /// <param name="baseType">The base type in the archive</param>
+    /// <param name="nativeType">The native type</param>
+    public void RegisterBaseClass(ArchiveObjectType baseType, Type nativeType);
+
+    /// <summary>
     ///   Registers a struct type that needs to be read to generic variables where <see cref="ReadObjectToVariable"/>
     ///   cannot be used.
     ///   This approach needs a constructor that makes boxed instances.

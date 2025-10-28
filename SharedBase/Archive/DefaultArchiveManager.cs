@@ -29,6 +29,11 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
 
     private readonly Dictionary<Type, ArchiveObjectType> reverseTypeMapping = new();
 
+    /// <summary>
+    ///   For base class etc. registrations
+    /// </summary>
+    private readonly Dictionary<ArchiveObjectType, Type> additionalKnownTypes = new();
+
     // Object reference handling
     private readonly Dictionary<object, long> objectIdPositions = new();
     private readonly Dictionary<object, int> objectIds = new();
@@ -568,6 +573,29 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
         readDelegatesAdvanced[type] = readDelegate;
     }
 
+    public void RegisterExtendedBase(ArchiveObjectType extendedType, ArchiveObjectType baseType, Type nativeType)
+    {
+        if (baseType.IsExtendedType() || !extendedType.IsExtendedType())
+            throw new ArgumentException("Extended base type must be an extended type");
+
+        bool firstAdded = reverseTypeMapping.TryAdd(nativeType, baseType);
+        bool secondAdded = registeredTypes.TryAdd(baseType, nativeType);
+        bool thirdAdded = additionalKnownTypes.TryAdd(baseType, nativeType);
+
+        if (!firstAdded || !secondAdded || !thirdAdded)
+        {
+            throw new ArgumentException("Could not register anything for an extended base type");
+        }
+    }
+
+    public void RegisterBaseClass(ArchiveObjectType baseType, Type nativeType)
+    {
+        if (!registeredTypes.TryAdd(baseType, nativeType))
+        {
+            throw new ArgumentException("Type is already registered");
+        }
+    }
+
     public void RegisterLimitedObjectType(ArchiveObjectType type, Type nativeType)
     {
         if (!registeredTypes.TryAdd(type, nativeType) || enumTypes.ContainsKey(type))
@@ -724,6 +752,9 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
             // case ArchiveObjectType.ReferenceTuple:
             //    return typeof(Tuple<,>);
         }
+
+        if (additionalKnownTypes.TryGetValue(type, out var additionalType))
+            return additionalType;
 
         return null;
     }
