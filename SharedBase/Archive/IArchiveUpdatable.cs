@@ -13,6 +13,12 @@ public interface IArchiveUpdatable
     ///   If true, then this value can be referenced in the archive in special cases. Normally updatable values cannot
     ///   be referenced at all, but that is necessary in some situations like delegate targets.
     /// </summary>
+    /// <remarks>
+    ///   <para>
+    ///     Note that to override this, a class must *directly* specify the <see cref="IArchiveUpdatable"/> interface
+    ///     otherwise the override does not apply.
+    ///   </para>
+    /// </remarks>
     public bool CanBeSpecialReference => false;
 
     public void WritePropertiesToArchive(ISArchiveWriter writer);
