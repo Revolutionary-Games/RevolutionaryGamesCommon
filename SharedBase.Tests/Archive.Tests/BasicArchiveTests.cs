@@ -660,4 +660,23 @@ public class BasicArchiveTests
             Assert.Equal(testValue.Length + (isLonger ? 5 : 1), memoryStream.Position);
         }
     }
+
+    [Theory]
+    [InlineData('a')]
+    [InlineData('\0')]
+    [InlineData('д')]
+    [InlineData('ä')]
+    public void BasicArchive_CharWritingWorks(char originalCharacter)
+    {
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, sharedManager);
+        var reader = new SArchiveMemoryReader(memoryStream, sharedManager);
+
+        writer.Write(originalCharacter);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+        var read = reader.ReadChar();
+
+        Assert.Equal(originalCharacter, read);
+    }
 }

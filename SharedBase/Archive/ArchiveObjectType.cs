@@ -11,6 +11,7 @@ public enum ArchiveObjectType : uint
     Null,
     Byte,
     Bool,
+    Char,
     Int16,
     Int32,
     Int64,

@@ -150,6 +150,12 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
             return true;
         }
 
+        if (type == typeof(char))
+        {
+            archiveType = ArchiveObjectType.Char;
+            return true;
+        }
+
         if (type == typeof(bool))
         {
             archiveType = ArchiveObjectType.Bool;
@@ -711,6 +717,8 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
                 return typeof(byte);
             case ArchiveObjectType.Bool:
                 return typeof(bool);
+            case ArchiveObjectType.Char:
+                return typeof(char);
             case ArchiveObjectType.Int16:
                 return typeof(short);
             case ArchiveObjectType.Int32:

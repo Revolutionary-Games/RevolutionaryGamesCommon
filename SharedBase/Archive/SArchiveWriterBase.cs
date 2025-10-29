@@ -43,6 +43,13 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
     public abstract void Write(byte value);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void Write(char value)
+    {
+        Write((byte)value);
+        Write((byte)(value >> 8));
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Write(short value)
     {
         Write((byte)value);
@@ -723,6 +730,10 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
             case byte byteValue:
                 WriteObjectHeader(ArchiveObjectType.Byte, false, false, false, false, 1);
                 Write(byteValue);
+                return;
+            case char charValue:
+                WriteObjectHeader(ArchiveObjectType.Char, false, false, false, false, 1);
+                Write(charValue);
                 return;
             case short shortValue:
                 WriteObjectHeader(ArchiveObjectType.Int16, false, false, false, false, 1);

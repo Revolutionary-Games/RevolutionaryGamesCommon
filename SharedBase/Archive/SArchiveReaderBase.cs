@@ -30,6 +30,12 @@ public abstract class SArchiveReaderBase : ISArchiveReader
     public abstract byte ReadInt8();
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public char ReadChar()
+    {
+        return (char)ReadUInt16();
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ushort ReadUInt16()
     {
         return (ushort)(ReadInt8() | ReadInt8() << 8);
@@ -721,8 +727,7 @@ public abstract class SArchiveReaderBase : ISArchiveReader
             }
             else
             {
-                throw new FormatException(
-                    "Cannot read properties of an object that was written as a reference " +
+                throw new FormatException("Cannot read properties of an object that was written as a reference " +
                     "(and doesn't support being a special reference)");
             }
         }
@@ -886,6 +891,12 @@ public abstract class SArchiveReaderBase : ISArchiveReader
                     throw new InvalidArchiveVersionException(version, 1);
 
                 read = ReadInt8() != 0;
+                break;
+            case ArchiveObjectType.Char:
+                if (version > 1)
+                    throw new InvalidArchiveVersionException(version, 1);
+
+                read = ReadChar();
                 break;
             case ArchiveObjectType.Int16:
                 if (version > 1)

@@ -16,13 +16,14 @@ public interface ISArchiveReader
         return ReadInt8() != 0;
     }
 
-    public ushort ReadUInt16();
-    public uint ReadUInt32();
-    public ulong ReadUInt64();
+    public char ReadChar();
 
     public short ReadInt16();
+    public ushort ReadUInt16();
     public int ReadInt32();
+    public uint ReadUInt32();
     public long ReadInt64();
+    public ulong ReadUInt64();
 
     public uint ReadVariableLengthField32();
 
