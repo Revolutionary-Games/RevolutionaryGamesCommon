@@ -543,6 +543,7 @@ public class BasicArchiveTests
     [Theory]
     [InlineData("This is a test string with pöytä in it")]
     [InlineData("Задача организации, в особенности же новая модель организационной")]
+    [InlineData("Соединения были разбавлены.\nСнижение концентрации: Сероводород")]
     public void BasicArchive_OtherLanguageStrings(string inputString)
     {
         var memoryStream = new MemoryStream();

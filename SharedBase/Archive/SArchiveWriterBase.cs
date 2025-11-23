@@ -205,6 +205,11 @@ public abstract class SArchiveWriterBase : ISArchiveWriter
                             throw new Exception("Somehow encoding string used less bytes than ascii would have");
 
                         firstChunkLength = bytesUsed;
+
+                        // We need to also swap to multiple chunks mode if the first chunk's length went too far
+                        if (firstChunkLength > SHORT_STRING_LENGTH)
+                            multipleChunks = true;
+
                         retry = true;
                         encoder.Reset();
                         break;
