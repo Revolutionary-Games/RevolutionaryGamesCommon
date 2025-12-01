@@ -1078,4 +1078,211 @@ public class ArchiveCollectionTests
         Assert.Contains(thing2, asSet);
         Assert.DoesNotContain(notInSet, asSet);
     }
+
+    [Fact]
+    public void ArchiveCollection_DictionaryKeysThatChangeOnWrite()
+    {
+        var customManager = new DefaultArchiveManager(true);
+        customManager.RegisterObjectType(ArchiveObjectType.TestObjectType1, typeof(ValueCoalescingStruct),
+            ValueCoalescingStruct.WriteToArchive);
+        customManager.RegisterBoxableValueType(ArchiveObjectType.TestObjectType1,
+            typeof(ValueCoalescingStruct), ValueCoalescingStruct.ConstructBoxedArchiveRead);
+
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, customManager);
+        var reader = new SArchiveMemoryReader(memoryStream, customManager);
+
+        var thing1 = new ValueCoalescingStruct(1);
+        var thing2 = new ValueCoalescingStruct(2);
+        var thing3 = new ValueCoalescingStruct(ValueCoalescingStruct.DeadValue1);
+
+        var original = new Dictionary<ValueCoalescingStruct, float>
+        {
+            { thing1, 12 },
+            { thing2, 5 },
+            { thing3, 10 },
+        };
+
+        writer.WriteObject(original);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var read = reader.ReadObjectOrNull<Dictionary<ValueCoalescingStruct, float>>();
+
+        Assert.NotNull(read);
+        Assert.Equal(original.Count, read.Count);
+
+        Assert.Contains(thing1, read);
+        Assert.Contains(thing2, read);
+        Assert.DoesNotContain(thing3, read);
+        Assert.Contains(new ValueCoalescingStruct(ValueCoalescingStruct.DeadMarker), read);
+    }
+
+    [Fact]
+    public void ArchiveCollection_DuplicateDictionaryKeysIsRejected()
+    {
+        var customManager = new DefaultArchiveManager(true);
+        customManager.RegisterObjectType(ArchiveObjectType.TestObjectType1, typeof(ValueCoalescingStruct),
+            ValueCoalescingStruct.WriteToArchive);
+        customManager.RegisterBoxableValueType(ArchiveObjectType.TestObjectType1,
+            typeof(ValueCoalescingStruct), ValueCoalescingStruct.ConstructBoxedArchiveRead);
+
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, customManager);
+        var reader = new SArchiveMemoryReader(memoryStream, customManager);
+
+        var thing1 = new ValueCoalescingStruct(1);
+        var thing2 = new ValueCoalescingStruct(2);
+        var thing3 = new ValueCoalescingStruct(ValueCoalescingStruct.DeadValue1);
+        var thing4 = new ValueCoalescingStruct(ValueCoalescingStruct.DeadValue2);
+
+        var original = new Dictionary<ValueCoalescingStruct, float>
+        {
+            { thing1, 12 },
+            { thing2, 5 },
+            { thing3, 10 },
+            { thing4, 15 },
+        };
+
+        writer.WriteObject(original);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        var exception =
+            Assert.Throws<FormatException>(() => reader.ReadObjectOrNull<Dictionary<ValueCoalescingStruct, float>>());
+
+        Assert.Contains("add read item to dictionary", exception.Message);
+        Assert.NotNull(exception.InnerException);
+        Assert.IsType<ArgumentException>(exception.InnerException);
+        Assert.Contains("same key has already been added", exception.InnerException.Message);
+    }
+
+    [Fact]
+    public void ArchiveCollection_DuplicateDictionaryKeysReadModeWorks()
+    {
+        var customManager = new DefaultArchiveManager(true);
+        customManager.RegisterObjectType(ArchiveObjectType.TestObjectType1, typeof(ValueCoalescingStruct),
+            ValueCoalescingStruct.WriteToArchive);
+        customManager.RegisterBoxableValueType(ArchiveObjectType.TestObjectType1,
+            typeof(ValueCoalescingStruct), ValueCoalescingStruct.ConstructBoxedArchiveRead);
+
+        var memoryStream = new MemoryStream();
+        var writer = new SArchiveMemoryWriter(memoryStream, customManager);
+        var reader = new SArchiveMemoryReader(memoryStream, customManager);
+
+        var thing1 = new ValueCoalescingStruct(1);
+        var thing2 = new ValueCoalescingStruct(2);
+        var thing3 = new ValueCoalescingStruct(ValueCoalescingStruct.DeadValue1);
+        var thing4 = new ValueCoalescingStruct(ValueCoalescingStruct.DeadValue2);
+
+        var original = new Dictionary<ValueCoalescingStruct, float>
+        {
+            { thing1, 12 },
+            { thing2, 5 },
+            { thing3, 10 },
+            { thing4, 15 },
+        };
+
+        writer.WriteObject(original);
+
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        reader.AllowDuplicateCollectionItems = true;
+
+        var read = reader.ReadObjectOrNull<Dictionary<ValueCoalescingStruct, float>>();
+
+        Assert.NotNull(read);
+
+        // Dead values coalesce
+        Assert.Equal(original.Count, read.Count + 1);
+
+        Assert.Contains(thing1, read);
+        Assert.Contains(thing2, read);
+        Assert.DoesNotContain(thing3, read);
+        Assert.DoesNotContain(thing4, read);
+        Assert.Contains(new ValueCoalescingStruct(ValueCoalescingStruct.DeadMarker), read);
+
+        // The latest item survived
+        Assert.Equal(15, read[new ValueCoalescingStruct(ValueCoalescingStruct.DeadMarker)]);
+    }
+
+    public struct ValueCoalescingStruct(int value) : IArchiveReadableVariable, IEquatable<ValueCoalescingStruct>
+    {
+        public const ushort SERIALIZATION_VERSION = 1;
+
+        public const int DeadMarker = -1;
+        public const int DeadValue1 = 80;
+        public const int DeadValue2 = 81;
+        public const int DeadValue3 = 82;
+
+        public readonly int WrappedValue = value;
+
+        public ushort CurrentArchiveVersion => SERIALIZATION_VERSION;
+        public ArchiveObjectType ArchiveObjectType => ArchiveObjectType.TestObjectType1;
+        public bool CanBeReferencedInArchive => false;
+
+        public static bool operator ==(ValueCoalescingStruct left, ValueCoalescingStruct right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator !=(ValueCoalescingStruct left, ValueCoalescingStruct right)
+        {
+            return !left.Equals(right);
+        }
+
+        public static IArchiveReadableVariable ConstructBoxedArchiveRead(ISArchiveReader reader,
+            out bool performedCustomRead, ushort version)
+        {
+            if (version is > SERIALIZATION_VERSION or <= 0)
+                throw new InvalidArchiveVersionException(version, SERIALIZATION_VERSION);
+
+            performedCustomRead = true;
+            return new ValueCoalescingStruct(reader.ReadInt32());
+        }
+
+        public static void WriteToArchive(ISArchiveWriter writer, ArchiveObjectType type, object obj)
+        {
+            if (type != ArchiveObjectType.TestObjectType1)
+                throw new NotSupportedException();
+
+            writer.WriteObject((ValueCoalescingStruct)obj);
+        }
+
+        public void WriteToArchive(ISArchiveWriter writer)
+        {
+            // if the value is a dead value, write the dead marker instead
+            switch (WrappedValue)
+            {
+                case DeadValue1:
+                case DeadValue2:
+                case DeadValue3:
+                    writer.Write(DeadMarker);
+                    break;
+                default:
+                    writer.Write(WrappedValue);
+                    break;
+            }
+        }
+
+        public void ReadFromArchive(ISArchiveReader reader, ushort version)
+        {
+            throw new NotSupportedException("Need to be constructed with custom read");
+        }
+
+        public bool Equals(ValueCoalescingStruct other)
+        {
+            return WrappedValue == other.WrappedValue;
+        }
+
+        public override bool Equals(object? obj)
+        {
+            return obj is ValueCoalescingStruct other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            return WrappedValue;
+        }
+    }
 }

@@ -597,6 +597,19 @@ public static class ArchiveBuiltInReaders
                 }
                 catch (Exception e)
                 {
+                    try
+                    {
+                        if (reader.AllowDuplicateCollectionItems)
+                        {
+                            dictionary2[keys[i]] = items[i];
+                            continue;
+                        }
+                    }
+                    catch
+                    {
+                        // If this also fails, we want to throw the original exception
+                    }
+
                     throw new FormatException(
                         $"Cannot add buffered item to dictionary at index {i}, key is {keys[i].GetType()} " +
                         $"and value is {items[i]?.GetType()} " +
@@ -840,6 +853,19 @@ public static class ArchiveBuiltInReaders
             }
             catch (Exception e)
             {
+                try
+                {
+                    if (reader.AllowDuplicateCollectionItems)
+                    {
+                        dictionary[key] = value;
+                        continue;
+                    }
+                }
+                catch
+                {
+                    // If this also fails, we want to throw the original exception
+                }
+
                 throw new FormatException(
                     $"Cannot add read item to dictionary at index {i}, key is {key.GetType()} / {readKeyType} " +
                     $"and value is {value?.GetType()} / {readValueType} " +

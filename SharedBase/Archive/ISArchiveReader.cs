@@ -9,6 +9,19 @@ public interface ISArchiveReader
 
     public IArchiveReadManager ReadManager { get; }
 
+    /// <summary>
+    ///   If set to true, the inbuilt collection deserializers will allow duplicate item (like dictionary keys).
+    /// </summary>
+    /// <remarks>
+    ///   <para>
+    ///     This is needed for very special situations where dictionary keys on loading will be different
+    ///     from on save and this can collide.
+    ///     For example, this is used in Thrive for entity dictionaries as all dead entities will be coalesced into
+    ///     a single null value which can cause duplicates, but they can be safely ignored with this option.
+    ///   </para>
+    /// </remarks>
+    public bool AllowDuplicateCollectionItems { get; set; }
+
     public byte ReadInt8();
 
     public bool ReadBool()

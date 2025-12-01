@@ -27,6 +27,8 @@ public abstract class SArchiveReaderBase : ISArchiveReader
 
     public IArchiveReadManager ReadManager { get; protected set; }
 
+    public bool AllowDuplicateCollectionItems { get; set; }
+
     public abstract byte ReadInt8();
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
