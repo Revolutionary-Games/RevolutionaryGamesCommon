@@ -3,13 +3,12 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
 public class BomChecker : FileCheck
 {
-    public static readonly byte[] BomBytes = { 239, 187, 191 };
+    public static readonly byte[] BomBytes = [239, 187, 191];
 
     private readonly Mode checkMode;
 
