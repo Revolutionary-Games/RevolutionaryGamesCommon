@@ -111,9 +111,9 @@ public class LocalizationCheckBase : CodeCheck
                     // TODO: should we say original order (like in the ruby version) or updated order is the right one?
                     runData.ReportError(
                         $"Header order should be: {updatedOrder}, but it is: {originalOrder}, in file {original}");
-                    runData.OutputWarningWithMutex(
-                        "In addition to checking Babel version, please make sure you have latest " +
-                        "gettext command line tool version");
+                    runData.OutputWarningWithMutex("Please make sure you have latest gettext command line " +
+                        "tool version and you didn't manually edit the headers " +
+                        "(or used an external tool that changed them)");
 
                     issuesFound = true;
                 }
