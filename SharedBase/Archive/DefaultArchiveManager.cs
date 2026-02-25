@@ -138,6 +138,7 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
     public bool TryGetObjectWriteType(Type type, out ArchiveObjectType archiveType)
     {
         // Check custom mapping first
+        // This also now catches base class registrations
         if (registeredWriterTypes.TryGetValue(type, out archiveType))
             return true;
 
@@ -600,6 +601,8 @@ public class DefaultArchiveManager : IArchiveWriteManager, IArchiveReadManager
         {
             throw new ArgumentException("Type is already registered");
         }
+
+        registeredWriterTypes.TryAdd(nativeType, baseType);
     }
 
     public void RegisterLimitedObjectType(ArchiveObjectType type, Type nativeType)
