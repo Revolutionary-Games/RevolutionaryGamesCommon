@@ -12,6 +12,7 @@ public class DisallowedFileType : FileCheck
     public DisallowedFileType(string firstHandledFileEnding, params string[] extraHandledFileEndings) :
         base(firstHandledFileEnding, extraHandledFileEndings)
     {
+        HandlesBigBinaryFiles = true;
     }
 
     public Dictionary<string, string> ExtraErrorMessages { get; } = new();
