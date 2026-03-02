@@ -103,10 +103,8 @@ public class FileChecks : CodeCheck
     /// </summary>
     /// <param name="start">The folder to start</param>
     /// <param name="runData">Run data to check excludes from</param>
-    /// <param name="binaryFileExtensions">Binary file extensions that are ignored</param>
     /// <returns>All found files</returns>
-    public static IEnumerable<string> EnumerateFilesRecursively(string start, CodeCheckRun runData,
-        IReadOnlyCollection<string> binaryFileExtensions)
+    public static IEnumerable<string> EnumerateFilesRecursively(string start, CodeCheckRun runData)
     {
         foreach (var file in Directory.EnumerateFiles(start))
         {
@@ -128,19 +126,13 @@ public class FileChecks : CodeCheck
 
             if (runData.ProcessFile(handledFile))
             {
-                // Skip handling any binary files as the handlers (even ones that work on *any* file type, don't really
-                // want to run on them). If we ever get a binary type that needs checking we'll need some way to say
-                // *really* any file and text files only for a check.
-                if (binaryFileExtensions.Any(handledFile.EndsWith))
-                    continue;
-
                 yield return handledFile;
             }
         }
 
         foreach (var folder in Directory.EnumerateDirectories(start))
         {
-            foreach (var recursiveCall in EnumerateFilesRecursively(folder, runData, binaryFileExtensions))
+            foreach (var recursiveCall in EnumerateFilesRecursively(folder, runData))
             {
                 yield return recursiveCall;
             }
@@ -149,7 +141,7 @@ public class FileChecks : CodeCheck
 
     public override async Task Run(CodeCheckRun runData, CancellationToken cancellationToken)
     {
-        var files = EnumerateFilesRecursively(StartFileEnumerateFolder, runData, binaryFileExtensions);
+        var files = EnumerateFilesRecursively(StartFileEnumerateFolder, runData);
 
         if (!await RunChecksOnFiles(files, runData, cancellationToken))
         {
@@ -168,8 +160,6 @@ public class FileChecks : CodeCheck
 
             if (ColourConsole.DebugPrintingEnabled)
                 runData.OutputTextWithMutex($"Handling: {file}");
-
-            CheckAndWarnAboutFileSize(runData, file);
 
             try
             {
@@ -218,6 +208,14 @@ public class FileChecks : CodeCheck
         if (!runData.ProcessFile(path))
             return true;
 
+        // Many checks cannot run on big files, so we need to detect those and filter them out of most checks
+        bool isBinary = binaryFileExtensions.Any(path.EndsWith);
+
+        if (!isBinary)
+        {
+            CheckAndWarnAboutFileSize(runData, path);
+        }
+
         bool success = true;
 
         // We don't load the file contents here as the OS should cache the file read really well without us potentially
@@ -225,6 +223,11 @@ public class FileChecks : CodeCheck
 
         foreach (var check in enabledChecks)
         {
+            // Skip handling any binary files as the handlers (even ones that work on *any* file type don't really
+            // want to run on them).
+            if (isBinary && !check.HandlesBigBinaryFiles)
+                continue;
+
             // Allow multiple checks to work on a single file as they can detect different things
             if (check.HandlesFile(path))
             {

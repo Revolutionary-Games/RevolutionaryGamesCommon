@@ -123,7 +123,8 @@ public class RewriteTool : CodeCheck
     {
         var ignored = await FileChecks.GenerateKnownToBeIgnoredExtensions("./");
 
-        var files = FileChecks.EnumerateFilesRecursively(StartFileEnumerateFolder, runData, ignored)
+        var files = FileChecks.EnumerateFilesRecursively(StartFileEnumerateFolder, runData)
+            .Where(f => !ignored.Any(f.EndsWith))
             .Where(f => f.EndsWith(".cs")).ToList();
 
         if (files.Count < 1)

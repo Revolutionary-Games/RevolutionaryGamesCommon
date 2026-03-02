@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 /// <summary>
-///   Base class for the various file based checks
+///   Base class for the various file-based checks
 /// </summary>
 public abstract class FileCheck
 {
@@ -51,6 +51,8 @@ public abstract class FileCheck
     }
 
     public List<string>? IgnoredFiles { get; set; }
+
+    public bool HandlesBigBinaryFiles { get; set; }
 
     /// <summary>
     ///   Contains a list of file endings (extensions) that this check handles
