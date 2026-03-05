@@ -441,6 +441,9 @@ public class DiffGeneratorTests
     [InlineData(Text1, " ")]
     [InlineData(Text11, " ")]
     [InlineData(Text12, " ")]
+    [InlineData("", "")]
+    [InlineData("", " ")]
+    [InlineData(" ", "")]
     public void Diff_GeneratedDiffWhenAppliedGivesNewText(string old, string updated)
     {
         var diff = DiffGenerator.Default.Generate(old, updated);
@@ -636,6 +639,25 @@ public class DiffGeneratorTests
 
             Assert.Equal(text2, result.ToString());
         }
+    }
+
+    [Fact]
+    public void Diff_ApplyWithStartingNewLineWorks()
+    {
+        var old = "\nThis is a text\nWith many lines\n";
+        var newText = "\nThis is a text\nAnd an added line!\nWith many lines\n";
+
+        var diff = new DiffData(
+        [
+            new DiffData.Block(0, 0,
+                "\n", "This is a text",
+                ["With many lines"],
+                ["And an added line!", "With many lines"]),
+        ]);
+
+        var result = DiffGenerator.Default.ApplyDiff(old, diff);
+
+        Assert.Equal(newText, result.ToString());
     }
 
     [Theory]
