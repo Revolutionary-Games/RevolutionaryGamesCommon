@@ -209,8 +209,7 @@ public class LineByLineReaderTests
     [Fact]
     public void LineReader_LineSplitWorksOnWindows()
     {
-        var split = LineByLineReader.SplitToLines(
-            "This is just some text\r\n" +
+        var split = LineByLineReader.SplitToLines("This is just some text\r\n" +
             "with a few lines in it\r\n" +
             "that just says basically nothing at all\r\n").ToArray();
 
@@ -220,8 +219,7 @@ public class LineByLineReaderTests
         Assert.Equal("that just says basically nothing at all", split[2]);
         Assert.Equal(string.Empty, split[3]);
 
-        split = LineByLineReader.SplitToLines(
-            "This is just some text\r\n" +
+        split = LineByLineReader.SplitToLines("This is just some text\r\n" +
             "with a few lines in it\r\n" +
             "that just says basically nothing at all").ToArray();
 
