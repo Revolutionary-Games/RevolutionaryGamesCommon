@@ -77,12 +77,30 @@ public class DiffGenerator
         bool lineEnded1 = false;
         bool lineEnded2 = false;
 
+        bool firstLine = true;
+
         // Compare the strings line by line
+
         while (true)
         {
             // See if we can process a full line
-            bool newEnd1 = reader1.LookForLineEnd();
-            bool newEnd2 = reader2.LookForLineEnd();
+            bool newEnd1;
+            bool newEnd2;
+
+            if (firstLine)
+            {
+                // The texts can start with a new line character
+                newEnd1 = reader1.AtLineEnd || reader1.LookForLineEnd();
+                newEnd2 = reader2.AtLineEnd || reader2.LookForLineEnd();
+            }
+            else
+            {
+                // On further lines neither reader can be at a new line right now, so these calls are safe
+                newEnd1 = reader1.LookForLineEnd();
+                newEnd2 = reader2.LookForLineEnd();
+            }
+
+            firstLine = false;
 
             if (!reader1.Ended && !reader2.Ended)
             {
@@ -116,7 +134,7 @@ public class DiffGenerator
             {
                 // Divergence
 
-                // Try to find where the lines would converge if possible, if not possible then this just records
+                // Try to find where the lines would converge if possible, if not possible, then this just records
                 // differences until the end
                 var readerSearch2 = reader2.Clone();
 
@@ -217,7 +235,7 @@ public class DiffGenerator
                                         lineEnded1 = ended;
                                 }
 
-                                // Adjust reader1 to be able to continue next iteration on the same line as reader2
+                                // Adjust reader1 to be able to continue the next iteration on the same line as reader2
                                 if (lineEnded1)
                                     reader1.MoveToPreviousLine();
 
@@ -384,7 +402,7 @@ public class DiffGenerator
             reuseBuilder.Clear();
         }
 
-        // Just return original if nothing in diff
+        // Just return the original if nothing in the diff
         if (diff.Blocks == null || diff.Blocks.Count < 1)
         {
             return reuseBuilder.Append(original);
@@ -516,9 +534,24 @@ public class DiffGenerator
             // TODO: implement fuzzy matching modes (first should be whitespace ignoring mode)
             var scanReader = originalReader.Clone();
 
+            bool firstLine = true;
+
             while (true)
             {
-                bool lineEnd = scanReader.LookForLineEnd();
+                bool lineEnd;
+
+                // In some cases (like text starting with a new line), the reader might already be at a line end in which case we can't
+                // scan forward for the next line end as we are already there
+                if (originalReader.AtLineEnd && scanReader.AtLineEnd && firstLine)
+                {
+                    lineEnd = true;
+                }
+                else
+                {
+                    lineEnd = scanReader.LookForLineEnd();
+                }
+
+                firstLine = false;
 
                 if (scanReader.Ended)
                     throw new NonMatchingDiffException(block);
@@ -534,7 +567,7 @@ public class DiffGenerator
                 {
                     if (line == UnescapeReferenceLine(block.Reference2))
                     {
-                        // Found correct position
+                        // Found the correct position
 
                         // -1 is checked here as reference1 is where the lines point to so if both 1 and 2 references
                         // match we are already one line past where we wanted to be
@@ -566,10 +599,24 @@ public class DiffGenerator
                 }
             }
 
+            bool firstCopyLine = true;
+
             // Copy viewed reference lines to output
             while (originalReader.IsBehind(scanReader))
             {
-                bool lineEnd = originalReader.LookForLineEnd();
+                bool lineEnd;
+
+                // Copying is allowed to start on an empty line with nothing but a line end
+                if (firstCopyLine && originalReader.AtLineEnd)
+                {
+                    lineEnd = true;
+                }
+                else
+                {
+                    lineEnd = originalReader.LookForLineEnd();
+                }
+
+                firstCopyLine = false;
 
                 if (originalReader.Ended)
                     throw new NonMatchingDiffException(block);
@@ -581,7 +628,7 @@ public class DiffGenerator
                     originalReader.MoveToNextLine();
 
                 MakeSureResultHasEndingNewLine(reuseBuilder, lineEndings);
-                CopyLineToOutput(reuseBuilder, line, lineEnd, lineEndings);
+                CopyLineToOutput(reuseBuilder, line, lineEnd, lineEndings, true);
             }
 
             // Then apply the block as the reader should be at the start of the first line of the block
@@ -646,7 +693,7 @@ public class DiffGenerator
 
                 if (originalReader.Ended)
                 {
-                    // Deleting trailing newline potentially, or mismatching data
+                    // Deleting a trailing newline potentially, or mismatching data
                     if (deletedLine == string.Empty && !lastLineProcessed)
                     {
                         lastLineProcessed = true;
@@ -691,7 +738,7 @@ public class DiffGenerator
         if (block.AddedLines is { Count: > 0 })
         {
             // Only apply newlines between added lines as an added line may not necessarily end with a newline (for
-            // example at the end of a file)
+            // example, at the end of a file)
             bool first = true;
 
             foreach (var addedLine in block.AddedLines)
@@ -705,7 +752,7 @@ public class DiffGenerator
             }
         }
 
-        // Empty blocks shouldn't be dangerous so this doesn't check if this did anything or not
+        // Empty blocks shouldn't be dangerous, so this doesn't check if this did anything or not
 
         return readLines;
     }
@@ -747,12 +794,17 @@ public class DiffGenerator
     }
 
     private static void CopyLineToOutput(StringBuilder reuseBuilder, string line, bool lineEnd,
-        string lineEndings)
+        string lineEndings, bool ignoreDoubleLineEnd = false)
     {
         reuseBuilder.Append(line);
 
         if (lineEnd)
+        {
+            if (ignoreDoubleLineEnd && reuseBuilder.Length > 0 && reuseBuilder[^1] == '\n')
+                return;
+
             reuseBuilder.Append(lineEndings);
+        }
     }
 
     private static void CopyRemainingTextToOutput(StringBuilder reuseBuilder, LineByLineReader originalReader,

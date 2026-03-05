@@ -87,7 +87,7 @@ public class DiffData
 
         /// <summary>
         ///   The second reference line after the first one. Two reference lines are used to allow more certainty in
-        ///   matching where this block should apply if for example the source text has been slightly modified (or
+        ///   matching where this block should apply if, for example, the source text has been slightly modified (or
         ///   another diff has been applied to it already).
         /// </summary>
         [JsonInclude]
