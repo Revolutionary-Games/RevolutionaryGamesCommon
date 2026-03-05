@@ -540,8 +540,8 @@ public class DiffGenerator
             {
                 bool lineEnd;
 
-                // In some cases (like text starting with a new line), the reader might already be at a line end in which case we can't
-                // scan forward for the next line end as we are already there
+                // In some cases (like text starting with a new line), the reader might already be at a line end in
+                // which case we can't scan forward for the next line end as we are already there
                 if (originalReader.AtLineEnd && scanReader.AtLineEnd && firstLine)
                 {
                     lineEnd = true;

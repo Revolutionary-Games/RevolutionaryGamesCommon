@@ -280,7 +280,8 @@ public class LineByLineReaderTests
     [InlineData(Text1, 16, 0, 'J')]
     [InlineData(Text1, 17, 0, 'J')]
     [InlineData(Text1, 38, 15, 't')]
-    public void LineReader_LookForLineEndBackwardsWorks(string text, int skipChars, int expectedStart, char expectedChar)
+    public void LineReader_LookForLineEndBackwardsWorks(string text, int skipChars, int expectedStart,
+        char expectedChar)
     {
         var reader = new LineByLineReader(text);
 

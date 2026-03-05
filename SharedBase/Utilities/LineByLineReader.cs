@@ -129,7 +129,8 @@ public struct LineByLineReader
     {
         if (AtLineEnd)
         {
-            throw new InvalidOperationException("Currently at a line end, should be moved to next / previous line first");
+            throw new InvalidOperationException(
+                "Currently at a line end, should be moved to next / previous line first");
         }
 
         if (Ended)
