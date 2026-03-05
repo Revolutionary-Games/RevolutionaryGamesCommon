@@ -21,6 +21,10 @@ public struct LineByLineReader
     public LineByLineReader(string text)
     {
         this.text = text;
+
+        // If starts at a new line, detect that
+        if (text.Length > 0 && IsLineEnding(text[0]))
+            AtLineEnd = true;
     }
 
     /// <summary>
@@ -125,8 +129,7 @@ public struct LineByLineReader
     {
         if (AtLineEnd)
         {
-            throw new InvalidOperationException(
-                "Currently at a line end, should be moved to next / previous line first");
+            throw new InvalidOperationException("Currently at a line end, should be moved to next / previous line first");
         }
 
         if (Ended)
@@ -140,6 +143,12 @@ public struct LineByLineReader
             // Allow scanning backwards when exactly at the end
             index = text.Length - 1;
         }
+
+        // If this is already at the start of the text, and that is a newline, then we cannot go further back
+        if (index == 0 && text.Length > 0 && IsLineEnding(text[0]))
+            return false;
+
+        // Multicharacter endings should have scanned to the first character, so the above check should be enough
 
         for (; index >= 0; --index)
         {
@@ -216,8 +225,8 @@ public struct LineByLineReader
     }
 
     /// <summary>
-    ///   Reads current line from its beginning to here. Even if <see cref="AtLineEnd"/> is true this won't include the
-    ///   line ending characters.
+    ///   Reads the current line from its beginning to here. Even if <see cref="AtLineEnd"/> is true this won't include
+    ///   the line ending characters.
     /// </summary>
     /// <returns>The current line in the text</returns>
     /// <exception cref="InvalidOperationException">If this is already ended</exception>
@@ -226,6 +235,39 @@ public struct LineByLineReader
         FindCurrentLineRange(out var startIndex, out var endIndex);
 
         return text.Substring(startIndex, endIndex - startIndex + 1);
+    }
+
+    /// <summary>
+    ///   Moves forward by a given number of characters. Note that doesn't skip over line endings.
+    /// </summary>
+    /// <param name="skipChars">How many characters to skip</param>
+    /// <returns>True if skipped, false if there wasn't enough text to skip so much</returns>
+    public bool MoveForwardCharacters(int skipChars)
+    {
+        if (skipChars <= 0)
+            return true;
+
+        if (CheckTextEndConditions())
+            return false;
+
+        int count = 0;
+        for (; index < text.Length && count < skipChars; ++index, ++count)
+        {
+            if (IsLineEnding(text[index]))
+            {
+                AtLineEnd = true;
+            }
+            else
+            {
+                if (AtLineEnd)
+                {
+                    AtLineEnd = false;
+                    ++lineIndex;
+                }
+            }
+        }
+
+        return count == skipChars;
     }
 
     /// <summary>
@@ -244,7 +286,9 @@ public struct LineByLineReader
         // Adjust to end before the line ending
         if (AtLineEnd)
         {
-            --endIndex;
+            // If the text starts with a newline, don't go past the start
+            if (endIndex > 0)
+                --endIndex;
         }
         else if (index >= text.Length)
         {
@@ -264,6 +308,10 @@ public struct LineByLineReader
                 break;
             }
         }
+
+        // If the start index is at a line start (due to the start of the string, move it forward)
+        if (startIndex == 0 && startIndex < endIndex && text.Length > 0 && IsLineEnding(text[0]))
+            ++startIndex;
     }
 
     /// <summary>
@@ -291,7 +339,7 @@ public struct LineByLineReader
         if (length != otherEnd - otherStart + 1)
             return false;
 
-        // After calculating the ranges just compare character by character
+        // After calculating the ranges, just compare character by character
         for (int i = 0; i < length; ++i)
         {
             if (text[ourStart + i] != otherText[otherStart + i])

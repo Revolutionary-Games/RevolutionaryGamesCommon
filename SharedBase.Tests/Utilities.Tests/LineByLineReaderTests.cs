@@ -14,6 +14,8 @@ public class LineByLineReaderTests
 
     private const string Text2 = Text1 + "\n";
 
+    private const string Text3 = "\nFirst line\nSecond line\nThird line\n";
+
     private const string WindowsText = Fragment1 + "\r\n" + Fragment2 + "\r\n" + Fragment3;
 
     [Fact]
@@ -207,7 +209,8 @@ public class LineByLineReaderTests
     [Fact]
     public void LineReader_LineSplitWorksOnWindows()
     {
-        var split = LineByLineReader.SplitToLines("This is just some text\r\n" +
+        var split = LineByLineReader.SplitToLines(
+            "This is just some text\r\n" +
             "with a few lines in it\r\n" +
             "that just says basically nothing at all\r\n").ToArray();
 
@@ -217,7 +220,8 @@ public class LineByLineReaderTests
         Assert.Equal("that just says basically nothing at all", split[2]);
         Assert.Equal(string.Empty, split[3]);
 
-        split = LineByLineReader.SplitToLines("This is just some text\r\n" +
+        split = LineByLineReader.SplitToLines(
+            "This is just some text\r\n" +
             "with a few lines in it\r\n" +
             "that just says basically nothing at all").ToArray();
 
@@ -234,5 +238,64 @@ public class LineByLineReaderTests
         Assert.Equal(2, split.Length);
         Assert.Equal("This is just some text", split[0]);
         Assert.Equal(string.Empty, split[1]);
+    }
+
+    [Theory]
+    [InlineData(Text1, 0, 0, 13)]
+    [InlineData(Text1, 13, 0, 13)]
+    [InlineData(Text1, 14, 0, 13)]
+    [InlineData(Text1, 15, 15, 37)]
+    [InlineData(Text1, 16, 15, 37)]
+    [InlineData(Text1, 38, 15, 37)]
+    [InlineData(Text1, 39, 39, 62)]
+    [InlineData(Text3, 0, 0, 0)]
+    public void LineReader_CurrentLineRangeCalculation(string text, int skipChars, int expectedStart, int expectedEnd)
+    {
+        var reader = new LineByLineReader(text);
+
+        Assert.True(reader.MoveForwardCharacters(skipChars));
+
+        if (reader.AtLineEnd && skipChars > 0)
+            reader.MoveToNextLine();
+
+        if (!reader.AtLineEnd)
+            reader.LookForLineEnd();
+
+        reader.FindCurrentLineRange(out var start, out var end);
+        Assert.Equal(expectedStart, start);
+        Assert.Equal(expectedEnd, end);
+
+        // Make sure this doesn't throw
+        var substring = text.Substring(start, end - start + 1);
+
+        // And gets the right characters
+        Assert.Equal(text.Substring(expectedStart, expectedEnd - expectedStart + 1), substring);
+    }
+
+    [Theory]
+    [InlineData(Text1, 0, 0, 'J')]
+    [InlineData(Text1, 5, 0, 'J')]
+    [InlineData(Text1, 14, 0, 'J')]
+    [InlineData(Text1, 15, 0, 'J')]
+    [InlineData(Text1, 16, 0, 'J')]
+    [InlineData(Text1, 17, 0, 'J')]
+    [InlineData(Text1, 38, 15, 't')]
+    public void LineReader_LookForLineEndBackwardsWorks(string text, int skipChars, int expectedStart, char expectedChar)
+    {
+        var reader = new LineByLineReader(text);
+
+        Assert.True(reader.MoveForwardCharacters(skipChars));
+
+        if (reader.AtLineEnd)
+            reader.MoveToNextLine();
+
+        // if (!reader.AtLineEnd)
+        reader.LookBackwardsForLineEnd();
+
+        // We don't scan forward, so end ends up bad, and thus we ignore it
+        reader.FindCurrentLineRange(out var start, out _);
+        Assert.Equal(expectedStart, start);
+
+        Assert.Equal(expectedChar, text[expectedStart]);
     }
 }
