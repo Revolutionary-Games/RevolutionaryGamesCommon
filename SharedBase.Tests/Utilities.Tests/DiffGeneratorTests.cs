@@ -1,10 +1,9 @@
 namespace SharedBase.Tests.Utilities.Tests;
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text.Json;
 using SharedBase.Utilities;
+using TextDiff;
 using Xunit;
 
 public class DiffGeneratorTests
@@ -143,13 +142,31 @@ public class DiffGeneratorTests
                                             as well as deleted
                                             """;
 
+    private const string SpecificText2Old = """
+
+                                            TODO: new banner image
+                                            [center]![banner_50.webp](media:webp:86890a33-2956-48ee-97b1-23fae2eadd8a)[/center]
+
+                                            TODO: write some intro paragraphs
+                                            """;
+
+    private const string SpecificText2New = """
+
+                                            TODO: new banner image
+                                            [center]![banner_50.webp](media:webp:86890a33-2956-48ee-97b1-23fae2eadd8a)[/center]
+
+                                            It's finally time for the first major update of the Multicellular development process!
+
+                                            TODO: write some intro paragraphs
+                                            """;
+
     [Fact]
     public void Diff_EmptyIsEmpty()
     {
         var diff = DiffGenerator.Default.Generate(Text1, Text1);
 
         Assert.True(diff.Empty);
-        Assert.Null(diff.Blocks);
+        Assert.Null(diff.UnifiedDiffText);
     }
 
     [Fact]
@@ -158,19 +175,9 @@ public class DiffGeneratorTests
         var diff = DiffGenerator.Default.Generate(string.Empty, Text1);
 
         Assert.False(diff.Empty);
-        Assert.NotNull(diff.Blocks);
+        Assert.NotNull(diff.UnifiedDiffText);
 
-        Assert.Single(diff.Blocks);
-
-        var block = diff.Blocks.First();
-
-        Assert.Null(block.DeletedLines);
-        Assert.NotNull(block.AddedLines);
-
-        Assert.Equal(Text1.Split('\n', '\r', StringSplitOptions.RemoveEmptyEntries), block.AddedLines);
-
-        Assert.Equal(0, block.ExpectedOffset);
-        Assert.Equal(0, block.IgnoreReferenceCount);
+        Assert.Equal(Text1, DiffGenerator.Default.ApplyDiff(string.Empty, diff));
     }
 
     [Fact]
@@ -179,19 +186,9 @@ public class DiffGeneratorTests
         var diff = DiffGenerator.Default.Generate(Text1, string.Empty);
 
         Assert.False(diff.Empty);
-        Assert.NotNull(diff.Blocks);
+        Assert.NotNull(diff.UnifiedDiffText);
 
-        Assert.Single(diff.Blocks);
-
-        var block = diff.Blocks.First();
-
-        Assert.NotNull(block.DeletedLines);
-        Assert.Null(block.AddedLines);
-
-        Assert.Equal(Text1.Split('\n', '\r', StringSplitOptions.RemoveEmptyEntries), block.DeletedLines);
-
-        Assert.Equal(0, block.ExpectedOffset);
-        Assert.Equal(0, block.IgnoreReferenceCount);
+        Assert.Equal(string.Empty, DiffGenerator.Default.ApplyDiff(Text1, diff));
     }
 
     [Fact]
@@ -200,24 +197,9 @@ public class DiffGeneratorTests
         var diff = DiffGenerator.Default.Generate(Text3, Text4);
 
         Assert.False(diff.Empty);
-        Assert.NotNull(diff.Blocks);
+        Assert.NotNull(diff.UnifiedDiffText);
 
-        Assert.Single(diff.Blocks);
-
-        var block = diff.Blocks.First();
-
-        Assert.NotNull(block.DeletedLines);
-        Assert.NotNull(block.AddedLines);
-        Assert.Single(block.AddedLines);
-        Assert.Single(block.DeletedLines);
-        Assert.Equal(Text3, block.DeletedLines[0]);
-        Assert.Equal(Text4, block.AddedLines[0]);
-        Assert.Equal(0, block.ExpectedOffset);
-        Assert.Equal(0, block.IgnoreReferenceCount);
-        Assert.NotEqual(Text3, block.Reference1);
-        Assert.NotEqual(Text3, block.Reference2);
-        Assert.NotEqual(Text4, block.Reference1);
-        Assert.NotEqual(Text4, block.Reference2);
+        Assert.Equal(Text4, DiffGenerator.Default.ApplyDiff(Text3, diff));
     }
 
     [Fact]
@@ -226,18 +208,13 @@ public class DiffGeneratorTests
         var diff = DiffGenerator.Default.Generate(Text1, Text2);
 
         Assert.False(diff.Empty);
-        Assert.NotNull(diff.Blocks);
+        Assert.NotNull(diff.UnifiedDiffText);
 
-        Assert.Single(diff.Blocks);
+        var expectedDiff = " This is just some text\n with a few lines in it\n " +
+            "that just says basically nothing at all\n" +
+            "+but maybe just has a bit of a new thing";
 
-        var block = diff.Blocks.First();
-
-        Assert.Null(block.DeletedLines);
-        Assert.NotNull(block.AddedLines);
-        Assert.Single(block.AddedLines);
-        Assert.Equal("but maybe just has a bit of a new thing", block.AddedLines[0]);
-        Assert.Equal(3, block.ExpectedOffset);
-        Assert.Equal(0, block.IgnoreReferenceCount);
+        Assert.Equal(expectedDiff, diff.UnifiedDiffText);
     }
 
     [Fact]
@@ -245,45 +222,21 @@ public class DiffGeneratorTests
     {
         var diff = DiffGenerator.Default.Generate(Text5, Text6);
 
-        Assert.NotNull(diff.Blocks);
-        Assert.Single(diff.Blocks);
+        Assert.NotNull(diff.UnifiedDiffText);
 
-        var block = diff.Blocks.First();
-
-        Assert.Null(block.DeletedLines);
-        Assert.NotNull(block.AddedLines);
-        Assert.Single(block.AddedLines);
-        Assert.Equal(string.Empty, block.AddedLines[0]);
-
-        Assert.Equal(DiffGenerator.StartLineReference, block.Reference1);
-        Assert.Equal("Just some text", block.Reference2);
-
-        Assert.Equal(1, block.ExpectedOffset);
-        Assert.Equal(0, block.IgnoreReferenceCount);
+        Assert.Equal(Text6, DiffGenerator.Default.ApplyDiff(Text5, diff));
     }
+
+    // TODO: test for applying the wrong way around
 
     [Fact]
     public void Diff_FirstLineDifference()
     {
         var diff = DiffGenerator.Default.Generate(Text1, Text7);
 
-        Assert.NotNull(diff.Blocks);
-        Assert.Single(diff.Blocks);
+        Assert.NotNull(diff.UnifiedDiffText);
 
-        var block = diff.Blocks.First();
-
-        Assert.NotNull(block.DeletedLines);
-        Assert.Single(block.DeletedLines);
-        Assert.Equal("This is just some text", block.DeletedLines[0]);
-        Assert.NotNull(block.AddedLines);
-        Assert.Single(block.AddedLines);
-        Assert.Equal("First line difference in text", block.AddedLines[0]);
-
-        Assert.Equal(DiffGenerator.StartLineReference, block.Reference1);
-        Assert.Equal(DiffGenerator.StartLineReference, block.Reference2);
-
-        Assert.Equal(0, block.ExpectedOffset);
-        Assert.Equal(0, block.IgnoreReferenceCount);
+        Assert.Equal(Text7, DiffGenerator.Default.ApplyDiff(Text1, diff));
     }
 
     [Fact]
@@ -291,21 +244,9 @@ public class DiffGeneratorTests
     {
         var diff = DiffGenerator.Default.Generate(Text1, Text11);
 
-        Assert.NotNull(diff.Blocks);
-        Assert.Single(diff.Blocks);
+        Assert.NotNull(diff.UnifiedDiffText);
 
-        var block = diff.Blocks.First();
-
-        Assert.NotNull(block.DeletedLines);
-        Assert.Single(block.DeletedLines);
-        Assert.Equal("with a few lines in it", block.DeletedLines[0]);
-        Assert.Null(block.AddedLines);
-
-        Assert.Equal(DiffGenerator.StartLineReference, block.Reference1);
-        Assert.Equal("This is just some text", block.Reference2);
-
-        Assert.Equal(1, block.ExpectedOffset);
-        Assert.Equal(0, block.IgnoreReferenceCount);
+        Assert.Equal(Text11, DiffGenerator.Default.ApplyDiff(Text1, diff));
     }
 
     [Fact]
@@ -313,38 +254,9 @@ public class DiffGeneratorTests
     {
         var diff = DiffGenerator.Default.Generate(Text9, Text10);
 
-        Assert.NotNull(diff.Blocks);
-        Assert.Equal(2, diff.Blocks.Count);
+        Assert.NotNull(diff.UnifiedDiffText);
 
-        var block1 = diff.Blocks[0];
-
-        Assert.NotNull(block1.DeletedLines);
-        Assert.Single(block1.DeletedLines);
-        Assert.Equal("with a few lines in it", block1.DeletedLines[0]);
-        Assert.NotNull(block1.AddedLines);
-        Assert.Single(block1.AddedLines);
-        Assert.Equal("with a few changed lines in it", block1.AddedLines[0]);
-
-        Assert.Equal(DiffGenerator.StartLineReference, block1.Reference1);
-        Assert.Equal("This is just some text", block1.Reference2);
-
-        Assert.Equal(1, block1.ExpectedOffset);
-        Assert.Equal(0, block1.IgnoreReferenceCount);
-
-        var block2 = diff.Blocks[1];
-
-        Assert.NotNull(block2.DeletedLines);
-        Assert.Single(block2.DeletedLines);
-        Assert.Equal("and there ends up being a difference", block2.DeletedLines[0]);
-        Assert.NotNull(block2.AddedLines);
-        Assert.Single(block2.AddedLines);
-        Assert.Equal("and there ends up being a difference in multiple places", block2.AddedLines[0]);
-
-        Assert.Equal("that just says basically nothing at all", block2.Reference1);
-        Assert.Equal("but maybe just has a bit of a new thing", block2.Reference2);
-
-        Assert.Equal(3, block2.ExpectedOffset);
-        Assert.Equal(0, block2.IgnoreReferenceCount);
+        Assert.Equal(Text10, DiffGenerator.Default.ApplyDiff(Text9, diff));
     }
 
     [Theory]
@@ -358,20 +270,14 @@ public class DiffGeneratorTests
     [InlineData("some text\n\nother stuff\n")]
     public void Diff_EmptyDiffAppliesCorrectly(string text)
     {
-        Assert.Equal(text, DiffGenerator.Default.ApplyDiff(text, new DiffData()).ToString());
-        Assert.Equal(text, DiffGenerator.Default.ApplyDiff(text, new DiffData(new List<DiffData.Block>())).ToString());
+        Assert.Equal(text, DiffGenerator.Default.ApplyDiff(text, new DiffData()));
+        Assert.Equal(text, DiffGenerator.Default.ApplyDiff(text, new DiffData(string.Empty)));
+    }
 
-        // Test also with a single pretty malformed block that doesn't have any operations
-        Assert.Equal(text,
-            DiffGenerator.Default.ApplyDiff(text,
-                new DiffData([
-                    new DiffData.Block(0,
-                        0,
-                        DiffGenerator.StartLineReference,
-                        DiffGenerator.StartLineReference,
-                        null,
-                        null),
-                ])).ToString());
+    [Fact]
+    public void Diff_BadDiffThrows()
+    {
+        Assert.Throws<ArgumentException>(() => DiffGenerator.Default.ApplyDiff(Text1, new DiffData(" ")));
     }
 
     [Fact]
@@ -382,24 +288,14 @@ public class DiffGeneratorTests
 
         var diff = DiffGenerator.Default.Generate(old, updated);
 
-        Assert.NotNull(diff.Blocks);
-        Assert.Single(diff.Blocks);
+        Assert.NotNull(diff.UnifiedDiffText);
 
-        var block1 = diff.Blocks[0];
-
-        Assert.Null(block1.AddedLines);
-        Assert.NotNull(block1.DeletedLines);
-
-        Assert.Equal(2, block1.DeletedLines.Count);
-        Assert.Equal("but maybe just has a bit of a new thing", block1.DeletedLines[0]);
-        Assert.Empty(block1.DeletedLines[1]);
-
-        Assert.Equal(updated, DiffGenerator.Default.ApplyDiff(old, diff).ToString());
+        Assert.Equal(updated, DiffGenerator.Default.ApplyDiff(old, diff));
 
         old = Text2 + "\n";
         diff = DiffGenerator.Default.Generate(old, updated);
 
-        Assert.Equal(updated, DiffGenerator.Default.ApplyDiff(old, diff).ToString());
+        Assert.Equal(updated, DiffGenerator.Default.ApplyDiff(old, diff));
     }
 
     [Fact]
@@ -410,15 +306,7 @@ public class DiffGeneratorTests
 
         var diff = DiffGenerator.Default.Generate(old, updated);
 
-        Assert.NotNull(diff.Blocks);
-        Assert.Single(diff.Blocks);
-        Assert.Null(diff.Blocks[0].AddedLines);
-        Assert.NotNull(diff.Blocks[0].DeletedLines);
-        Assert.Equal(2, diff.Blocks[0].DeletedLines!.Count);
-
-        var result = DiffGenerator.Default.ApplyDiff(old, diff);
-
-        Assert.Equal(updated, result.ToString());
+        Assert.Equal(updated, DiffGenerator.Default.ApplyDiff(old, diff));
     }
 
     [Theory]
@@ -448,9 +336,40 @@ public class DiffGeneratorTests
     {
         var diff = DiffGenerator.Default.Generate(old, updated);
 
+        Assert.Equal(updated, DiffGenerator.Default.ApplyDiff(old, diff));
+    }
+
+    [Fact]
+    public void Diff_TextDiffSpaceTest()
+    {
+        var old = " ";
+        var newText = "This is just some text";
+        var diffText = "- \n+This is just some text";
+
+        var textDiffer = new TextDiffer();
+
+        var result = textDiffer.Process(old, diffText);
+
+        string updatedText = result.Text;
+
+        Assert.Equal(newText, updatedText);
+    }
+
+    [Fact]
+    public void Diff_WorksFromJustASpaceOldText()
+    {
+        var old = " ";
+        var newText = "This is just some text";
+
+        var diff = DiffGenerator.Default.Generate(old, newText);
+
+        var expectedDiff = "- \n+This is just some text";
+
+        Assert.Equal(expectedDiff, diff.UnifiedDiffText);
+
         var result = DiffGenerator.Default.ApplyDiff(old, diff);
 
-        Assert.Equal(updated, result.ToString());
+        Assert.Equal(newText, result);
     }
 
     [Theory]
@@ -464,9 +383,7 @@ public class DiffGeneratorTests
     {
         var diff = DiffGenerator.Default.Generate(updated, old);
 
-        var result = DiffGenerator.Default.ApplyDiff(updated, diff);
-
-        Assert.Equal(old, result.ToString());
+        Assert.Equal(old, DiffGenerator.Default.ApplyDiff(updated, diff));
     }
 
     [Fact]
@@ -474,27 +391,9 @@ public class DiffGeneratorTests
     {
         var diff = DiffGenerator.Default.Generate(Text8, Text9);
 
-        Assert.NotNull(diff.Blocks);
-        Assert.Single(diff.Blocks);
+        Assert.NotNull(diff.UnifiedDiffText);
 
-        var block = diff.Blocks.First();
-
-        Assert.NotNull(block.DeletedLines);
-        Assert.Single(block.DeletedLines);
-        Assert.Equal("but only after a changed line", block.DeletedLines[0]);
-        Assert.NotNull(block.AddedLines);
-        Assert.Single(block.AddedLines);
-        Assert.Equal("that might be tricky to match", block.AddedLines[0]);
-
-        Assert.Equal("and there ends up being a difference", block.Reference1);
-        Assert.Equal("that is after a reference match", block.Reference2);
-
-        Assert.Equal(7, block.ExpectedOffset);
-        Assert.Equal(1, block.IgnoreReferenceCount);
-
-        var result = DiffGenerator.Default.ApplyDiff(Text8, diff);
-
-        Assert.Equal(Text9, result.ToString());
+        Assert.Equal(Text9, DiffGenerator.Default.ApplyDiff(Text8, diff));
     }
 
     [Theory]
@@ -504,7 +403,7 @@ public class DiffGeneratorTests
     public void Diff_RoundTripThroughJsonWorks(string old, string updated)
     {
         var diff = DiffGenerator.Default.Generate(old, updated);
-        Assert.NotNull(diff.Blocks);
+        Assert.NotNull(diff.UnifiedDiffText);
 
         var encoded = JsonSerializer.Serialize(diff);
 
@@ -512,17 +411,11 @@ public class DiffGeneratorTests
 
         Assert.NotNull(restored);
 
-        Assert.NotNull(restored.Blocks);
-        Assert.Equal(diff.Blocks.Count, restored.Blocks.Count);
+        Assert.NotNull(restored.UnifiedDiffText);
+        Assert.Equal(diff.UnifiedDiffText.Length, restored.UnifiedDiffText.Length);
+        Assert.Equal(diff.UnifiedDiffText, restored.UnifiedDiffText);
 
-        for (int i = 0; i < diff.Blocks.Count; ++i)
-        {
-            Assert.Equal(diff.Blocks[i], restored.Blocks[i]);
-        }
-
-        var result = DiffGenerator.Default.ApplyDiff(old, restored);
-
-        Assert.Equal(updated, result.ToString());
+        Assert.Equal(updated, DiffGenerator.Default.ApplyDiff(old, restored));
     }
 
     [Fact]
@@ -552,7 +445,7 @@ public class DiffGeneratorTests
         updated = updated.Replace("\n", "\r\n");
 
         var diff = DiffGenerator.Default.Generate(old, updated);
-        Assert.NotNull(diff.Blocks);
+        Assert.NotNull(diff.UnifiedDiffText);
 
         var encoded = JsonSerializer.Serialize(diff);
 
@@ -560,12 +453,11 @@ public class DiffGeneratorTests
 
         Assert.NotNull(restored);
 
-        Assert.NotNull(restored.Blocks);
-        Assert.Equal(diff.PreferWindowsLineEndings, restored.PreferWindowsLineEndings);
+        Assert.NotNull(restored.UnifiedDiffText);
 
         var result = DiffGenerator.Default.ApplyDiff(old, restored);
 
-        Assert.Equal(updated, result.ToString());
+        Assert.Equal(updated, result);
     }
 
     [Theory]
@@ -578,9 +470,7 @@ public class DiffGeneratorTests
     {
         var diff = DiffGenerator.Default.Generate(old, updated);
 
-        var result = DiffGenerator.Default.ApplyDiff(old, diff);
-
-        Assert.Equal(updated, result.ToString());
+        Assert.Equal(updated, DiffGenerator.Default.ApplyDiff(old, diff));
     }
 
     [Theory]
@@ -595,50 +485,10 @@ public class DiffGeneratorTests
     [InlineData("", Text17)]
     public void Diff_LinesMatchingStartSpecialValueAreHandledCorrectly(string old, string updated)
     {
-        if (!LineByLineReader.SplitToLines(old).Contains(DiffGenerator.StartLineReference) &&
-            !LineByLineReader.SplitToLines(updated).Contains(DiffGenerator.StartLineReference))
-        {
-            throw new ArgumentException("Either old or new should have the special reference line in it");
-        }
-
+        // Note these no longer do anything but just for fun the test still exists as it shouldn't break on these
         var diff = DiffGenerator.Default.Generate(old, updated);
 
-        var result = DiffGenerator.Default.ApplyDiff(old, diff);
-
-        Assert.Equal(updated, result.ToString());
-    }
-
-    [Theory]
-    [InlineData(Text15, Text16)]
-    [InlineData(Text15, Text17)]
-    [InlineData(Text17, Text15)]
-    [InlineData(Text15, "")]
-    [InlineData(Text16, "")]
-    [InlineData(Text17, "")]
-    [InlineData("", Text15)]
-    [InlineData("", Text16)]
-    [InlineData("", Text17)]
-    public void Diff_MultiEscapedStartLineReference(string old, string updated)
-    {
-        for (int i = 0; i < 3; ++i)
-        {
-            string extra = string.Empty;
-
-            for (int j = 0; j < i; ++j)
-            {
-                extra += "\\";
-            }
-
-            var text1 = old.Replace(DiffGenerator.StartLineReference, extra + DiffGenerator.EscapedStartLineReference);
-            var text2 = updated.Replace(DiffGenerator.StartLineReference,
-                extra + DiffGenerator.EscapedStartLineReference);
-
-            var diff = DiffGenerator.Default.Generate(text1, text2);
-
-            var result = DiffGenerator.Default.ApplyDiff(text1, diff);
-
-            Assert.Equal(text2, result.ToString());
-        }
+        Assert.Equal(updated, DiffGenerator.Default.ApplyDiff(old, diff));
     }
 
     [Fact]
@@ -647,28 +497,24 @@ public class DiffGeneratorTests
         var old = "\nThis is a text\nWith many lines\n";
         var newText = "\nThis is a text\nAnd an added line!\nWith many lines\n";
 
-        var diff = new DiffData(
-        [
-            new DiffData.Block(0, 0,
-                "\n", "This is a text",
-                ["With many lines"],
-                ["And an added line!", "With many lines"]),
-        ]);
+        var diff = DiffGenerator.Default.Generate(old, newText);
 
         var result = DiffGenerator.Default.ApplyDiff(old, diff);
 
-        Assert.Equal(newText, result.ToString());
+        Assert.Equal(newText, result);
     }
 
     [Theory]
     [InlineData(SpecificText1Old, SpecificText1New)]
     [InlineData(SpecificText1New, SpecificText1Old)]
+    [InlineData(SpecificText2Old, SpecificText2New)]
+    [InlineData(SpecificText2New, SpecificText2Old)]
     public void Diff_SpecificProblematicTextsWork(string old, string updated)
     {
         var diff = DiffGenerator.Default.Generate(old, updated);
 
         var result = DiffGenerator.Default.ApplyDiff(old, diff);
 
-        Assert.Equal(updated, result.ToString());
+        Assert.Equal(updated, result);
     }
 }
