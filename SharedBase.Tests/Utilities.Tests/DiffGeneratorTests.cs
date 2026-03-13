@@ -144,7 +144,7 @@ public class DiffGeneratorTests
     private const string SpecificText2Old = """
 
                                             TODO: new banner image
-                                            [center]![banner_50.webp](media:webp:86890a33-2956-48ee-97b1-23fae2eadd8a)[/center]
+                                            [center]![banner_50.webp](media:webp:86890a33---97b1-23fae2eadd8a)[/center]
 
                                             TODO: write some intro paragraphs
                                             """;
@@ -152,9 +152,9 @@ public class DiffGeneratorTests
     private const string SpecificText2New = """
 
                                             TODO: new banner image
-                                            [center]![banner_50.webp](media:webp:86890a33-2956-48ee-97b1-23fae2eadd8a)[/center]
+                                            [center]![banner_50.webp](media:webp:86890a33---97b1-23fae2eadd8a)[/center]
 
-                                            It's finally time for the first major update of the Multicellular development process!
+                                            It's finally time for the first major update of the Multicellular!
 
                                             TODO: write some intro paragraphs
                                             """;
