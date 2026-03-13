@@ -8,13 +8,13 @@ using System.Text.Json.Serialization;
 /// </summary>
 public class DiffData
 {
+    /// <summary>
+    ///   Encoded version of the diff. Is not really user-readable but is in a text-like format so kind of can be read.
+    ///   Decoded with <c>DiffMatchPath.DiffFromDelta</c>
+    /// </summary>
     [JsonInclude]
     [JsonPropertyName("diff")]
-    public string? UnifiedDiffText;
-
-    [JsonInclude]
-    [JsonPropertyName("winStyle")]
-    public bool PreferWindowsLineEndings;
+    public string? DiffDeltaRaw;
 
     /// <summary>
     ///   Blank diff with no changes
@@ -24,23 +24,20 @@ public class DiffData
     }
 
     [JsonConstructor]
-    public DiffData(string? unifiedDiffText)
+    public DiffData(string? diffDeltaRaw)
     {
-        UnifiedDiffText = unifiedDiffText;
+        DiffDeltaRaw = diffDeltaRaw;
     }
 
     /// <summary>
     ///   True when the diffed data is the same, i.e. there are no differences
     /// </summary>
     [JsonIgnore]
-    public bool Empty => string.IsNullOrEmpty(UnifiedDiffText);
+    public bool Empty => string.IsNullOrEmpty(DiffDeltaRaw);
 
     public override string ToString()
     {
-        var text = $"Diff with length of {UnifiedDiffText?.Length.ToString() ?? "None"}";
-
-        if (PreferWindowsLineEndings)
-            text += " (windows line endings)";
+        var text = $"Diff with length of {DiffDeltaRaw?.Length.ToString() ?? "None"}";
 
         return text;
     }

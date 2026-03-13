@@ -1,20 +1,12 @@
 namespace SharedBase.Utilities;
 
 using System;
-using System.Text;
-using DiffPlex;
-using DiffPlex.DiffBuilder;
-using DiffPlex.DiffBuilder.Model;
-using TextDiff;
-using TextDiff.Models;
+using DiffMatchPatch;
 
 public class DiffGenerator
 {
-    private readonly InlineDiffBuilder diffBuilder = new(new Differ());
-
-    private readonly TextDiffer textDiff = new();
-
-    private readonly StringBuilder lineBuilder = new();
+    private readonly DiffMatchPatch diffBuilder =
+        new(1.5f, 32, 4, 0.5f, 1000, 32, 0.5f, 4);
 
     public static DiffGenerator Default { get; } = new();
 
@@ -31,22 +23,21 @@ public class DiffGenerator
         if (specialResult != null)
             return specialResult;
 
-        var newLine = "\n";
-        if (ShouldUseWindowsLineEndings(newText))
-            newLine = "\r\n";
-
-        string fullText;
+        string encodedDiff;
         lock (diffBuilder)
         {
-            var initialDiff = diffBuilder.BuildDiffModel(oldText, newText);
+            var diffs = diffBuilder.DiffMain(oldText, newText);
 
-            fullText = ConvertToUnifiedDiff(initialDiff, newLine);
+            // No clue what this does
+            // diffBuilder.DiffCleanupSemantic(diffs);
+
+            // We can't encode as JSON, so we have to encode as text.
+            // I really wanted to use a reusable string builder, however, the encoding is so complex that this needs
+            // to be done like this
+            encodedDiff = diffBuilder.DiffToDelta(diffs);
         }
 
-        return new DiffData(fullText)
-        {
-            PreferWindowsLineEndings = ShouldUseWindowsLineEndings(newText),
-        };
+        return new DiffData(encodedDiff);
     }
 
     /// <summary>
@@ -56,28 +47,20 @@ public class DiffGenerator
     /// <param name="diff">Diff data to apply, if empty won't do anything to the text</param>
     /// <returns>A string containing the result</returns>
     /// <exception cref="ArgumentException">If the diff data is malformed</exception>
-    /// <exception cref="TextDiff.Exceptions.TextDiffException">
-    ///   If the diff data doesn't match the text and can't be applied
-    /// </exception>
     public string ApplyDiff(string original, DiffData diff)
     {
-        if (diff.Empty || string.IsNullOrEmpty(diff.UnifiedDiffText))
+        if (diff.Empty || string.IsNullOrEmpty(diff.DiffDeltaRaw))
             return original;
 
-        ProcessResult result;
-        lock (textDiff)
+        string result;
+        lock (diffBuilder)
         {
-            // TODO: should this use ProcessOptimized if the original is long?
-            result = textDiff.Process(original, diff.UnifiedDiffText);
+            var diffs = diffBuilder.DiffFromDelta(original, diff.DiffDeltaRaw);
+
+            result = diffBuilder.DiffText2(diffs);
         }
 
-        // If we want Windows line endings, we need to force it here as the library doesn't do that
-        if (diff.PreferWindowsLineEndings)
-        {
-            return result.Text.Replace("\n", "\r\n");
-        }
-
-        return result.Text;
+        return result;
     }
 
     private static DiffData? HandleSpecialCases(string oldText, string newText)
@@ -93,51 +76,5 @@ public class DiffGenerator
         }
 
         return null;
-    }
-
-    private static bool ShouldUseWindowsLineEndings(string sampleText)
-    {
-        return sampleText.Contains("\r\n");
-    }
-
-    private string ConvertToUnifiedDiff(DiffPaneModel diffData, string lineSeparator)
-    {
-        lineBuilder.Clear();
-
-        bool first = true;
-
-        foreach (var line in diffData.Lines)
-        {
-            switch (line.Type)
-            {
-                case ChangeType.Unchanged:
-                    if (!first)
-                        lineBuilder.Append(lineSeparator);
-
-                    lineBuilder.Append(' ');
-                    lineBuilder.Append(line.Text);
-                    break;
-
-                case ChangeType.Deleted:
-                    if (!first)
-                        lineBuilder.Append(lineSeparator);
-
-                    lineBuilder.Append('-');
-                    lineBuilder.Append(line.Text);
-                    break;
-
-                case ChangeType.Inserted:
-                    if (!first)
-                        lineBuilder.Append(lineSeparator);
-
-                    lineBuilder.Append('+');
-                    lineBuilder.Append(line.Text);
-                    break;
-            }
-
-            first = false;
-        }
-
-        return lineBuilder.ToString();
     }
 }
