@@ -175,11 +175,13 @@ public class InspectCode : JetBrainsCheck
                 runData.OutputTextWithMutex("Rule has no full description");
             }
 
+            string? helpUriString = null;
             try
             {
                 if (rule.HelpUri != null)
                 {
-                    runData.OutputTextWithMutex(rule.HelpUri.ToString());
+                    helpUriString = rule.HelpUri.ToString();
+                    runData.OutputTextWithMutex(helpUriString);
                 }
             }
             catch (Exception e)
@@ -189,7 +191,10 @@ public class InspectCode : JetBrainsCheck
 
             if (rule.Help != null)
             {
-                runData.OutputTextWithMutex(rule.Help.Text);
+                if (rule.Help.Text != helpUriString)
+                {
+                    runData.OutputTextWithMutex(rule.Help.Text);
+                }
             }
         }
 
