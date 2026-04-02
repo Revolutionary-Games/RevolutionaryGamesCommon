@@ -183,6 +183,8 @@ public class SymbolUploader
         using var client = CreateHttpClient();
 
         // Separate client to not send our authentication headers there
+        // We upload at most a few hundred things, so this should be fine
+        // ReSharper disable once ShortLivedHttpClient
         using var uploadClient = new HttpClient();
 
         foreach (var upload in toUpload)
