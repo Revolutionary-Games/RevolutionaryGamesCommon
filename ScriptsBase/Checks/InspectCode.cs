@@ -54,8 +54,9 @@ public class InspectCode : JetBrainsCheck
         startInfo.ArgumentList.Add(runData.SolutionFile!);
         startInfo.ArgumentList.Add("-f=sarif");
         startInfo.ArgumentList.Add($"-o={InspectResultFile}");
-        startInfo.ArgumentList.Add("--build");
         startInfo.ArgumentList.Add($"--caches-home={JET_BRAINS_CACHE}");
+
+        AddJetbrainsToolRunBuildMode(runData, startInfo);
 
         AddJetbrainsToolRunIncludes(runData, startInfo);
 

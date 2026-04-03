@@ -83,6 +83,26 @@ public abstract class JetBrainsCheck : CodeCheck
         startInfo.ArgumentList.Add($"--exclude={formattedExcludes}");
     }
 
+    protected static void AddJetbrainsToolRunBuildMode(CodeCheckRun runData, ProcessStartInfo startInfo)
+    {
+        AddJetbrainsToolRunBuildMode(runData, startInfo, OperatingSystem.IsWindows());
+    }
+
+    protected static void AddJetbrainsToolRunBuildMode(CodeCheckRun runData, ProcessStartInfo startInfo, bool isWindows)
+    {
+        if (isWindows)
+        {
+            runData.OutputWarningWithMutex(
+                "NOTE: on Windows this JetBrains check can't build while the scripts are in use currently. " +
+                "Run a separate manual compile before this check if you want fully accurate results.");
+            startInfo.ArgumentList.Add("--no-build");
+        }
+        else
+        {
+            startInfo.ArgumentList.Add("--build");
+        }
+    }
+
     protected static void ReportRunFailure(ProcessRunHelpers.ProcessResult result, string tool, CodeCheckRun runData)
     {
         // ReSharper disable HeuristicUnreachableCode
