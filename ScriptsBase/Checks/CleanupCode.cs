@@ -1,5 +1,6 @@
 namespace ScriptsBase.Checks;
 
+using System;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
@@ -23,8 +24,6 @@ public class CleanupCode : JetBrainsCheck
         startInfo.ArgumentList.Add(runData.SolutionFile!);
         startInfo.ArgumentList.Add($"--profile={CleanUpProfile}");
         startInfo.ArgumentList.Add($"--caches-home={JET_BRAINS_CACHE}");
-
-        AddJetbrainsToolRunBuildMode(runData, startInfo);
 
         // TODO: check if the cleanupcode tool still doesn't run in parallel, and if so we should try to run multiple
         // tool instances at once (for example 4 at once)

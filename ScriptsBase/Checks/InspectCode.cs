@@ -56,7 +56,17 @@ public class InspectCode : JetBrainsCheck
         startInfo.ArgumentList.Add($"-o={InspectResultFile}");
         startInfo.ArgumentList.Add($"--caches-home={JET_BRAINS_CACHE}");
 
-        AddJetbrainsToolRunBuildMode(runData, startInfo);
+        if (OperatingSystem.IsWindows())
+        {
+            runData.OutputWarningWithMutex(
+                "NOTE: on Windows this JetBrains check can't build while the scripts are in use currently. " +
+                "Run a separate manual compile before this check if you want fully accurate results.");
+            startInfo.ArgumentList.Add("--no-build");
+        }
+        else
+        {
+            startInfo.ArgumentList.Add("--build");
+        }
 
         AddJetbrainsToolRunIncludes(runData, startInfo);
 
