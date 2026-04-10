@@ -318,8 +318,8 @@ public static class ProcessRunHelpers
 
             result.Exited = true;
 
-            // Wait for last bits of output if wanted. This is because very short running programs often miss out on
-            // their last bit of output otherwise
+            // Wait for the last bits of output if wanted. This is because very short-running programs often miss out
+            // on their last bit of output otherwise
             if (waitSkipSource != null)
             {
                 // Give some extra time before we end to get the last bit of output processed. Or until the output
@@ -333,43 +333,51 @@ public static class ProcessRunHelpers
             }
         };
 
-        // Timer based cancellation check to allow canceling even when there is no output (or we aren't reading output)
+        // Timer-based cancellation check to allow cancelling even when there is no output
+        // (or we aren't reading output)
         async void CancelWithTimer()
         {
-            while (true)
+            try
             {
-                if (result.Exited)
-                    break;
-
-                bool canceled;
-                try
+                while (true)
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
+                    if (result.Exited)
+                        break;
 
-                    canceled = cancellationToken.IsCancellationRequested;
-                }
-                catch (OperationCanceledException)
-                {
-                    canceled = true;
-                }
-
-                if (result.Exited)
-                    break;
-
-                if (canceled)
-                {
+                    bool canceled;
                     try
                     {
-                        // Try to kill the process to cancel it. We report cancellation first to make sure we don't
-                        // get stuck, managing to kill the running process is less important
-                        taskCompletionSource.SetCanceled(cancellationToken);
-                        process.Kill();
+                        await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
+
+                        canceled = cancellationToken.IsCancellationRequested;
                     }
-                    catch (Exception)
+                    catch (OperationCanceledException)
                     {
+                        canceled = true;
+                    }
+
+                    if (result.Exited)
                         break;
+
+                    if (canceled)
+                    {
+                        try
+                        {
+                            // Try to kill the process to cancel it. We report cancellation first to make sure we don't
+                            // get stuck, managing to kill the running process is less important
+                            taskCompletionSource.SetCanceled(cancellationToken);
+                            process.Kill();
+                        }
+                        catch (Exception)
+                        {
+                            break;
+                        }
                     }
                 }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("ERROR: Exception in cancel check task: " + e);
             }
         }
 
