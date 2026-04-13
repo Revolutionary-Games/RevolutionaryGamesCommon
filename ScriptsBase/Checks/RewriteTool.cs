@@ -20,7 +20,7 @@ using Utilities;
 /// </summary>
 public class RewriteTool : CodeCheck
 {
-    public const string NoModifierPlacementType = "no modifier";
+    private const string NoModifierPlacementType = "no modifier";
 
     private const string StartFileEnumerateFolder = "./";
 
@@ -213,46 +213,36 @@ public class RewriteTool : CodeCheck
 
         public override SyntaxNode? VisitMethodDeclaration(MethodDeclarationSyntax node)
         {
-            if (!inInterface)
+            if (!inInterface || node.Modifiers.Count >= 1)
                 return base.VisitMethodDeclaration(node);
 
-            if (node.Modifiers.Count < 1)
-            {
-                runData.OutputTextWithMutex(
-                    $"{GetLocation(node.Span)} had an interface method with missing access modifiers");
+            runData.OutputTextWithMutex(
+                $"{GetLocation(node.Span)} had an interface method with missing access modifiers");
 
-                var (publicToken, returnType) = CopyTriviaForPrependedNode(CreatePublicToken(), node.ReturnType);
+            var (publicToken, returnType) = CopyTriviaForPrependedNode(CreatePublicToken(), node.ReturnType);
 
-                var newNode = SyntaxFactory.MethodDeclaration(node.AttributeLists, new SyntaxTokenList(publicToken),
-                    returnType, node.ExplicitInterfaceSpecifier, node.Identifier, node.TypeParameterList,
-                    node.ParameterList, node.ConstraintClauses, node.Body, node.ExpressionBody, node.SemicolonToken);
+            var newNode = SyntaxFactory.MethodDeclaration(node.AttributeLists, new SyntaxTokenList(publicToken),
+                returnType, node.ExplicitInterfaceSpecifier, node.Identifier, node.TypeParameterList,
+                node.ParameterList, node.ConstraintClauses, node.Body, node.ExpressionBody, node.SemicolonToken);
 
-                return newNode;
-            }
-
-            return base.VisitMethodDeclaration(node);
+            return newNode;
         }
 
         public override SyntaxNode? VisitPropertyDeclaration(PropertyDeclarationSyntax node)
         {
-            if (!inInterface)
+            if (!inInterface || node.Modifiers.Count >= 1)
                 return base.VisitPropertyDeclaration(node);
 
-            if (node.Modifiers.Count < 1)
-            {
-                runData.OutputTextWithMutex(
-                    $"{GetLocation(node.Span)} had an interface property with missing access modifiers");
+            runData.OutputTextWithMutex(
+                $"{GetLocation(node.Span)} had an interface property with missing access modifiers");
 
-                var (publicToken, type) = CopyTriviaForPrependedNode(CreatePublicToken(), node.Type);
+            var (publicToken, type) = CopyTriviaForPrependedNode(CreatePublicToken(), node.Type);
 
-                var newNode = SyntaxFactory.PropertyDeclaration(node.AttributeLists, new SyntaxTokenList(publicToken),
-                    type, node.ExplicitInterfaceSpecifier, node.Identifier, node.AccessorList, node.ExpressionBody,
-                    node.Initializer, node.SemicolonToken);
+            var newNode = SyntaxFactory.PropertyDeclaration(node.AttributeLists, new SyntaxTokenList(publicToken),
+                type, node.ExplicitInterfaceSpecifier, node.Identifier, node.AccessorList, node.ExpressionBody,
+                node.Initializer, node.SemicolonToken);
 
-                return newNode;
-            }
-
-            return base.VisitPropertyDeclaration(node);
+            return newNode;
         }
 
         /// <summary>
@@ -303,7 +293,7 @@ public class RewriteTool : CodeCheck
         {
             var stringBuilder = new StringBuilder();
 
-            bool first = true;
+            var first = true;
             foreach (var memberDeclarationSyntax in members)
             {
                 if (!first)
@@ -323,48 +313,36 @@ public class RewriteTool : CodeCheck
 
         private static string GetNameFromMemberDeclaration(MemberDeclarationSyntax memberDeclarationSyntax)
         {
-            switch (memberDeclarationSyntax)
+            return memberDeclarationSyntax switch
             {
-                case FieldDeclarationSyntax fieldSyntax:
-                    return fieldSyntax.Declaration.Variables.FirstOrDefault()?.Identifier.ToString() ??
-                        "unknown variable name";
-                case MethodDeclarationSyntax methodSyntax:
-                    return methodSyntax.Identifier.ToString();
-                case PropertyDeclarationSyntax propertySyntax:
-                    return propertySyntax.Identifier.ToString();
-                case ClassDeclarationSyntax classSyntax:
-                    return classSyntax.Identifier.ToString();
-                case StructDeclarationSyntax structSyntax:
-                    return structSyntax.Identifier.ToString();
-                case RecordDeclarationSyntax recordSyntax:
-                    return recordSyntax.Identifier.ToString();
-                case InterfaceDeclarationSyntax interfaceSyntax:
-                    return interfaceSyntax.Identifier.ToString();
-                case DelegateDeclarationSyntax delegateSyntax:
-                    return delegateSyntax.Identifier.ToString();
-                case ConstructorDeclarationSyntax constructorSyntax:
-                    return constructorSyntax.Identifier.ToString();
-                case EnumDeclarationSyntax enumDeclaration:
-                    return enumDeclaration.Identifier.ToString();
-                case EventFieldDeclarationSyntax eventFieldSyntax:
-                    return eventFieldSyntax.Declaration.Variables.FirstOrDefault()?.Identifier.ToString() ??
-                        "unknown event field name";
-                case ConversionOperatorDeclarationSyntax conversionOperatorSyntax:
-                    return $"conversion operator {conversionOperatorSyntax.Type}" +
-                        $"{conversionOperatorSyntax.ParameterList.ToString()}";
-                case OperatorDeclarationSyntax operatorSyntax:
-                    return $"operator {operatorSyntax.OperatorToken}{operatorSyntax.ParameterList.ToString()}";
-                case IndexerDeclarationSyntax indexerSyntax:
-                    return $"{indexerSyntax.ThisKeyword}{indexerSyntax.ParameterList.ToString()}";
-                default:
-                    return $"Unknown member of kind: {memberDeclarationSyntax.Kind()}";
-            }
+                FieldDeclarationSyntax fieldSyntax => fieldSyntax.Declaration.Variables.FirstOrDefault()
+                    ?.Identifier.ToString() ?? "unknown variable name",
+                MethodDeclarationSyntax methodSyntax => methodSyntax.Identifier.ToString(),
+                PropertyDeclarationSyntax propertySyntax => propertySyntax.Identifier.ToString(),
+                ClassDeclarationSyntax classSyntax => classSyntax.Identifier.ToString(),
+                StructDeclarationSyntax structSyntax => structSyntax.Identifier.ToString(),
+                RecordDeclarationSyntax recordSyntax => recordSyntax.Identifier.ToString(),
+                InterfaceDeclarationSyntax interfaceSyntax => interfaceSyntax.Identifier.ToString(),
+                DelegateDeclarationSyntax delegateSyntax => delegateSyntax.Identifier.ToString(),
+                ConstructorDeclarationSyntax constructorSyntax => constructorSyntax.Identifier.ToString(),
+                EnumDeclarationSyntax enumDeclaration => enumDeclaration.Identifier.ToString(),
+                EventFieldDeclarationSyntax eventFieldSyntax => eventFieldSyntax.Declaration.Variables.FirstOrDefault()
+                    ?.Identifier.ToString() ?? "unknown event field name",
+                ConversionOperatorDeclarationSyntax conversionOperatorSyntax =>
+                    $"conversion operator {conversionOperatorSyntax.Type}" +
+                    $"{conversionOperatorSyntax.ParameterList.ToString()}",
+                OperatorDeclarationSyntax operatorSyntax =>
+                    $"operator {operatorSyntax.OperatorToken}{operatorSyntax.ParameterList.ToString()}",
+                IndexerDeclarationSyntax indexerSyntax =>
+                    $"{indexerSyntax.ThisKeyword}{indexerSyntax.ParameterList.ToString()}",
+                _ => $"Unknown member of kind: {memberDeclarationSyntax.Kind()}",
+            };
         }
 
         private static bool DetectStaticArchive(SourceText source)
         {
-            bool hasStaticWriteMethods = false;
-            bool hasNonStaticWriteMethods = false;
+            var hasStaticWriteMethods = false;
+            var hasNonStaticWriteMethods = false;
 
             // TODO: find a more efficient way to get the text?
             foreach (var line in source.Lines)
@@ -435,8 +413,8 @@ public class RewriteTool : CodeCheck
                     return 0;
 
                 // Compare first based on the member type to get the rough sections down
-                int xKindIndex = SyntaxTypeOrder.IndexOf(x.Kind());
-                int yKindIndex = SyntaxTypeOrder.IndexOf(y.Kind());
+                var xKindIndex = SyntaxTypeOrder.IndexOf(x.Kind());
+                var yKindIndex = SyntaxTypeOrder.IndexOf(y.Kind());
 
                 if (xKindIndex != -1 && yKindIndex != -1)
                 {
@@ -479,8 +457,8 @@ public class RewriteTool : CodeCheck
                     return 1;
 
                 // Compare other than access modifiers next
-                bool xConst = x.Modifiers.Any(m => m.IsKind(SyntaxKind.ConstKeyword));
-                bool yConst = y.Modifiers.Any(m => m.IsKind(SyntaxKind.ConstKeyword));
+                var xConst = x.Modifiers.Any(m => m.IsKind(SyntaxKind.ConstKeyword));
+                var yConst = y.Modifiers.Any(m => m.IsKind(SyntaxKind.ConstKeyword));
 
                 if (xConst && !yConst)
                     return -1;
@@ -488,8 +466,8 @@ public class RewriteTool : CodeCheck
                 if (!xConst && yConst)
                     return 1;
 
-                bool xStatic = x.Modifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword));
-                bool yStatic = y.Modifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword));
+                var xStatic = x.Modifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword));
+                var yStatic = y.Modifiers.Any(m => m.IsKind(SyntaxKind.StaticKeyword));
 
                 if (xStatic && !yStatic)
                     return -1;
@@ -497,8 +475,8 @@ public class RewriteTool : CodeCheck
                 if (!xStatic && yStatic)
                     return 1;
 
-                bool xReadOnly = x.Modifiers.Any(m => m.IsKind(SyntaxKind.ReadOnlyKeyword));
-                bool yReadOnly = y.Modifiers.Any(m => m.IsKind(SyntaxKind.ReadOnlyKeyword));
+                var xReadOnly = x.Modifiers.Any(m => m.IsKind(SyntaxKind.ReadOnlyKeyword));
+                var yReadOnly = y.Modifiers.Any(m => m.IsKind(SyntaxKind.ReadOnlyKeyword));
 
                 if (xReadOnly && !yReadOnly)
                     return -1;
@@ -512,9 +490,9 @@ public class RewriteTool : CodeCheck
                     var xName = xMethod.Identifier.ToString();
                     var yName = yMethod.Identifier.ToString();
 
-                    int xPriority = GetActiveNames(xStatic).FirstOrDefault(t => t.Regex.IsMatch(xName), (null!, 0))
+                    var xPriority = GetActiveNames(xStatic).FirstOrDefault(t => t.Regex.IsMatch(xName), (null!, 0))
                         .Order;
-                    int yPriority = GetActiveNames(yStatic).FirstOrDefault(t => t.Regex.IsMatch(yName), (null!, 0))
+                    var yPriority = GetActiveNames(yStatic).FirstOrDefault(t => t.Regex.IsMatch(yName), (null!, 0))
                         .Order;
 
                     if (xPriority < yPriority)
