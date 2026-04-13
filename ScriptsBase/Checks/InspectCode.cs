@@ -116,8 +116,8 @@ public class InspectCode : JetBrainsCheck
                     locationFound = true;
                 }
 
-                if (!location.ArtifactLocation.TryReconstructAbsoluteUri(
-                        sarifResult.Run.OriginalUriBaseIds, out var resolvedUri))
+                if (!location.ArtifactLocation.TryReconstructAbsoluteUri(sarifResult.Run.OriginalUriBaseIds,
+                        out var resolvedUri))
                 {
                     runData.OutputWarningWithMutex(
                         $"Failed to resolve error absolute URI: {location.ArtifactLocation.Uri}");
@@ -127,8 +127,9 @@ public class InspectCode : JetBrainsCheck
                 var file = resolvedUri.ToString();
                 file = RemovePotentialFilePrefix(file);
 
-                var reportFile = showFullFilePathsForErrors
-                    ? file : RemovePotentialFilePrefix(location.ArtifactLocation.Uri.ToString());
+                var reportFile = showFullFilePathsForErrors ?
+                    file :
+                    RemovePotentialFilePrefix(location.ArtifactLocation.Uri.ToString());
 
                 runData.OutputErrorWithMutex(
                     $"{reportFile}:{location.Region.StartLine} {text} type: {sarifResult.RuleId}");
