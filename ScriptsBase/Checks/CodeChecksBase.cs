@@ -17,20 +17,12 @@ using Utilities;
 ///   Base class for handling running configured <see cref="CodeCheck"/>s
 /// </summary>
 /// <typeparam name="T">The type of the options class</typeparam>
-public abstract class CodeChecksBase<T>
+public abstract class CodeChecksBase<T>(T options)
     where T : CheckOptionsBase
 {
-    public const int MAX_RUNTIME_MINUTES = 45;
+    protected readonly T options = options;
 
-    protected readonly T options;
-
-    protected CodeChecksBase(T options)
-    {
-        this.options = options;
-        RunData = new CodeCheckRun();
-    }
-
-    public CodeCheckRun RunData { get; }
+    private const int MAX_RUNTIME_MINUTES = 45;
 
     /// <summary>
     ///   The valid checks that exist. Note this should not create a new dictionary each time this is accessed
@@ -42,25 +34,55 @@ public abstract class CodeChecksBase<T>
     /// <summary>
     ///   Extra warnings to ignore in inspections that I couldn't figure out how to suppress normally
     /// </summary>
-    protected virtual IEnumerable<string> ForceIgnoredJetbrainsInspections => new string[] { };
+    protected virtual IEnumerable<string> ForceIgnoredJetbrainsInspections => [];
 
     /// <summary>
     ///   Sends extra wildcards on top of <see cref="InspectCode.InspectCodeIgnoredFilesWildcards"/> to be ignored
     ///   in code inspection
     /// </summary>
-    protected virtual IEnumerable<string> ExtraIgnoredJetbrainsInspectWildcards => new string[] { };
+    protected virtual IEnumerable<string> ExtraIgnoredJetbrainsInspectWildcards => [];
 
     /// <summary>
     ///   Extra ignore wildcards for JetBrains cleanup code
     /// </summary>
-    protected virtual IEnumerable<string> ExtraIgnoredJetbrainsCleanUpWildcards => new string[] { };
+    protected virtual IEnumerable<string> ExtraIgnoredJetbrainsCleanUpWildcards => [];
 
     protected virtual IEnumerable<string> DefaultChecks => ValidChecks.Keys;
+
+    private CodeCheckRun RunData { get; } = new();
 
     /// <summary>
     ///   Project specific file paths to always ignore
     /// </summary>
-    protected List<Regex> FilePathsToAlwaysIgnore { get; set; } = new();
+    private List<Regex> FilePathsToAlwaysIgnore { get; } = [];
+
+    /// <summary>
+    ///   Because we rebuild ourselves when checking, we need to be sure that we have loaded all of our DLLs before we
+    ///   start checks. That's what this method does by calling methods from all DLLs we need.
+    /// </summary>
+    private static void EnsureAllComponentsAreLoaded()
+    {
+        var po = new POParser();
+
+        // This needs enough dummy data to get everything loaded
+        po.Parse(@"# A comment
+#
+msgid """"
+msgstr """"
+""Project-Id-Version: PROJECT VERSION\n""
+""Report-Msgid-Bugs-To: EMAIL@ADDRESS\n""
+""Language: en\n""
+""MIME-Version: 1.0\n""
+""Content-Type: text/plain; charset=UTF-8\n""
+""Content-Transfer-Encoding: 8bit\n""
+""Plural-Forms: nplurals=2; plural=n != 1;\n""
+
+#: some file:3
+#, fuzzy
+msgid ""MSG_ID""
+msgstr ""Translation""
+");
+    }
 
     /// <summary>
     ///   Default set of editor and temp files to ignore
@@ -160,10 +182,7 @@ public abstract class CodeChecksBase<T>
 
     public bool IsRunningInCI()
     {
-        if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CI_COMMIT_HASH")))
-            return true;
-
-        return false;
+        return !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CI_COMMIT_HASH"));
     }
 
     private async Task RunActualChecks(List<CodeCheck> selectedChecks, CancellationTokenSource tokenSource)
@@ -205,7 +224,7 @@ public abstract class CodeChecksBase<T>
 
                 if (RunData.Errors)
                 {
-                    tokenSource.Cancel();
+                    await tokenSource.CancelAsync();
                 }
 
                 if (cancellationToken.IsCancellationRequested)
@@ -268,50 +287,16 @@ public abstract class CodeChecksBase<T>
             if (!ValidChecks.TryGetValue(checkName, out var check))
             {
                 RunData.OutputErrorWithMutex($"Unknown check name: {checkName}, valid names: {validNames}");
-                {
-                    return 1;
-                }
+                return 1;
             }
 
             selectedChecks.Add(check);
         }
 
-        if (selectedChecks.Count < 1)
-        {
-            RunData.OutputErrorWithMutex($"No checks selected. Available checks: {validNames}");
-            {
-                return 1;
-            }
-        }
+        if (selectedChecks.Count >= 1)
+            return 0;
 
-        return 0;
-    }
-
-    /// <summary>
-    ///   Because we rebuild ourselves when checking, we need to be sure that we have loaded all of our DLLs before we
-    ///   start checks. That's what this method does by calling methods from all DLLs we need.
-    /// </summary>
-    private void EnsureAllComponentsAreLoaded()
-    {
-        var po = new POParser();
-
-        // This needs enough dummy data to get everything loaded
-        po.Parse(@"# A comment
-#
-msgid """"
-msgstr """"
-""Project-Id-Version: PROJECT VERSION\n""
-""Report-Msgid-Bugs-To: EMAIL@ADDRESS\n""
-""Language: en\n""
-""MIME-Version: 1.0\n""
-""Content-Type: text/plain; charset=UTF-8\n""
-""Content-Transfer-Encoding: 8bit\n""
-""Plural-Forms: nplurals=2; plural=n != 1;\n""
-
-#: some file:3
-#, fuzzy
-msgid ""MSG_ID""
-msgstr ""Translation""
-");
+        RunData.OutputErrorWithMutex($"No checks selected. Available checks: {validNames}");
+        return 1;
     }
 }
