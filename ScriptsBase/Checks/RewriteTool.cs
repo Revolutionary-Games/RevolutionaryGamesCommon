@@ -154,7 +154,7 @@ public class RewriteTool : CodeCheck
         }
     }
 
-    private async Task<bool> RunOnFile(string file, CodeCheckRun runData, CancellationToken cancellationToken)
+    private static async Task<bool> RunOnFile(string file, CodeCheckRun runData, CancellationToken cancellationToken)
     {
         var text = await File.ReadAllBytesAsync(file, cancellationToken);
 
@@ -184,21 +184,11 @@ public class RewriteTool : CodeCheck
         return false;
     }
 
-    private class Rewriter : CSharpSyntaxRewriter
+    private sealed class Rewriter(CodeCheckRun runData, SourceText sourceText) : CSharpSyntaxRewriter
     {
-        private readonly CodeCheckRun runData;
-        private readonly SourceText sourceText;
         private bool inInterface;
 
-        private bool usesArchiveMethods;
-
-        public Rewriter(CodeCheckRun runData, SourceText sourceText)
-        {
-            this.runData = runData;
-            this.sourceText = sourceText;
-
-            usesArchiveMethods = DetectStaticArchive(sourceText);
-        }
+        private readonly bool usesArchiveMethods = DetectStaticArchive(sourceText);
 
         public override SyntaxNode? VisitInterfaceDeclaration(InterfaceDeclarationSyntax node)
         {
@@ -371,12 +361,12 @@ public class RewriteTool : CodeCheck
             return $"Line {sourceText.Lines.GetLinePosition(span.Start).Line + 1}";
         }
 
-        private SyntaxToken CreatePublicToken()
+        private static SyntaxToken CreatePublicToken()
         {
             return SyntaxFactory.Token(SyntaxKind.PublicKeyword);
         }
 
-        private (T1 NewNode, T2 OldNode) CopyTriviaForPrependedNode<T1, T2>(T1 newNode, T2 oldNode)
+        private static (T1 NewNode, T2 OldNode) CopyTriviaForPrependedNode<T1, T2>(T1 newNode, T2 oldNode)
             where T1 : SyntaxNode
             where T2 : SyntaxNode
         {
@@ -386,7 +376,7 @@ public class RewriteTool : CodeCheck
                 oldNode.WithLeadingTrivia(singleSpaceTrivia));
         }
 
-        private (SyntaxToken NewNode, T2 OldNode) CopyTriviaForPrependedNode<T2>(SyntaxToken newNode, T2 oldNode)
+        private static (SyntaxToken NewNode, T2 OldNode) CopyTriviaForPrependedNode<T2>(SyntaxToken newNode, T2 oldNode)
             where T2 : SyntaxNode
         {
             var singleSpaceTrivia = SyntaxFactory.SyntaxTrivia(SyntaxKind.WhitespaceTrivia, " ");
@@ -395,15 +385,8 @@ public class RewriteTool : CodeCheck
                 oldNode.WithLeadingTrivia(singleSpaceTrivia));
         }
 
-        private class MemberOrderComparer : IComparer<MemberDeclarationSyntax>
+        private sealed class MemberOrderComparer(bool hasStaticWriteMethods) : IComparer<MemberDeclarationSyntax>
         {
-            private readonly bool hasStaticWriteMethods;
-
-            public MemberOrderComparer(bool hasStaticWriteMethods)
-            {
-                this.hasStaticWriteMethods = hasStaticWriteMethods;
-            }
-
             public int Compare(MemberDeclarationSyntax? x, MemberDeclarationSyntax? y)
             {
                 if (x == null || y == null)
