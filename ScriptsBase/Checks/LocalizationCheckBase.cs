@@ -131,8 +131,8 @@ public class LocalizationCheckBase : CodeCheck
                 using var originalEnumerator = originalData.GetEnumerator();
                 using var updatedEnumerator = updatedData.GetEnumerator();
 
-                bool hasOriginalItem = true;
-                bool hasUpdatedItem = true;
+                var hasOriginalItem = true;
+                var hasUpdatedItem = true;
 
                 while (true)
                 {
@@ -205,15 +205,7 @@ public class LocalizationCheckBase : CodeCheck
 
     private static int CountReferenceLocationComments(IEnumerable<POComment> comments)
     {
-        int count = 0;
-
-        foreach (var comment in comments)
-        {
-            if ((comment.Kind & POCommentKind.Reference) != 0)
-                ++count;
-        }
-
-        return count;
+        return comments.Count(comment => (comment.Kind & POCommentKind.Reference) != 0);
     }
 
     private static IEnumerable<string> EnumerateAllPoFiles(string start)
@@ -239,17 +231,17 @@ public class LocalizationCheckBase : CodeCheck
         {
             var name = TempCheckName(file);
 
-            if (File.Exists(name))
+            if (!File.Exists(name))
+                continue;
+
+            try
             {
-                try
-                {
-                    File.Delete(name);
-                }
-                catch (Exception e)
-                {
-                    if (printErrors)
-                        ColourConsole.WriteErrorLine($"Failed to delete temporary file ({name}): {e}");
-                }
+                File.Delete(name);
+            }
+            catch (Exception e)
+            {
+                if (printErrors)
+                    ColourConsole.WriteErrorLine($"Failed to delete temporary file ({name}): {e}");
             }
         }
     }

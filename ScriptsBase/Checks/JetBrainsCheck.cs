@@ -63,11 +63,11 @@ public abstract class JetBrainsCheck : CodeCheck
 
     protected static void AddJetbrainsToolRunIncludes(CodeCheckRun runData, ProcessStartInfo startInfo)
     {
-        if (runData.OnlyCheckFiles != null)
-        {
-            var formattedIncludes = string.Join(';', runData.OnlyCheckFiles);
-            startInfo.ArgumentList.Add($"--include={formattedIncludes}");
-        }
+        if (runData.OnlyCheckFiles == null)
+            return;
+
+        var formattedIncludes = string.Join(';', runData.OnlyCheckFiles);
+        startInfo.ArgumentList.Add($"--include={formattedIncludes}");
     }
 
     protected static void AddJetbrainsToolRunExcludes(IEnumerable<string>? excludes, ProcessStartInfo startInfo)
