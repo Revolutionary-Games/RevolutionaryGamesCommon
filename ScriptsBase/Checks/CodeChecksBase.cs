@@ -49,6 +49,36 @@ public abstract class CodeChecksBase<T>(T options)
 
     protected virtual IEnumerable<string> DefaultChecks => ValidChecks.Keys;
 
+    /// <summary>
+    ///   Default set of editor and temp files to ignore
+    /// </summary>
+    protected virtual IEnumerable<Regex> DefaultIgnoredFilePaths { get; } = new List<Regex>
+    {
+        new(@"\.vs/"),
+        new(@"\.vscode/"),
+        new(@"\.idea/"),
+        new(@"\.mono/"),
+        new(@"\.import/"),
+        new(@"\.DotSettings$"),
+        new("/?tmp/"),
+        new("/?RubySetupSystem/"),
+        new("/?bin/"),
+        new("/?obj/"),
+        new(@"\.out$"),
+        new("~$"),
+        new(@"\.bak$"),
+        new(@"\.git/"),
+        new("/?builds/", RegexOptions.IgnoreCase),
+        new("/?build/", RegexOptions.IgnoreCase),
+        new("/?build-debug/", RegexOptions.IgnoreCase),
+        new("/?dist/", RegexOptions.IgnoreCase),
+        new("/?native_libs/"),
+        new("/?symbols/", RegexOptions.IgnoreCase),
+        new(LocalizationCheckBase.LOCALE_TEMP_SUFFIX + "$"),
+        new(JetBrainsCheck.JET_BRAINS_CACHE + "/"),
+        new(InspectCode.InspectResultFile),
+    }.Concat(InspectCode.InspectCodeIgnoredFiles).ToList();
+
     private CodeCheckRun RunData { get; } = new();
 
     /// <summary>
@@ -83,36 +113,6 @@ msgid ""MSG_ID""
 msgstr ""Translation""
 ");
     }
-
-    /// <summary>
-    ///   Default set of editor and temp files to ignore
-    /// </summary>
-    protected virtual IEnumerable<Regex> DefaultIgnoredFilePaths { get; } = new List<Regex>
-    {
-        new(@"\.vs/"),
-        new(@"\.vscode/"),
-        new(@"\.idea/"),
-        new(@"\.mono/"),
-        new(@"\.import/"),
-        new(@"\.DotSettings$"),
-        new("/?tmp/"),
-        new("/?RubySetupSystem/"),
-        new("/?bin/"),
-        new("/?obj/"),
-        new(@"\.out$"),
-        new("~$"),
-        new(@"\.bak$"),
-        new(@"\.git/"),
-        new("/?builds/", RegexOptions.IgnoreCase),
-        new("/?build/", RegexOptions.IgnoreCase),
-        new("/?build-debug/", RegexOptions.IgnoreCase),
-        new("/?dist/", RegexOptions.IgnoreCase),
-        new("/?native_libs/"),
-        new("/?symbols/", RegexOptions.IgnoreCase),
-        new(LocalizationCheckBase.LOCALE_TEMP_SUFFIX + "$"),
-        new(JetBrainsCheck.JET_BRAINS_CACHE + "/"),
-        new(InspectCode.InspectResultFile),
-    }.Concat(InspectCode.InspectCodeIgnoredFiles).ToList();
 
     /// <summary>
     ///   Runs the code checks with the specified options given to the constructor
