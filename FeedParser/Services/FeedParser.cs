@@ -209,37 +209,25 @@ public static class FeedParser
             {
                 var title = feedEntry.Descendants().FirstOrDefault(e => e.Name.LocalName == "title");
 
-                if (title != null)
-                {
-                    title.Value = Regex.Replace(title.Value, action.ToFind, action.Replacer, RegexOptions.IgnoreCase,
-                        regexTimeout);
-                }
+                title?.Value = Regex.Replace(title.Value, action.ToFind, action.Replacer, RegexOptions.IgnoreCase,
+                    regexTimeout);
             }
             else if (action.Target == PreprocessingActionTarget.Summary)
             {
                 var content = feedEntry.Descendants().FirstOrDefault(e => e.Name.LocalName == "content");
 
-                if (content != null)
-                {
-                    content.Value = Regex.Replace(content.Value, action.ToFind, action.Replacer,
-                        RegexOptions.IgnoreCase, regexTimeout);
-                }
+                content?.Value = Regex.Replace(content.Value, action.ToFind, action.Replacer,
+                    RegexOptions.IgnoreCase, regexTimeout);
 
                 content = feedEntry.Descendants().FirstOrDefault(e => e.Name.LocalName == "description");
 
-                if (content != null)
-                {
-                    content.Value = Regex.Replace(content.Value, action.ToFind, action.Replacer,
-                        RegexOptions.IgnoreCase, regexTimeout);
-                }
+                content?.Value = Regex.Replace(content.Value, action.ToFind, action.Replacer,
+                    RegexOptions.IgnoreCase, regexTimeout);
 
                 content = feedEntry.Descendants().FirstOrDefault(e => e.Name.LocalName == "summary");
 
-                if (content != null)
-                {
-                    content.Value = Regex.Replace(content.Value, action.ToFind, action.Replacer,
-                        RegexOptions.IgnoreCase, regexTimeout);
-                }
+                content?.Value = Regex.Replace(content.Value, action.ToFind, action.Replacer,
+                    RegexOptions.IgnoreCase, regexTimeout);
             }
             else
             {
