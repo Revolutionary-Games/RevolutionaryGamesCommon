@@ -9,15 +9,8 @@ using SharedBase.Utilities;
 /// <summary>
 ///   Checks that the project compiles without errors
 /// </summary>
-public class CompileCheck : CodeCheck
+public class CompileCheck(bool forceRebuild) : CodeCheck
 {
-    private readonly bool forceRebuild;
-
-    public CompileCheck(bool forceRebuild)
-    {
-        this.forceRebuild = forceRebuild;
-    }
-
     public override async Task Run(CodeCheckRun runData, CancellationToken cancellationToken)
     {
         if (runData.SolutionFile == null)

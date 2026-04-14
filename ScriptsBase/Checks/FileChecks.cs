@@ -109,15 +109,7 @@ public class FileChecks : CodeCheck
         foreach (var file in Directory.EnumerateFiles(start))
         {
             // Hopefully this isn't too bad performance for Windows people
-            string handledFile;
-            if (NeedsToReplacePaths)
-            {
-                handledFile = file.Replace(Path.DirectorySeparatorChar, '/');
-            }
-            else
-            {
-                handledFile = file;
-            }
+            var handledFile = NeedsToReplacePaths ? file.Replace(Path.DirectorySeparatorChar, '/') : file;
 
             if (handledFile.StartsWith(StartFileEnumerateFolder))
             {
@@ -149,10 +141,24 @@ public class FileChecks : CodeCheck
         }
     }
 
+    private static void CheckAndWarnAboutFileSize(CodeCheckRun runData, string file)
+    {
+        var fileInfo = new FileInfo(file);
+
+        if (fileInfo.Length <= GlobalConstants.MEBIBYTE * ExpectedMebibyteMaxSize)
+            return;
+
+        var mebibytes = Math.Round(fileInfo.Length / (float)GlobalConstants.MEBIBYTE, 2);
+
+        runData.OutputWarningWithMutex(
+            $"File {file} is bigger ({mebibytes} MiB) than is expected ({ExpectedMebibyteMaxSize} MiB) " +
+            "for file based checks. Is a file that should be ignored being checked?");
+    }
+
     private async Task<bool> RunChecksOnFiles(IEnumerable<string> files, CodeCheckRun runData,
         CancellationToken cancellationToken)
     {
-        bool success = true;
+        var success = true;
 
         foreach (var file in files)
         {
@@ -183,20 +189,6 @@ public class FileChecks : CodeCheck
         return success;
     }
 
-    private void CheckAndWarnAboutFileSize(CodeCheckRun runData, string file)
-    {
-        var fileInfo = new FileInfo(file);
-
-        if (fileInfo.Length > GlobalConstants.MEBIBYTE * ExpectedMebibyteMaxSize)
-        {
-            var mebibytes = Math.Round(fileInfo.Length / (float)GlobalConstants.MEBIBYTE, 2);
-
-            runData.OutputWarningWithMutex(
-                $"File {file} is bigger ({mebibytes} MiB) than is expected ({ExpectedMebibyteMaxSize} MiB) " +
-                "for file based checks. Is a file that should be ignored being checked?");
-        }
-    }
-
     /// <summary>
     ///   Forwards a file to process (if not skipped) to a real processing function
     /// </summary>
@@ -209,14 +201,14 @@ public class FileChecks : CodeCheck
             return true;
 
         // Many checks cannot run on big files, so we need to detect those and filter them out of most checks
-        bool isBinary = binaryFileExtensions.Any(path.EndsWith);
+        var isBinary = binaryFileExtensions.Any(path.EndsWith);
 
         if (!isBinary)
         {
             CheckAndWarnAboutFileSize(runData, path);
         }
 
-        bool success = true;
+        var success = true;
 
         // We don't load the file contents here as the OS should cache the file read really well without us potentially
         // loading a really large file all into memory at once. Also, some checks need to work on more than just the
@@ -229,20 +221,20 @@ public class FileChecks : CodeCheck
                 continue;
 
             // Allow multiple checks to work on a single file as they can detect different things
-            if (check.HandlesFile(path))
+            if (!check.HandlesFile(path))
+                continue;
+
+            var errors = check.Handle(path);
+
+            await foreach (var error in errors)
             {
-                var errors = check.Handle(path);
-
-                await foreach (var error in errors)
+                if (success)
                 {
-                    if (success)
-                    {
-                        runData.ReportError($"Problems found in file {path}:");
-                        success = false;
-                    }
-
-                    runData.OutputTextWithMutex(error);
+                    runData.ReportError($"Problems found in file {path}:");
+                    success = false;
                 }
+
+                runData.OutputTextWithMutex(error);
             }
         }
 
@@ -250,14 +242,9 @@ public class FileChecks : CodeCheck
         {
             // ReSharper disable HeuristicUnreachableCode RedundantIfElseBlock
 #pragma warning disable CS0162
-            if (PrintNameTwice)
-            {
-                runData.OutputErrorWithMutex($"Problems found in file (see above): {path}");
-            }
-            else
-            {
-                runData.OutputErrorWithMutex("Problems found in file (see above)");
-            }
+            runData.OutputErrorWithMutex(PrintNameTwice ?
+                $"Problems found in file (see above): {path}" :
+                "Problems found in file (see above)");
 
             // ReSharper restore HeuristicUnreachableCode RedundantIfElseBlock
 #pragma warning restore CS0162

@@ -89,7 +89,7 @@ public class InspectCode : JetBrainsCheck
             return;
         }
 
-        bool issuesFound = false;
+        var issuesFound = false;
 
         var log = SarifLog.Load(InspectResultFile);
 
@@ -104,11 +104,11 @@ public class InspectCode : JetBrainsCheck
             if (IsAlwaysIgnoredJetBrainsIssue(sarifResult.RuleId, text))
                 continue;
 
-            bool locationFound = false;
+            var locationFound = false;
 
-            foreach (var location in sarifResult.Locations)
+            foreach (var location in sarifResult.Locations.Select(location => location.PhysicalLocation))
             {
-                if (location.PhysicalLocation == null)
+                if (location == null)
                     continue;
 
                 if (!issuesFound)
@@ -118,34 +118,27 @@ public class InspectCode : JetBrainsCheck
                     locationFound = true;
                 }
 
-                if (!location.PhysicalLocation.ArtifactLocation.TryReconstructAbsoluteUri(
-                        sarifResult.Run.OriginalUriBaseIds, out var resolvedUri))
+                if (!location.ArtifactLocation.TryReconstructAbsoluteUri(sarifResult.Run.OriginalUriBaseIds,
+                        out var resolvedUri))
                 {
                     runData.OutputWarningWithMutex(
-                        $"Failed to resolve error absolute URI: {location.PhysicalLocation.ArtifactLocation.Uri}");
-                    resolvedUri = location.PhysicalLocation.ArtifactLocation.Uri;
+                        $"Failed to resolve error absolute URI: {location.ArtifactLocation.Uri}");
+                    resolvedUri = location.ArtifactLocation.Uri;
                 }
 
                 var file = resolvedUri.ToString();
                 file = RemovePotentialFilePrefix(file);
 
-                string reportFile;
-
-                if (showFullFilePathsForErrors)
-                {
-                    reportFile = file;
-                }
-                else
-                {
-                    reportFile = RemovePotentialFilePrefix(location.PhysicalLocation.ArtifactLocation.Uri.ToString());
-                }
+                var reportFile = showFullFilePathsForErrors ?
+                    file :
+                    RemovePotentialFilePrefix(location.ArtifactLocation.Uri.ToString());
 
                 runData.OutputErrorWithMutex(
-                    $"{reportFile}:{location.PhysicalLocation.Region.StartLine} {text} type: {sarifResult.RuleId}");
+                    $"{reportFile}:{location.Region.StartLine} {text} type: {sarifResult.RuleId}");
 
                 // TODO: determine if the offset counts "\r\n" as one or two characters
-                var offsetStart = location.PhysicalLocation.Region.CharOffset;
-                var length = location.PhysicalLocation.Region.CharLength;
+                var offsetStart = location.Region.CharOffset;
+                var length = location.Region.CharLength;
 
                 PrepareFileForReporting(file);
 
@@ -200,12 +193,9 @@ public class InspectCode : JetBrainsCheck
                 runData.OutputWarningWithMutex("Trying to read help URI resulted in an exception: " + e);
             }
 
-            if (rule.Help != null)
+            if (rule.Help != null && rule.Help.Text != helpUriString)
             {
-                if (rule.Help.Text != helpUriString)
-                {
-                    runData.OutputTextWithMutex(rule.Help.Text);
-                }
+                runData.OutputTextWithMutex(rule.Help.Text);
             }
         }
 
@@ -223,10 +213,7 @@ public class InspectCode : JetBrainsCheck
 
     private static string RemovePotentialFilePrefix(string file)
     {
-        if (file.StartsWith("file://"))
-            return file.Substring("file://".Length);
-
-        return file;
+        return file.StartsWith("file://") ? file.Substring("file://".Length) : file;
     }
 
     /// <summary>
