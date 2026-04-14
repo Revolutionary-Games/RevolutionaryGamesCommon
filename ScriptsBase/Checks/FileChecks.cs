@@ -61,7 +61,7 @@ public class FileChecks : CodeCheck
     /// </summary>
     /// <param name="useDefaults">If true default checks are added automatically</param>
     /// <param name="customChecks">A list of custom checks to prepend to the active checks</param>
-    private FileChecks(bool useDefaults, params FileCheck[] customChecks)
+    public FileChecks(bool useDefaults, params FileCheck[] customChecks)
     {
         enabledChecks.AddRange(customChecks);
 

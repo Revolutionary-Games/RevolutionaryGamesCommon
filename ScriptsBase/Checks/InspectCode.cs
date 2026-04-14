@@ -106,9 +106,11 @@ public class InspectCode : JetBrainsCheck
 
             var locationFound = false;
 
-            foreach (var location in sarifResult.Locations.Select(location => location.PhysicalLocation)
-                         .Where(physicalLocation => physicalLocation != null))
+            foreach (var location in sarifResult.Locations.Select(location => location.PhysicalLocation))
             {
+                if (location == null)
+                    continue;
+
                 if (!issuesFound)
                 {
                     runData.ReportError("Code inspection detected issues:");
