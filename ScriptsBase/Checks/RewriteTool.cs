@@ -154,7 +154,7 @@ public class RewriteTool : CodeCheck
         }
     }
 
-    private static async Task<bool> RunOnFile(string file, CodeCheckRun runData, CancellationToken cancellationToken)
+    private async Task<bool> RunOnFile(string file, CodeCheckRun runData, CancellationToken cancellationToken)
     {
         var text = await File.ReadAllBytesAsync(file, cancellationToken);
 
@@ -186,9 +186,9 @@ public class RewriteTool : CodeCheck
 
     private sealed class Rewriter(CodeCheckRun runData, SourceText sourceText) : CSharpSyntaxRewriter
     {
-        private bool inInterface;
-
         private readonly bool usesArchiveMethods = DetectStaticArchive(sourceText);
+
+        private bool inInterface;
 
         public override SyntaxNode? VisitInterfaceDeclaration(InterfaceDeclarationSyntax node)
         {
@@ -356,11 +356,6 @@ public class RewriteTool : CodeCheck
             return false;
         }
 
-        private string GetLocation(TextSpan span)
-        {
-            return $"Line {sourceText.Lines.GetLinePosition(span.Start).Line + 1}";
-        }
-
         private static SyntaxToken CreatePublicToken()
         {
             return SyntaxFactory.Token(SyntaxKind.PublicKeyword);
@@ -383,6 +378,11 @@ public class RewriteTool : CodeCheck
 
             return (newNode.WithLeadingTrivia(oldNode.GetLeadingTrivia()),
                 oldNode.WithLeadingTrivia(singleSpaceTrivia));
+        }
+
+        private string GetLocation(TextSpan span)
+        {
+            return $"Line {sourceText.Lines.GetLinePosition(span.Start).Line + 1}";
         }
 
         private sealed class MemberOrderComparer(bool hasStaticWriteMethods) : IComparer<MemberDeclarationSyntax>
