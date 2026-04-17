@@ -61,7 +61,7 @@ public static class Normalization
 
     public static string NormalizeEmail(string email)
     {
-        var split = email.Split('@');
+        var split = email.Trim().Split('@');
 
         if (split.Length < 2)
             throw new ArgumentException("Email must contain '@'");
