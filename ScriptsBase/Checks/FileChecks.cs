@@ -69,6 +69,7 @@ public class FileChecks : CodeCheck
         {
             enabledChecks.Add(new GitConflictMarkerCheck());
             enabledChecks.Add(new CSharpCheck());
+            enabledChecks.Add(new CSharpSyntaxChecks(new IfElseBracesCheck()));
             enabledChecks.Add(new TscnCheck());
             enabledChecks.Add(new JSONCheck());
             enabledChecks.Add(new ShaderCheck());
