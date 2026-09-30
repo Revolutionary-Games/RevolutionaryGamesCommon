@@ -481,7 +481,7 @@ public class RewriteTool : CodeCheck
 
                 // Modifiers are all the same, compare some special names
                 if (x is MethodDeclarationSyntax xMethod && y is MethodDeclarationSyntax yMethod &&
-                    (x.Modifiers.Count > 0) == (y.Modifiers.Count > 0))
+                    (x.Modifiers.Count > 0 == y.Modifiers.Count > 0))
                 {
                     var xName = GetMethodName(xMethod);
                     var yName = GetMethodName(yMethod);
