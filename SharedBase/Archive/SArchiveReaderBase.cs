@@ -368,6 +368,7 @@ public abstract class SArchiveReaderBase : ISArchiveReader
                 throw new FormatException("Invalid object type in archive specified (for struct)");
 
             case ArchiveObjectType.Byte:
+            {
                 if (version > 1)
                     throw new InvalidArchiveVersionException(version, 1);
 
@@ -379,8 +380,10 @@ public abstract class SArchiveReaderBase : ISArchiveReader
                 }
 
                 throw new FormatException($"Cannot read {type} into receiver of type {receiver!.GetType()}");
+            }
 
             case ArchiveObjectType.Bool:
+            {
                 if (version > 1)
                     throw new InvalidArchiveVersionException(version, 1);
 
@@ -391,8 +394,10 @@ public abstract class SArchiveReaderBase : ISArchiveReader
                 }
 
                 throw new FormatException($"Cannot read {type} into receiver of type {receiver!.GetType()}");
+            }
 
             case ArchiveObjectType.Int16:
+            {
                 if (version > 1)
                     throw new InvalidArchiveVersionException(version, 1);
 
@@ -403,7 +408,10 @@ public abstract class SArchiveReaderBase : ISArchiveReader
                 }
 
                 throw new FormatException($"Cannot read {type} into receiver of type {receiver!.GetType()}");
+            }
+
             case ArchiveObjectType.Int32:
+            {
                 if (version > 1)
                     throw new InvalidArchiveVersionException(version, 1);
 
@@ -414,7 +422,10 @@ public abstract class SArchiveReaderBase : ISArchiveReader
                 }
 
                 throw new FormatException($"Cannot read {type} into receiver of type {receiver!.GetType()}");
+            }
+
             case ArchiveObjectType.Int64:
+            {
                 if (version > 1)
                     throw new InvalidArchiveVersionException(version, 1);
 
@@ -425,7 +436,10 @@ public abstract class SArchiveReaderBase : ISArchiveReader
                 }
 
                 throw new FormatException($"Cannot read {type} into receiver of type {receiver!.GetType()}");
+            }
+
             case ArchiveObjectType.UInt16:
+            {
                 if (version > 1)
                     throw new InvalidArchiveVersionException(version, 1);
 
@@ -436,7 +450,10 @@ public abstract class SArchiveReaderBase : ISArchiveReader
                 }
 
                 throw new FormatException($"Cannot read {type} into receiver of type {receiver!.GetType()}");
+            }
+
             case ArchiveObjectType.UInt32:
+            {
                 if (version > 1)
                     throw new InvalidArchiveVersionException(version, 1);
 
@@ -447,7 +464,10 @@ public abstract class SArchiveReaderBase : ISArchiveReader
                 }
 
                 throw new FormatException($"Cannot read {type} into receiver of type {receiver!.GetType()}");
+            }
+
             case ArchiveObjectType.UInt64:
+            {
                 if (version > 1)
                     throw new InvalidArchiveVersionException(version, 1);
 
@@ -458,7 +478,10 @@ public abstract class SArchiveReaderBase : ISArchiveReader
                 }
 
                 throw new FormatException($"Cannot read {type} into receiver of type {receiver!.GetType()}");
+            }
+
             case ArchiveObjectType.Float:
+            {
                 if (version > 1)
                     throw new InvalidArchiveVersionException(version, 1);
 
@@ -469,7 +492,10 @@ public abstract class SArchiveReaderBase : ISArchiveReader
                 }
 
                 throw new FormatException($"Cannot read {type} into receiver of type {receiver!.GetType()}");
+            }
+
             case ArchiveObjectType.Double:
+            {
                 if (version > 1)
                     throw new InvalidArchiveVersionException(version, 1);
 
@@ -480,7 +506,10 @@ public abstract class SArchiveReaderBase : ISArchiveReader
                 }
 
                 throw new FormatException($"Cannot read {type} into receiver of type {receiver!.GetType()}");
+            }
+
             case ArchiveObjectType.VariableUint32:
+            {
                 if (version > 1)
                     throw new InvalidArchiveVersionException(version, 1);
 
@@ -491,7 +520,10 @@ public abstract class SArchiveReaderBase : ISArchiveReader
                 }
 
                 throw new FormatException($"Cannot read {type} into receiver of type {receiver!.GetType()}");
+            }
+
             case ArchiveObjectType.Tuple:
+            {
                 // This is highly not recommended when tuples are known to be used as this causes boxing
                 try
                 {
@@ -502,6 +534,7 @@ public abstract class SArchiveReaderBase : ISArchiveReader
                 {
                     throw new FormatException($"Cannot read {type} into receiver of type {receiver!.GetType()}", e);
                 }
+            }
         }
 
         // Try a manager read for custom registered structs
@@ -883,89 +916,129 @@ public abstract class SArchiveReaderBase : ISArchiveReader
                 throw new FormatException("Invalid object type in archive specified");
 
             case ArchiveObjectType.Byte:
+            {
                 if (version > 1)
                     throw new InvalidArchiveVersionException(version, 1);
 
                 read = ReadInt8();
                 break;
+            }
+
             case ArchiveObjectType.Bool:
+            {
                 if (version > 1)
                     throw new InvalidArchiveVersionException(version, 1);
 
                 read = ReadInt8() != 0;
                 break;
+            }
+
             case ArchiveObjectType.Char:
+            {
                 if (version > 1)
                     throw new InvalidArchiveVersionException(version, 1);
 
                 read = ReadChar();
                 break;
+            }
+
             case ArchiveObjectType.Int16:
+            {
                 if (version > 1)
                     throw new InvalidArchiveVersionException(version, 1);
 
                 read = ReadInt16();
                 break;
+            }
+
             case ArchiveObjectType.Int32:
+            {
                 if (version > 1)
                     throw new InvalidArchiveVersionException(version, 1);
 
                 read = ReadInt32();
                 break;
+            }
+
             case ArchiveObjectType.Int64:
+            {
                 if (version > 1)
                     throw new InvalidArchiveVersionException(version, 1);
 
                 read = ReadInt64();
                 break;
+            }
+
             case ArchiveObjectType.UInt16:
+            {
                 if (version > 1)
                     throw new InvalidArchiveVersionException(version, 1);
 
                 read = ReadUInt16();
                 break;
+            }
+
             case ArchiveObjectType.UInt32:
+            {
                 if (version > 1)
                     throw new InvalidArchiveVersionException(version, 1);
 
                 read = ReadUInt32();
                 break;
+            }
+
             case ArchiveObjectType.UInt64:
+            {
                 if (version > 1)
                     throw new InvalidArchiveVersionException(version, 1);
 
                 read = ReadUInt64();
                 break;
+            }
+
             case ArchiveObjectType.Float:
+            {
                 if (version > 1)
                     throw new InvalidArchiveVersionException(version, 1);
 
                 read = ReadFloat();
                 break;
+            }
+
             case ArchiveObjectType.Double:
+            {
                 if (version > 1)
                     throw new InvalidArchiveVersionException(version, 1);
 
                 read = ReadDouble();
                 break;
+            }
+
             case ArchiveObjectType.String:
+            {
                 if (version > 1)
                     throw new InvalidArchiveVersionException(version, 1);
 
                 read = ReadString();
                 break;
+            }
+
             case ArchiveObjectType.VariableUint32:
+            {
                 if (version > 1)
                     throw new InvalidArchiveVersionException(version, 1);
 
                 read = ReadVariableLengthField32();
                 break;
+            }
 
             // Reference tuple is handled by ReadManager
 
             case ArchiveObjectType.Tuple:
+            {
                 read = ReadTupleBoxed(version);
                 break;
+            }
         }
 
         // If we don't have an object yet, we need to deserialize one.
