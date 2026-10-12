@@ -13,12 +13,12 @@ using Utilities;
 /// </summary>
 public sealed class CodeCheckRun : IDisposable
 {
-    private readonly object outputLock = new();
+    private readonly Lock outputLock = new();
     private readonly SemaphoreSlim dotnetToolRestoreMutex = new(1);
 
     private bool toolsRestored;
 
-    private List<Regex> ignorePatterns = new();
+    private List<Regex> ignorePatterns = [];
 
     public bool Errors { get; private set; }
 
@@ -39,38 +39,15 @@ public sealed class CodeCheckRun : IDisposable
     /// <returns>True if the file should be processed</returns>
     public bool ProcessFile(string file)
     {
-        if (OnlyCheckFiles != null)
-        {
-            foreach (var onlyCheckFile in OnlyCheckFiles)
-            {
-                if (file.EndsWith(onlyCheckFile))
-                {
-                    // Apply ignoring on top of the specific list of files to ignore
-                    if (IsFileIgnored(file))
-                        return false;
+        if (OnlyCheckFiles == null || OnlyCheckFiles.Any(file.EndsWith))
+            return !IsFileIgnored(file);
 
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        if (IsFileIgnored(file))
-            return false;
-
-        return true;
+        return false;
     }
 
     public bool IsFileIgnored(string file)
     {
-        foreach (var ignorePattern in ignorePatterns)
-        {
-            if (ignorePattern.IsMatch(file))
-                return true;
-        }
-
-        return false;
+        return ignorePatterns.Any(ignorePattern => ignorePattern.IsMatch(file));
     }
 
     public async Task<bool> CheckDotnetTools()
@@ -93,13 +70,11 @@ public sealed class CodeCheckRun : IDisposable
             toolsRestored = true;
 
             OutputInfoWithMutex("Restoring dotnet tools to make sure they are up to date");
-            if (!await DotnetToolInstaller.InstallDotnetTools())
-            {
-                ReportError("Failed to run dotnet tool restore");
-                return false;
-            }
+            if (await DotnetToolInstaller.InstallDotnetTools())
+                return true;
 
-            return true;
+            ReportError("Failed to run dotnet tool restore");
+            return false;
         }
         finally
         {
@@ -199,10 +174,10 @@ public sealed class CodeCheckRun : IDisposable
 
     private void Dispose(bool disposing)
     {
-        if (disposing)
-        {
-            dotnetToolRestoreMutex.Dispose();
-            BuildMutex.Dispose();
-        }
+        if (!disposing)
+            return;
+
+        dotnetToolRestoreMutex.Dispose();
+        BuildMutex.Dispose();
     }
 }
