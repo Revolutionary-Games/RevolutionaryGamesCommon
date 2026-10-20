@@ -69,6 +69,78 @@ public static class GitRunHelpers
     }
 
     [UnsupportedOSPlatform("browser")]
+    public static async Task CheckoutNewBranch(string folder, string branch, string startPoint, bool skipLFS,
+        CancellationToken cancellationToken)
+    {
+        var startInfo = PrepareToRunGit(folder, skipLFS);
+        startInfo.ArgumentList.Add("checkout");
+        startInfo.ArgumentList.Add("-B");
+        startInfo.ArgumentList.Add(branch);
+        startInfo.ArgumentList.Add(startPoint);
+
+        var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken);
+        if (result.ExitCode != 0)
+        {
+            throw new Exception($"Failed to create and checkout branch in repo: {result.FullOutput}");
+        }
+    }
+
+    [UnsupportedOSPlatform("browser")]
+    public static async Task Add(string folder, string path, CancellationToken cancellationToken)
+    {
+        var startInfo = PrepareToRunGit(folder, false);
+        startInfo.ArgumentList.Add("add");
+        startInfo.ArgumentList.Add("--");
+        startInfo.ArgumentList.Add(path);
+
+        var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken);
+        if (result.ExitCode != 0)
+        {
+            throw new Exception($"Failed to add file to repo: {result.FullOutput}");
+        }
+    }
+
+    [UnsupportedOSPlatform("browser")]
+    public static async Task Commit(string folder, string message, string path,
+        IReadOnlyDictionary<string, string>? environment, CancellationToken cancellationToken, bool noVerify = false)
+    {
+        var startInfo = PrepareToRunGit(folder, false);
+        SetEnvironment(startInfo, environment);
+        startInfo.ArgumentList.Add("commit");
+        if (noVerify)
+            startInfo.ArgumentList.Add("-n");
+
+        startInfo.ArgumentList.Add("-m");
+        startInfo.ArgumentList.Add(message);
+        startInfo.ArgumentList.Add("--");
+        startInfo.ArgumentList.Add(path);
+
+        var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken);
+        if (result.ExitCode != 0)
+        {
+            throw new Exception($"Failed to commit changes in repo: {result.FullOutput}");
+        }
+    }
+
+    [UnsupportedOSPlatform("browser")]
+    public static async Task PushBranch(string folder, string remoteUrl, string branch, string expectedCommit,
+        IReadOnlyDictionary<string, string>? environment, CancellationToken cancellationToken)
+    {
+        var startInfo = PrepareToRunGit(folder, false);
+        SetEnvironment(startInfo, environment);
+        startInfo.ArgumentList.Add("push");
+        startInfo.ArgumentList.Add($"--force-with-lease=refs/heads/{branch}:{expectedCommit}");
+        startInfo.ArgumentList.Add(remoteUrl);
+        startInfo.ArgumentList.Add($"HEAD:refs/heads/{branch}");
+
+        var result = await ProcessRunHelpers.RunProcessAsync(startInfo, cancellationToken);
+        if (result.ExitCode != 0)
+        {
+            throw new Exception($"Failed to push branch to remote repo: {result.FullOutput}");
+        }
+    }
+
+    [UnsupportedOSPlatform("browser")]
     public static async Task UpdateSubmodules(string folder, bool init, bool recursive,
         CancellationToken cancellationToken)
     {
@@ -593,6 +665,16 @@ public static class GitRunHelpers
 
         startInfo.WorkingDirectory = folder;
         return startInfo;
+    }
+
+    [UnsupportedOSPlatform("browser")]
+    private static void SetEnvironment(ProcessStartInfo startInfo, IReadOnlyDictionary<string, string>? environment)
+    {
+        if (environment == null)
+            return;
+
+        foreach (var item in environment)
+            startInfo.Environment[item.Key] = item.Value;
     }
 
     [UnsupportedOSPlatform("browser")]
