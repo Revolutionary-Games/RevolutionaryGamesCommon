@@ -7,7 +7,6 @@ public static class Normalization
 {
     public static string NormalizeUserName(string username)
     {
-        // TODO: Maybe some length limiting
         var builder = new StringBuilder(username.Length);
 
         bool addSpace = false;
