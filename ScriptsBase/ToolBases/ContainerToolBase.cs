@@ -20,7 +20,7 @@ public abstract class ContainerToolBase<T>
 {
     public const int RePullImagesIfOlderThanDays = 14;
 
-    protected readonly T options;
+    protected readonly T Options;
 
     private readonly Regex builtImageId =
         new(@"COMMIT.*\n.*-->\s+[a-f0-9]+\s*\n([a-f0-9]+)\s+$", RegexOptions.IgnoreCase);
@@ -30,7 +30,7 @@ public abstract class ContainerToolBase<T>
 
     protected ContainerToolBase(T options)
     {
-        this.options = options;
+        Options = options;
     }
 
     protected abstract string ExportFileNameBase { get; }
@@ -42,30 +42,30 @@ public abstract class ContainerToolBase<T>
 
     public async Task<bool> Run(CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(options.Version))
-            options.Version = "latest";
+        if (string.IsNullOrWhiteSpace(Options.Version))
+            Options.Version = "latest";
 
-        if (options.Version != "latest")
+        if (Options.Version != "latest")
         {
-            if (!int.TryParse(options.Version, out var versionNumber))
+            if (!int.TryParse(Options.Version, out var versionNumber))
             {
                 ColourConsole.WriteErrorLine("Expected version to be 'latest' or a number");
                 return false;
             }
 
-            options.Version = $"v{versionNumber}";
+            Options.Version = $"v{versionNumber}";
         }
 
-        ColourConsole.WriteInfoLine($"Building image version {options.Version}");
+        ColourConsole.WriteInfoLine($"Building image version {Options.Version}");
 
         string? tag = null;
         string? extraTag = null;
 
-        if (options.Tag == true)
+        if (Options.Tag == true)
         {
-            tag = $"{ImageNameBase}:{options.Version}";
+            tag = $"{ImageNameBase}:{Options.Version}";
 
-            if (options.Latest == true && options.Version != "latest")
+            if (Options.Latest == true && Options.Version != "latest")
                 extraTag = $"{ImageNameBase}:latest";
         }
 
@@ -86,9 +86,9 @@ public abstract class ContainerToolBase<T>
             return false;
         }
 
-        if (options.Export == true || (options.Export == null && SaveByDefault))
+        if (Options.Export == true || (Options.Export == null && SaveByDefault))
         {
-            if (!await ExportAsFile(builtImage, options.Version, cancellationToken))
+            if (!await ExportAsFile(builtImage, Options.Version, cancellationToken))
             {
                 ColourConsole.WriteErrorLine("Failed to save image as file");
                 return false;

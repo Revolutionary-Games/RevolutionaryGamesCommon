@@ -10,7 +10,7 @@ public class CodeChecks : CodeChecksBase<Program.CheckOptions>
         ValidChecks = new Dictionary<string, CodeCheck>
         {
             { "files", new FileChecks() },
-            { "compile", new CompileCheck(!options.NoExtraRebuild) },
+            { "compile", new CompileCheck(!Options.NoExtraRebuild) },
             { "inspectcode", new InspectCode() },
             { "cleanupcode", new CleanupCode() },
             { "rewrite", new RewriteTool() },

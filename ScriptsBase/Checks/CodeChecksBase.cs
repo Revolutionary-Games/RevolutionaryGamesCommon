@@ -22,11 +22,11 @@ public abstract class CodeChecksBase<T>
 {
     public const int MAX_RUNTIME_MINUTES = 45;
 
-    protected readonly T options;
+    protected readonly T Options;
 
     protected CodeChecksBase(T options)
     {
-        this.options = options;
+        Options = options;
         RunData = new CodeCheckRun();
     }
 
@@ -117,14 +117,14 @@ public abstract class CodeChecksBase<T>
 
         var selectedChecks = new List<CodeCheck>();
 
-        var checkNames = options.Checks.Count > 0 ? options.Checks : DefaultChecks.ToList();
+        var checkNames = Options.Checks.Count > 0 ? Options.Checks : DefaultChecks.ToList();
 
         var setupResult = SetupCheckObjectsForRun(checkNames, selectedChecks);
 
         if (setupResult != 0)
             return setupResult;
 
-        if (options.PreCommitMode)
+        if (Options.PreCommitMode)
         {
             await SetupPreCommitMode(tokenSource.Token);
         }
@@ -144,7 +144,7 @@ public abstract class CodeChecksBase<T>
         }
         finally
         {
-            if (options.PreCommitMode)
+            if (Options.PreCommitMode)
                 TeardownPreCommitMode();
         }
 
@@ -171,7 +171,7 @@ public abstract class CodeChecksBase<T>
         var cancellationToken = tokenSource.Token;
         var pendingTasks = new List<Task>();
 
-        if (options.Parallel != true)
+        if (Options.Parallel != true)
         {
             ColourConsole.WriteDebugLine(
                 "Will wait for each check to finish before starting next one (parallel option is not enabled)");
@@ -183,7 +183,7 @@ public abstract class CodeChecksBase<T>
             {
                 var task = codeCheck.Run(RunData, cancellationToken);
 
-                if (options.Parallel != true)
+                if (Options.Parallel != true)
                 {
                     await task;
 
@@ -250,9 +250,9 @@ public abstract class CodeChecksBase<T>
         RunData.SetIgnoredFiles(DefaultIgnoredFilePaths.Concat(FilePathsToAlwaysIgnore));
         RunData.SetSpecificSetOfFilesToCheck(OnlyChangedFileDetector.DetectOnlySomeFilesConfiguredForChecking()
             ?.ToList());
-        RunData.ApplyCommandLineIncludes(options.Include, options.Exclude);
+        RunData.ApplyCommandLineIncludes(Options.Include, Options.Exclude);
 
-        RunData.InstallDotnetTools = options.RestoreTools;
+        RunData.InstallDotnetTools = Options.RestoreTools;
         RunData.SolutionFile = MainSolutionFile;
         RunData.ForceIgnoredJetbrainsInspections = ForceIgnoredJetbrainsInspections.ToList();
         RunData.ExtraIgnoredJetbrainsInspectWildcards = ExtraIgnoredJetbrainsInspectWildcards.ToList();

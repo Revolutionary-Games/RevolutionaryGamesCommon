@@ -18,13 +18,13 @@ using Utilities;
 public abstract class PackageToolBase<T>
     where T : PackageOptionsBase
 {
-    protected readonly T options;
+    protected readonly T Options;
 
     private readonly List<string> reprintMessages = new();
 
     protected PackageToolBase(T options)
     {
-        this.options = options;
+        Options = options;
     }
 
     protected abstract IReadOnlyCollection<PackagePlatform> ValidPlatforms { get; }
@@ -38,36 +38,36 @@ public abstract class PackageToolBase<T>
 
     protected string CompressedSourceName => $"source{CompressionType.P7Zip.CompressedExtension()}";
 
-    protected string CompressedSourceLocation => Path.Join(options.OutputFolder, CompressedSourceName);
+    protected string CompressedSourceLocation => Path.Join(Options.OutputFolder, CompressedSourceName);
 
     public virtual async Task<bool> Run(CancellationToken cancellationToken)
     {
-        if (options.Platforms.Count < 1)
+        if (Options.Platforms.Count < 1)
         {
             ColourConsole.WriteNormalLine("Using default platforms for packaging");
-            options.Platforms = DefaultPlatforms.ToList();
+            Options.Platforms = DefaultPlatforms.ToList();
         }
 
-        if (options.Platforms.Count < 1)
+        if (Options.Platforms.Count < 1)
         {
             ColourConsole.WriteErrorLine("No platforms to export for selected");
             return false;
         }
 
-        if (options.Retries < 0)
+        if (Options.Retries < 0)
         {
             ColourConsole.WriteErrorLine("Retries needs to be a non-negative number");
             return false;
         }
 
-        if (options.OutputDirectlyToOutputFolder && options.Platforms.Count > 1)
+        if (Options.OutputDirectlyToOutputFolder && Options.Platforms.Count > 1)
         {
             ColourConsole.WriteWarningLine(
                 "When outputting directly to the output folder packaging multiple platforms " +
                 "may result in unexpected results");
         }
 
-        Directory.CreateDirectory(options.OutputFolder);
+        Directory.CreateDirectory(Options.OutputFolder);
 
         if (!await OnBeforeStartExport(cancellationToken))
         {
@@ -75,9 +75,9 @@ public abstract class PackageToolBase<T>
             return false;
         }
 
-        ColourConsole.WriteInfoLine($"Starting package for platforms: {string.Join(", ", options.Platforms)}");
+        ColourConsole.WriteInfoLine($"Starting package for platforms: {string.Join(", ", Options.Platforms)}");
 
-        if (options.SourceCode == true)
+        if (Options.SourceCode == true)
         {
             ColourConsole.WriteNormalLine("Package includes source code");
             if (!await CompressSourceCode(cancellationToken))
@@ -87,7 +87,7 @@ public abstract class PackageToolBase<T>
             }
         }
 
-        foreach (var platform in options.Platforms)
+        foreach (var platform in Options.Platforms)
         {
             ColourConsole.WriteInfoLine($"Starting package for: {platform}");
 
@@ -154,7 +154,7 @@ public abstract class PackageToolBase<T>
                 throw new Exception("Failed to get base folder from copy target");
 
             // Skip copying if target equals the source
-            if (options.OutputDirectlyToOutputFolder)
+            if (Options.OutputDirectlyToOutputFolder)
             {
                 if (Path.GetFullPath(target) == Path.GetFullPath(fileToPackage.OriginalFile))
                 {
@@ -179,7 +179,7 @@ public abstract class PackageToolBase<T>
             }
         }
 
-        if (options.SourceCode == true)
+        if (Options.SourceCode == true)
         {
             // TODO: this probably doesn't work with OutputDirectlyToOutputFolder
             ColourConsole.WriteDebugLine($"Copying source zip to {folder}");
@@ -195,7 +195,7 @@ public abstract class PackageToolBase<T>
 
     protected virtual async Task<bool> CompressSourceCode(CancellationToken cancellationToken)
     {
-        if (options.CleanZips && File.Exists(CompressedSourceLocation))
+        if (Options.CleanZips && File.Exists(CompressedSourceLocation))
         {
             ColourConsole.WriteNormalLine($"Deleting {CompressedSourceLocation} before creating it again");
             File.Delete(CompressedSourceLocation);
@@ -223,7 +223,7 @@ public abstract class PackageToolBase<T>
     protected virtual async Task<bool> Compress(PackagePlatform platform, string folder, string archiveFile,
         CancellationToken cancellationToken)
     {
-        if (options.CleanZips && File.Exists(archiveFile))
+        if (Options.CleanZips && File.Exists(archiveFile))
         {
             ColourConsole.WriteNormalLine($"Deleting {archiveFile} before creating it again");
             File.Delete(archiveFile);
@@ -307,25 +307,25 @@ public abstract class PackageToolBase<T>
         }
 
         string folder;
-        if (options.OutputDirectlyToOutputFolder)
+        if (Options.OutputDirectlyToOutputFolder)
         {
             ColourConsole.WriteNormalLine("Outputting directly to the output folder without subfolders");
-            folder = options.OutputFolder;
+            folder = Options.OutputFolder;
         }
         else
         {
-            folder = Path.Join(options.OutputFolder, GetFolderNameForExport(platform));
+            folder = Path.Join(Options.OutputFolder, GetFolderNameForExport(platform));
         }
 
         Directory.CreateDirectory(folder);
 
         bool succeeded = false;
 
-        for (int i = 0; i < options.Retries + 1; ++i)
+        for (int i = 0; i < Options.Retries + 1; ++i)
         {
             if (!await Export(platform, folder, cancellationToken) || !Directory.Exists(folder))
             {
-                if (i < options.Retries)
+                if (i < Options.Retries)
                 {
                     ColourConsole.WriteNormalLine($"Failed to export {platform} to {folder}, will retry");
 
@@ -359,12 +359,12 @@ public abstract class PackageToolBase<T>
 
         string folderOrArchive;
 
-        if (options.Compress)
+        if (Options.Compress)
         {
-            var zipFile = Path.Join(options.OutputFolder,
+            var zipFile = Path.Join(Options.OutputFolder,
                 $"{GetFolderNameForExport(platform)}{GetCompressedExtensionForPlatform(platform)}");
 
-            if (options.CleanZips && File.Exists(zipFile))
+            if (Options.CleanZips && File.Exists(zipFile))
                 File.Delete(zipFile);
 
             if (!await Compress(platform, folder, zipFile, cancellationToken) || !File.Exists(zipFile))

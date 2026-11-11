@@ -4,6 +4,13 @@
     "orderingRules": {
       "usingDirectivesPlacement": "insideNamespace"
     },
+    "maintainabilityRules": {
+      "topLevelTypes": [
+        "class",
+        "interface",
+        "struct"
+      ]
+    },
     "layoutRules": {
       "newlineAtEndOfFile": "require"
     }

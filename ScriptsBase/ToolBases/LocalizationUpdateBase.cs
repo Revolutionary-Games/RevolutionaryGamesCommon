@@ -23,7 +23,7 @@ using Utilities;
 public abstract class LocalizationUpdateBase<T>
     where T : LocalizationOptionsBase
 {
-    protected readonly T options;
+    protected readonly T Options;
 
     /// <summary>
     ///   Multiple source string locations are packed onto a single line if the combined length is less than
@@ -43,7 +43,7 @@ public abstract class LocalizationUpdateBase<T>
 
     protected LocalizationUpdateBase(T options)
     {
-        this.options = options;
+        Options = options;
     }
 
     /// <summary>
@@ -70,8 +70,8 @@ public abstract class LocalizationUpdateBase<T>
 
     protected virtual string TranslationTemplateFile => Path.Join(LocaleFolder, TranslationTemplateFileName);
 
-    protected string PotSuffix => string.IsNullOrEmpty(options.PotSuffix) ? ".pot" : options.PotSuffix;
-    protected string PoSuffix => string.IsNullOrEmpty(options.PoSuffix) ? ".po" : options.PoSuffix;
+    protected string PotSuffix => string.IsNullOrEmpty(Options.PotSuffix) ? ".pot" : Options.PotSuffix;
+    protected string PoSuffix => string.IsNullOrEmpty(Options.PoSuffix) ? ".po" : Options.PoSuffix;
 
     protected abstract IEnumerable<string> PathsToExtractFrom { get; }
 
@@ -96,7 +96,7 @@ public abstract class LocalizationUpdateBase<T>
 
     public async Task<bool> Run(CancellationToken cancellationToken)
     {
-        if (!options.Quiet)
+        if (!Options.Quiet)
             ColourConsole.WriteInfoLine($"Extracting translations template {TranslationTemplateFileName}");
 
         if (!await RunTemplateUpdate(cancellationToken))
@@ -109,7 +109,7 @@ public abstract class LocalizationUpdateBase<T>
             return false;
         }
 
-        if (!options.Quiet)
+        if (!Options.Quiet)
         {
             ColourConsole.WriteSuccessLine("Template updated");
             ColourConsole.WriteInfoLine($"Updating individual languages ({PoSuffix} files)");
@@ -126,7 +126,7 @@ public abstract class LocalizationUpdateBase<T>
 
         await PostProcessTranslations(cancellationToken);
 
-        if (!options.Quiet)
+        if (!Options.Quiet)
             ColourConsole.WriteSuccessLine("Done updating locales");
         return true;
     }
@@ -142,13 +142,13 @@ public abstract class LocalizationUpdateBase<T>
 
         if (File.Exists(target))
         {
-            if (!options.Quiet)
+            if (!Options.Quiet)
                 ColourConsole.WriteNormalLine($"Updating locale {locale}");
 
             return await RunTranslationUpdate(locale, target, cancellationToken);
         }
 
-        if (!options.Quiet)
+        if (!Options.Quiet)
             ColourConsole.WriteNormalLine($"Creating locale {locale}");
 
         if (!await RunTranslationCreate(locale, target, cancellationToken))
