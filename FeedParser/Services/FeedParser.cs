@@ -2,6 +2,7 @@ namespace FeedParser.Services;
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -150,7 +151,7 @@ public static class FeedParser
             var published = element.Descendants().FirstOrDefault(p => p.Name.LocalName is "published" or "pubDate")
                 ?.Value;
 
-            if (published != null && DateTime.TryParse(published, out var parsedTime))
+            if (published != null && DateTime.TryParse(published, CultureInfo.InvariantCulture, out var parsedTime))
             {
                 parsed.PublishedAt = parsedTime.ToUniversalTime();
             }
