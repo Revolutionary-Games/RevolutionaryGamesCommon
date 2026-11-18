@@ -3,3 +3,4 @@ obj
 *.DotSettings.user
 /.jetbrains-cache
 /inspect_results.json
+.DS_Store
