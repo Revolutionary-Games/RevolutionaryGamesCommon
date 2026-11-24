@@ -2,6 +2,7 @@ namespace FeedParser.Tests.Services.Tests;
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using AngleSharp.Html.Parser;
 using FeedParser.Services;
@@ -53,7 +54,8 @@ public class FeedTests
             items[0].Link);
         Assert.NotNull(items[0].Summary);
         Assert.NotEmpty(items[0].Summary!);
-        Assert.Equal(DateTime.Parse("2022-05-29T12:12:03Z").ToUniversalTime(), items[0].PublishedAt);
+        Assert.Equal(DateTime.Parse("2022-05-29T12:12:03Z", CultureInfo.InvariantCulture).ToUniversalTime(),
+            items[0].PublishedAt);
 
         Assert.Equal("User3", items[1].Author);
         Assert.Equal("tag:github.com,2008:PushEvent/22041370895", items[1].Id);
@@ -122,7 +124,8 @@ public class FeedTests
             items[0].Link);
         Assert.NotNull(items[0].Summary);
         Assert.NotEmpty(items[0].Summary!);
-        Assert.Equal(DateTime.Parse("2022-04-30T17:10:02Z").ToUniversalTime(), items[0].PublishedAt);
+        Assert.Equal(DateTime.Parse("2022-04-30T17:10:02Z", CultureInfo.InvariantCulture).ToUniversalTime(),
+            items[0].PublishedAt);
     }
 
     [Fact]
